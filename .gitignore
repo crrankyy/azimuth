@@ -1,0 +1,10 @@
+node_modules/
+plugin/dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+
+# Design inputs (kept locally, not part of the product)
+azimuth-viewer-handoff/
+docs/azimuth-spec.md
+docs/viewer-design-prompt.md

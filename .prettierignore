@@ -1,0 +1,9 @@
+node_modules/
+plugin/dist/
+coverage/
+pnpm-lock.yaml
+azimuth-viewer-handoff/
+docs/azimuth-spec.md
+docs/viewer-design-prompt.md
+# Fixture bytes are asserted exactly (frontmatter round-trips, spec hashes).
+test/fixtures/

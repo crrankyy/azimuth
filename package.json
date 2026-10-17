@@ -1,0 +1,48 @@
+{
+  "name": "azimuth",
+  "version": "0.1.0",
+  "description": "File-based project management for codebases built with AI agents, with a live offline viewer and a Claude Code plugin.",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/crrankyy/azimuth.git"
+  },
+  "bin": {
+    "azimuth": "plugin/bin/azimuth"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm build:viewer && pnpm build:cli",
+    "build:cli": "node scripts/build-cli.mjs",
+    "build:viewer": "vite build --config viewer/vite.config.ts",
+    "dev:viewer": "vite --config viewer/vite.config.ts",
+    "typecheck": "tsc -p tsconfig.json && tsc -p viewer/tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}
