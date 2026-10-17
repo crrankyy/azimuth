@@ -273,7 +273,7 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
 export function evaluateGate(ctx: GateContext, f: FeatureEntity, to: FeatureStatus): Gate | null {
   switch (to) {
     case "draft":
-      return f.status === "idea" ? { to, checks: draftGate(f) } : null;
+      return f.status === "idea" || f.status === "deferred" ? { to, checks: draftGate(f) } : null;
     case "approved":
       return { to, checks: approveGate(ctx, f) };
     case "in-progress":

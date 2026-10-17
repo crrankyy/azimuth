@@ -259,6 +259,10 @@ export function headSha(root: string): string | null {
   return git(root, ["rev-parse", "--short=7", "HEAD"])?.trim() || null;
 }
 
+export function gitTopLevel(root: string): string | null {
+  return git(root, ["rev-parse", "--show-toplevel"])?.trim() || null;
+}
+
 export function gitCommonDir(root: string): string | null {
   try {
     return execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], {

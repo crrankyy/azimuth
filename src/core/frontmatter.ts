@@ -180,16 +180,82 @@ export function updateFrontmatter(text: string, updates: Record<string, unknown>
     while (end > keyStart && (yaml[end - 1] === "\n" || yaml[end - 1] === "\r")) end--;
     edits.push({ start: keyStart, end, text: `${key}: ${inlineYaml(value)}` });
   }
-  let out = yaml;
-  for (const edit of edits.sort((a, b) => b.start - a.start)) {
-    out = out.slice(0, edit.start) + fixEol(edit.text) + out.slice(edit.end);
-  }
+  let out = applyEdits(yaml, edits, fixEol);
   if (appends.length > 0) {
     const trimmed = out.replace(/(\r?\n)+$/, "");
     const trailing = out.slice(trimmed.length);
     out = (trimmed === "" ? "" : trimmed + eol) + fixEol(appends.join("\n")) + trailing;
   }
-  const lines = text.slice(parts.bom.length).split(eol);
+  return replaceYaml(text, parts, out);
+}
+
+function applyEdits(yaml: string, edits: Edit[], fixEol: (s: string) => string): string {
+  let out = yaml;
+  for (const edit of [...edits].sort((a, b) => b.start - a.start)) {
+    out = out.slice(0, edit.start) + fixEol(edit.text) + out.slice(edit.end);
+  }
+  return out;
+}
+
+function replaceYaml(text: string, parts: FrontmatterFile, yaml: string): string {
+  const lines = text.slice(parts.bom.length).split(parts.eol);
   const close = lines.findIndex((line, i) => i > 0 && FENCE.test(line));
-  return parts.bom + [lines[0], out, ...lines.slice(close)].join(eol);
+  return parts.bom + [lines[0], yaml, ...lines.slice(close)].join(parts.eol);
+}
+
+/**
+ * Sets keys on one mapping inside a top-level list (e.g. a task in `tasks:`), editing only the
+ * affected values. Missing keys are inserted after the item's last key at the same indentation.
+ * Returns null when no item matches.
+ */
+export function updateFrontmatterItem(
+  text: string,
+  listKey: string,
+  match: (item: Record<string, unknown>) => boolean,
+  updates: Record<string, unknown>,
+): string | null {
+  const parts = splitFrontmatter(text);
+  if (parts.yaml === null) return null;
+  const yaml = parts.yaml;
+  const { eol } = parts;
+  const fixEol = (s: string) => (eol === "\n" ? s : s.replace(/\r?\n/g, eol));
+  const doc = parseDocument(yaml, { keepSourceTokens: true });
+  if (doc.errors.length > 0 || !isMap(doc.contents)) return null;
+  const list = doc.contents.items.find((p) => isScalar(p.key) && p.key.value === listKey)?.value;
+  if (!isSeq(list)) return null;
+  const item = list.items.find(
+    (node) => isMap(node) && match(toJS(node) as Record<string, unknown>),
+  );
+  if (!isMap(item) || item.items.length === 0) return null;
+
+  const first = item.items[0]?.key;
+  const firstStart = isScalar(first) && first.range ? first.range[0] : 0;
+  const lineStart = yaml.lastIndexOf("\n", firstStart - 1) + 1;
+  const indent = " ".repeat(firstStart - lineStart);
+  const last = item.items[item.items.length - 1];
+  let insertAt =
+    (last?.value as Node | null)?.range?.[1] ??
+    (last?.key as Node | null)?.range?.[2] ??
+    firstStart;
+  while (insertAt > 0 && (yaml[insertAt - 1] === "\n" || yaml[insertAt - 1] === "\r")) insertAt--;
+
+  const edits: Edit[] = [];
+  const inserts: string[] = [];
+  for (const [key, value] of Object.entries(updates)) {
+    const pair = item.items.find((p) => isScalar(p.key) && p.key.value === key);
+    const valueNode = pair?.value as Node | null | undefined;
+    if (pair && isScalar(valueNode) && valueNode.range && isPlainScalar(value)) {
+      const [start, end] = valueNode.range;
+      const prefix = start === end && yaml[start - 1] === ":" ? " " : "";
+      edits.push({ start, end, text: prefix + inlineYaml(value) });
+    } else if (pair && isScalar(pair.key) && pair.key.range) {
+      let end = valueNode?.range ? valueNode.range[1] : pair.key.range[2];
+      while (end > pair.key.range[0] && (yaml[end - 1] === "\n" || yaml[end - 1] === "\r")) end--;
+      edits.push({ start: pair.key.range[0], end, text: `${key}: ${inlineYaml(value)}` });
+    } else {
+      inserts.push(`\n${indent}${key}: ${inlineYaml(value)}`);
+    }
+  }
+  if (inserts.length > 0) edits.push({ start: insertAt, end: insertAt, text: inserts.join("") });
+  return replaceYaml(text, parts, applyEdits(yaml, edits, fixEol));
 }
