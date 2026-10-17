@@ -121,10 +121,10 @@ export function IndexProvider({
   useEffect(() => {
     if (boot.mode === "export") return;
     if (!boot.token) {
-      // Vite dev server: no backend, render the bundled sample.
+      // Vite dev server: no backend. Render the bundled sample as if live (actions are refused).
       sample?.().then((s) => {
         apply(s);
-        setConnection("export");
+        setConnection("live");
       });
       return;
     }

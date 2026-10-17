@@ -7,3 +7,4 @@ docs/azimuth-spec.md
 docs/viewer-design-prompt.md
 # Fixture bytes are asserted exactly (frontmatter round-trips, spec hashes).
 test/fixtures/
+viewer/src/styles/azimuth.css
