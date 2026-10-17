@@ -395,12 +395,7 @@ export function reapproveFeature(root: string, id: string, opts: MoveOptions): R
   });
 }
 
-export function moveTask(
-  root: string,
-  taskId: string,
-  toRaw: string,
-  opts: MoveOptions,
-): Result {
+export function moveTask(root: string, taskId: string, toRaw: string, opts: MoveOptions): Result {
   if (!(TASK_STATUSES as readonly string[]).includes(toRaw)) {
     throw new AzimuthError(
       "invalid",
