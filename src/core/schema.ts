@@ -122,9 +122,34 @@ export function opt<T>(ctx: FieldContext, key: string, reader: Reader<T>, fallba
 }
 
 /** Warns about keys the format doesn't define (they are kept, not removed). */
+/** Values the index computes; storing them in a file would go stale, so it is an error. */
+const DERIVED_KEYS = [
+  "blocks",
+  "blocked_by",
+  "progress",
+  "coverage",
+  "stale",
+  "modified_since_approval",
+  "next_gate",
+  "last_activity",
+  "file_conflicts",
+  "approval_changes",
+];
+
 export function unknownKeys(ctx: FieldContext, known: readonly string[]): void {
   for (const key of Object.keys(ctx.data)) {
     if (known.includes(key)) continue;
+    if (DERIVED_KEYS.includes(key)) {
+      ctx.problems.push({
+        code: "E-DERIVED-FIELD",
+        severity: "error",
+        file: ctx.file,
+        line: ctx.keyLines[key] ?? null,
+        ref: ctx.ref,
+        message: `${key} is computed by Azimuth; remove it from the file.`,
+      });
+      continue;
+    }
     ctx.problems.push({
       code: "W-UNKNOWN-KEY",
       severity: "warning",
