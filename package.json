@@ -24,7 +24,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run"
+    "test": "node scripts/build-cli.mjs && vitest run"
   },
   "dependencies": {
     "react": "^19.3.1",

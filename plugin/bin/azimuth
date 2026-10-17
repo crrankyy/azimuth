@@ -1,0 +1,79 @@
+#!/bin/sh
+# Azimuth launcher. Claude Code puts the plugin's bin/ on the Bash tool's PATH and runs hooks
+# through it, but neither is guaranteed to have `node` on PATH, so find a usable Node here.
+set -u
+
+# Resolve this script's real location (it may be symlinked onto PATH).
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in
+    /*) self=$link ;;
+    *) self=$(dirname "$self")/$link ;;
+  esac
+done
+here=$(cd "$(dirname "$self")" && pwd)
+cli="$here/../dist/cli.mjs"
+
+# Hooks run in every repository once the plugin is installed: leave non-Azimuth repos alone
+# before paying for a Node start-up.
+if [ "${1:-}" = "hook" ]; then
+  dir=${CLAUDE_PROJECT_DIR:-$PWD}
+  found=""
+  while :; do
+    if [ -f "$dir/.azimuth/config.yaml" ]; then found=1; break; fi
+    if [ -e "$dir/.git" ] || [ "$dir" = "/" ]; then break; fi
+    dir=$(dirname "$dir")
+  done
+  [ -n "$found" ] || exit 0
+fi
+
+is_usable() {
+  [ -x "$1" ] || return 1
+  major=$("$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null) || return 1
+  [ "${major:-0}" -ge 20 ] 2>/dev/null
+}
+
+cache_dir=${XDG_CACHE_HOME:-$HOME/.cache}/azimuth
+cache_file=$cache_dir/node-path
+node=""
+if [ -n "${AZIMUTH_NODE:-}" ] && is_usable "$AZIMUTH_NODE"; then
+  node=$AZIMUTH_NODE
+elif [ -f "$cache_file" ] && [ -x "$(cat "$cache_file")" ]; then
+  node=$(cat "$cache_file")
+else
+  for candidate in \
+    "$(command -v node 2>/dev/null || true)" \
+    /opt/homebrew/opt/node/bin/node \
+    /opt/homebrew/opt/node@*/bin/node \
+    /usr/local/opt/node/bin/node \
+    /usr/local/opt/node@*/bin/node \
+    /opt/homebrew/bin/node \
+    /usr/local/bin/node \
+    /usr/bin/node \
+    $(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -rV 2>/dev/null) \
+    "$HOME/.volta/bin/node" \
+    "$HOME/.local/share/fnm/aliases/default/bin/node" \
+    "$HOME/.asdf/shims/node"; do
+    if [ -n "$candidate" ] && is_usable "$candidate"; then
+      node=$candidate
+      mkdir -p "$cache_dir" 2>/dev/null && printf '%s' "$node" > "$cache_file" 2>/dev/null
+      break
+    fi
+  done
+fi
+
+if [ -z "$node" ]; then
+  if [ "${1:-}" = "hook" ]; then
+    echo "azimuth: Node.js 20+ not found; set AZIMUTH_NODE to its path." >&2
+    exit 0
+  fi
+  echo "azimuth: Node.js 20 or newer is required. Install it, or set AZIMUTH_NODE=/path/to/node." >&2
+  exit 3
+fi
+if [ ! -f "$cli" ]; then
+  echo "azimuth: $cli is missing. Run \`pnpm build\` in the Azimuth repository." >&2
+  [ "${1:-}" = "hook" ] && exit 0
+  exit 3
+fi
+exec "$node" "$cli" "$@"

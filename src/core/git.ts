@@ -24,10 +24,14 @@ export function isGitRepo(root: string): boolean {
   return git(root, ["rev-parse", "--is-inside-work-tree"])?.trim() === "true";
 }
 
-/** ISO timestamps from git use offsets; the index uses UTC with `Z`. */
+/**
+ * Timestamps in the index are UTC with `Z`, at whole seconds: git records commit times to the
+ * second, so finer stamps would make same-second events compare out of order.
+ */
 export function toUtc(iso: string): string {
   const ms = Date.parse(iso);
-  return Number.isNaN(ms) ? iso : new Date(ms).toISOString().replace(/\.000Z$/, "Z");
+  if (Number.isNaN(ms)) return iso;
+  return new Date(Math.floor(ms / 1000) * 1000).toISOString().replace(/\.000Z$/, "Z");
 }
 
 interface RawCommit extends Commit {

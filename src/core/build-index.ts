@@ -6,6 +6,7 @@ import type { Facts } from "./facts";
 import { nextGate, type GateContext } from "./gates";
 import { gitFacts, toUtc } from "./git";
 import { buildInbox } from "./inbox";
+import { compareIds } from "./ids";
 import { loadProject, type FeatureEntity, type Model } from "./model";
 import { traceTests } from "./trace";
 import type { Feature, FeatureDetail, Index, LiveSession, Problem, VerifyRun } from "./types";
@@ -102,7 +103,9 @@ const RECENT_RUNS = 200;
 
 /** Newest first: the 200 most recent runs plus the latest run of every task. */
 function indexRuns(runs: VerifyRun[]): VerifyRun[] {
-  const newest = [...runs].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+  const newest = [...runs].sort(
+    (a, b) => Date.parse(b.at) - Date.parse(a.at) || compareIds(b.id, a.id),
+  );
   const latestPerTask = new Set<string>();
   const seenTargets = new Set<string>();
   for (const run of newest) {
