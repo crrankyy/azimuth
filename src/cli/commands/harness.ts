@@ -15,6 +15,7 @@ import { readLiveSessions } from "../../core/live";
 import { findProjectRoot } from "../../core/paths";
 import { VERSION } from "../../core/version";
 import { HOOKS, type HookInput } from "../../hooks/handlers";
+import { ensureViewer } from "../../server/autostart";
 import { viewerUrl } from "../../server/registry";
 import type { Index } from "../../core/types";
 import { color, print, requirePositional, UsageError } from "../io";
@@ -71,6 +72,7 @@ export const hook: Command = {
     try {
       const out = await handler(input, {
         env: process.env,
+        ensureViewer: (root) => ensureViewer(root),
         writeEnv: (lines) => writeEnvFile(process.env.CLAUDE_ENV_FILE, lines),
       });
       if (out.stdout) process.stdout.write(out.stdout);

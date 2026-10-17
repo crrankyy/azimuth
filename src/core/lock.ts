@@ -56,7 +56,11 @@ function lockIsStale(path: string): boolean {
 
 /** Runs `fn` while holding the project write lock (re-entrant within one process). */
 let held = 0;
-export function withLock<T>(root: string, fn: () => T, timeoutMs = 5_000): T {
+export function withLock<T>(
+  root: string,
+  fn: () => T,
+  timeoutMs = Number(process.env.AZIMUTH_LOCK_TIMEOUT_MS) || 5_000,
+): T {
   if (held > 0) {
     held++;
     try {
