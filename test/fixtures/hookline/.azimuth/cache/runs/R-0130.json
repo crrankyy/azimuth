@@ -1,0 +1,30 @@
+{
+  "id": "R-0130",
+  "target": "T-003.5",
+  "command": "pnpm vitest run src/worker/deliver.test.ts",
+  "ok": true,
+  "exit_code": 0,
+  "duration_ms": 16380,
+  "at": "2026-09-27T16:45:00Z",
+  "commit": "{{sha:docs: reconcile architecture after F-003}}",
+  "output_tail": " ✓ src/worker/deliver.test.ts (6 tests) 15127ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)",
+  "scenarios": [
+    {
+      "id": "S-003.2.3",
+      "status": "passing"
+    },
+    {
+      "id": "S-003.3.1",
+      "status": "passing"
+    },
+    {
+      "id": "S-003.3.2",
+      "status": "passing"
+    },
+    {
+      "id": "S-003.3.3",
+      "status": "passing"
+    }
+  ],
+  "junit": null
+}

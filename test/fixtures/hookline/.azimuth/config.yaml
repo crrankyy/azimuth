@@ -1,0 +1,25 @@
+schema: 1
+project:
+  name: Hookline
+  description: Self-hosted webhook delivery service. It accepts events over HTTP, signs them and delivers them to subscriber endpoints with retries.
+  mode: brownfield
+stack:
+  languages: [typescript]
+  package_manager: pnpm
+  test_runner: vitest
+  display: [TypeScript, Node 22, Fastify, SQLite, Vitest, pnpm]
+commands:
+  build: pnpm build
+  typecheck: pnpm tsc --noEmit
+  test: pnpm vitest run
+  lint: pnpm eslint .
+  format: pnpm prettier --check .
+tests:
+  globs: ["src/**/*.test.ts", "test/**/*.test.ts"]
+git:
+  arch_stale_after_commits: 10
+autonomy:
+  approve_specs: manual
+  accept_adrs: manual
+  strict: false
+stale_after_days: 5

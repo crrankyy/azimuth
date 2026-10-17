@@ -1,0 +1,22 @@
+{
+  "id": "R-0136",
+  "target": "T-007.2",
+  "command": "pnpm vitest run src/worker/record-attempt.test.ts",
+  "ok": true,
+  "exit_code": 0,
+  "duration_ms": 1610,
+  "at": "2026-10-17T15:11:00Z",
+  "commit": "{{sha:feat(F-007): record every delivery attempt}}",
+  "output_tail": " ✓ src/worker/record-attempt.test.ts (3 tests) 41ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)",
+  "scenarios": [
+    {
+      "id": "S-007.1.1",
+      "status": "passing"
+    },
+    {
+      "id": "S-007.1.2",
+      "status": "passing"
+    }
+  ],
+  "junit": null
+}

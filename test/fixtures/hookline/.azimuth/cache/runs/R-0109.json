@@ -1,0 +1,13 @@
+{
+  "id": "R-0109",
+  "target": "T-002.1",
+  "command": "pnpm tsc --noEmit",
+  "ok": true,
+  "exit_code": 0,
+  "duration_ms": 4420,
+  "at": "2026-09-11T10:20:00Z",
+  "commit": "{{sha:docs: reconcile architecture after F-003}}",
+  "output_tail": "",
+  "scenarios": [],
+  "junit": null
+}

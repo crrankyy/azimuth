@@ -1,0 +1,38 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      better-sqlite3:
+        specifier: ^11.5.0
+        version: 11.5.0
+      fastify:
+        specifier: ^5.0.0
+        version: 5.0.0
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.11
+        version: 7.6.11
+      '@types/node':
+        specifier: ^22.9.0
+        version: 22.9.0
+      eslint:
+        specifier: ^9.14.0
+        version: 9.14.0
+      prettier:
+        specifier: ^3.3.3
+        version: 3.3.3
+      typescript:
+        specifier: ^5.6.3
+        version: 5.6.3
+      typescript-eslint:
+        specifier: ^8.13.0
+        version: 8.13.0
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.4

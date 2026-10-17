@@ -228,7 +228,7 @@ describe("records", () => {
         severity: "error",
         file: ".azimuth/issues/RISK-0002-memory-growth.md",
         line: 6,
-        ref: "RISK-0002",
+        ref: null,
         message:
           'likelihood must be low, medium or high (got "med"). RISK-0002 was left out of the index.',
       },

@@ -1,0 +1,18 @@
+{
+  "id": "R-0127",
+  "target": "T-003.7",
+  "command": "pnpm vitest run test/worker.e2e.test.ts",
+  "ok": false,
+  "exit_code": 1,
+  "duration_ms": 1960,
+  "at": "2026-09-25T11:00:00Z",
+  "commit": "{{sha:docs: reconcile architecture after F-003}}",
+  "output_tail": " FAIL  test/worker.e2e.test.ts > S-003.2.1 sends a due delivery signed\nAssertionError: expected [] to have a length of 1 but got +0\n\n Test Files  1 failed (1)\n      Tests  1 failed (1)",
+  "scenarios": [
+    {
+      "id": "S-003.2.1",
+      "status": "failing"
+    }
+  ],
+  "junit": null
+}

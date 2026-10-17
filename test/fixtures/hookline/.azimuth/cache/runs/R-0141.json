@@ -1,0 +1,18 @@
+{
+  "id": "R-0141",
+  "target": "T-005.3",
+  "command": "pnpm vitest run src/retry/classify.test.ts",
+  "ok": true,
+  "exit_code": 0,
+  "duration_ms": 1310,
+  "at": "2026-10-18T11:32:00Z",
+  "commit": "{{sha:feat(F-005): classify responses as retryable or permanent}}",
+  "output_tail": " ✓ src/retry/classify.test.ts (4 tests) 9ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)",
+  "scenarios": [
+    {
+      "id": "S-005.1.2",
+      "status": "passing"
+    }
+  ],
+  "junit": null
+}

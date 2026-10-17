@@ -1,0 +1,22 @@
+{
+  "id": "R-0110",
+  "target": "T-002.2",
+  "command": "pnpm vitest run src/signing/hmac.test.ts",
+  "ok": false,
+  "exit_code": 1,
+  "duration_ms": 1210,
+  "at": "2026-09-11T14:00:00Z",
+  "commit": "{{sha:docs: reconcile architecture after F-003}}",
+  "output_tail": " FAIL  src/signing/hmac.test.ts > S-002.1.1 signs the exact payload bytes\nError: not implemented\n\n Test Files  1 failed (1)\n      Tests  2 failed (2)",
+  "scenarios": [
+    {
+      "id": "S-002.1.1",
+      "status": "failing"
+    },
+    {
+      "id": "S-002.1.2",
+      "status": "failing"
+    }
+  ],
+  "junit": null
+}

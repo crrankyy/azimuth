@@ -161,13 +161,20 @@ export function unknownKeys(ctx: FieldContext, known: readonly string[]): void {
   }
 }
 
-/** Marks every schema error of an excluded entity, so the reason it disappeared is visible. */
+/**
+ * Marks every problem of an excluded entity so the reason it disappeared is visible. Their
+ * `ref` is cleared: the entity is not in the index, so there is nothing to link to.
+ */
 export function finishSchema(ctx: FieldContext): Problem[] {
   if (!ctx.failed) return ctx.problems;
   const label = ctx.ref ?? ctx.file;
   return ctx.problems.map((p) =>
     p.code === "E-SCHEMA"
-      ? { ...p, message: `${p.message.replace(/\.$/, "")}. ${label} was left out of the index.` }
-      : p,
+      ? {
+          ...p,
+          ref: null,
+          message: `${p.message.replace(/\.$/, "")}. ${label} was left out of the index.`,
+        }
+      : { ...p, ref: null },
   );
 }
