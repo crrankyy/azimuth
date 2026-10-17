@@ -39,6 +39,8 @@ export interface MoveOptions extends Who {
   /** Override the dependency check of G-START (you only). */
   override?: boolean;
   supersededBy?: string;
+  /** Why a task is blocked or skipped. */
+  note?: string;
   /** For viewer actions: the status the user saw; a different current status is a conflict. */
   expectStatus?: string;
 }
@@ -397,7 +399,7 @@ export function moveTask(
   root: string,
   taskId: string,
   toRaw: string,
-  opts: MoveOptions & { note?: string },
+  opts: MoveOptions,
 ): Result {
   if (!(TASK_STATUSES as readonly string[]).includes(toRaw)) {
     throw new AzimuthError(
