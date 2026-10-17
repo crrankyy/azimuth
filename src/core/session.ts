@@ -4,7 +4,8 @@ import { sessionIdFor } from "./allocate";
 import { AzimuthError } from "./errors";
 import { splitFrontmatter, updateFrontmatter } from "./frontmatter";
 import { readCommits, toUtc } from "./git";
-import { sharedCacheDir, withLock, writeFileAtomic } from "./lock";
+import { withLock, writeFileAtomic } from "./lock";
+import { appendLive, readLiveRecords } from "./live";
 import { loadProject } from "./model";
 import { azPath } from "./paths";
 import { fill, TEMPLATES } from "./templates";
@@ -27,30 +28,13 @@ export function actorFromEnv(env: SessionEnv): Actor {
   return env.CLAUDECODE === "1" ? "agent" : "you";
 }
 
-export function liveFile(root: string, claudeSession: string): string {
-  return join(sharedCacheDir(root), "live", `${claudeSession.replace(/[^\w.-]/g, "_")}.jsonl`);
-}
-
 /** The current Azimuth session: explicit env, or the last one started in this Claude session. */
 export function currentSession(root: string, env: SessionEnv): string | null {
   if (env.AZIMUTH_SESSION) return env.AZIMUTH_SESSION;
   if (!env.AZIMUTH_CLAUDE_SESSION) return null;
-  let text: string;
-  try {
-    text = readFileSync(liveFile(root, env.AZIMUTH_CLAUDE_SESSION), "utf8");
-  } catch {
-    return null;
-  }
-  const lines = text.trimEnd().split("\n").reverse();
-  for (const line of lines) {
-    try {
-      const event = JSON.parse(line) as { kind?: string; ses?: string | null };
-      if (event.kind === "session") return event.ses ?? null;
-    } catch {
-      // A torn line from a concurrent writer; skip it.
-    }
-  }
-  return null;
+  const records = readLiveRecords(root, env.AZIMUTH_CLAUDE_SESSION);
+  const last = [...records].reverse().find((r) => r.kind === "session");
+  return last?.kind === "session" ? last.ses : null;
 }
 
 function replaceSection(body: string, title: string, content: string): string {
@@ -95,29 +79,6 @@ export function startSession(root: string, opts: StartOptions): string {
     }
     return id;
   });
-}
-
-/** Appends one live event line (also used by the Claude Code hooks). */
-export function appendLive(
-  root: string,
-  claudeSession: string,
-  event: Record<string, unknown>,
-): void {
-  const path = liveFile(root, claudeSession);
-  const line = JSON.stringify(event);
-  try {
-    writeFileSync(path, `${line}\n`, { flag: "a" });
-  } catch {
-    writeFileAtomic(path, readFileSafe(path) + `${line}\n`);
-  }
-}
-
-function readFileSafe(path: string): string {
-  try {
-    return readFileSync(path, "utf8");
-  } catch {
-    return "";
-  }
 }
 
 function requireSession(root: string, id: string | null): string {

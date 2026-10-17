@@ -65,7 +65,17 @@ export const status: Command = {
   summary: "Project summary: what needs you, work in flight, what's next",
   options: { brief: { type: "boolean" }, json: { type: "boolean" } },
   run({ values }) {
-    const rt = runtime(values);
+    let rt;
+    try {
+      rt = runtime(values);
+    } catch (e) {
+      // Skills inject `status --brief` into their prompt; outside a project that must not fail.
+      if (values.brief && e instanceof UsageError) {
+        print("No Azimuth project in this repository yet. Run /azimuth:init to set one up.");
+        return 0;
+      }
+      throw e;
+    }
     const { index } = buildIndex(rt.root, { mode: "live" });
     if (rt.json) printJson(index);
     else print(statusBrief(index, viewerUrl(rt.root)));

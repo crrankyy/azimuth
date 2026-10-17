@@ -1,0 +1,27 @@
+---
+name: ship
+description: Take a feature request all the way through Azimuth - capture, spec, approval, build and close-out - stopping only for blocking questions or refusals that need the user.
+argument-hint: "<feature request or F-NNN>"
+allowed-tools:
+  - Bash(azimuth *)
+  - Bash(${CLAUDE_PLUGIN_ROOT}/bin/azimuth *)
+  - Bash(git *)
+---
+
+# Ship a feature end to end
+
+Request: $ARGUMENTS
+
+Run the stages in order, following each skill's instructions in full:
+
+1. **Capture** (`/azimuth:idea`) unless the argument is already an F-ID.
+2. **Spec** (`/azimuth:spec`): write, check, draft, commit and approve. If the CLI refuses
+   approval because it is manual, or a blocking question is open, stop here and tell the user
+   exactly what they need to do in the viewer.
+3. **Build** (`/azimuth:build`): every task, test-first, with verify runs and progress logs.
+4. **Close out** (`/azimuth:verify`): verify at HEAD, as-built, architecture, done.
+
+Between stages, re-read `azimuth show <F-ID> --brief`; act on change requests and answers the
+user left in the meantime before moving on. Keep one Azimuth session per stage (each skill
+starts and closes its own). Finish with a short report: what shipped, commits, follow-ups, and
+anything waiting for the user.

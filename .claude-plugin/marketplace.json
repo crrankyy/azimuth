@@ -1,0 +1,12 @@
+{
+  "name": "azimuth",
+  "description": "Azimuth: file-based project management for codebases built with AI agents.",
+  "owner": { "name": "crrankyy" },
+  "plugins": [
+    {
+      "name": "azimuth",
+      "source": "./plugin",
+      "description": "Specs, gated lifecycles, live activity and a local viewer for agent-built projects."
+    }
+  ]
+}

@@ -1,0 +1,291 @@
+import { isAbsolute, relative } from "node:path";
+import { analyzeProject, buildIndex } from "../core/build-index";
+import { statusBrief } from "../core/brief";
+import { advance, describeEvents, userEventsSince, type Cursor } from "../core/delta";
+import { toUtc } from "../core/git";
+import {
+  appendLive,
+  pruneLive,
+  readLiveRecords,
+  summarizeLive,
+  type LiveRecord,
+} from "../core/live";
+import { loadProject } from "../core/model";
+import { findProjectRoot } from "../core/paths";
+import { viewerUrl } from "../server/registry";
+
+/** What Claude Code sends a command hook on stdin (only the fields Azimuth reads). */
+export interface HookInput {
+  session_id?: string;
+  cwd?: string;
+  hook_event_name?: string;
+  source?: string;
+  reason?: string;
+  tool_name?: string;
+  tool_input?: Record<string, unknown>;
+  agent_id?: string;
+  agent_type?: string;
+  stop_hook_active?: boolean;
+}
+
+export interface HookOutput {
+  stdout?: string;
+  stderr?: string;
+  exitCode: number;
+}
+
+export interface HookEnv {
+  CLAUDE_PROJECT_DIR?: string;
+  CLAUDE_ENV_FILE?: string;
+  AZIMUTH_NO_VIEWER?: string;
+  CLAUDE_CODE_REMOTE?: string;
+}
+
+export interface HookContext {
+  env: HookEnv;
+  now?: Date;
+  /** Starts the viewer if needed and returns its URL (wired by the server module). */
+  ensureViewer?: (root: string) => Promise<string | null>;
+  /** Writes the session's environment exports (defaults to appending to CLAUDE_ENV_FILE). */
+  writeEnv?: (lines: string[]) => void;
+}
+
+const OK: HookOutput = { exitCode: 0 };
+const stamp = (now: Date) => toUtc(now.toISOString());
+
+function projectRoot(input: HookInput, env: HookEnv): string | null {
+  return findProjectRoot(env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd());
+}
+
+function context(event: string, text: string): HookOutput {
+  return {
+    exitCode: 0,
+    stdout: JSON.stringify({
+      hookSpecificOutput: { hookEventName: event, additionalContext: text },
+    }),
+  };
+}
+
+function block(reason: string): HookOutput {
+  return { exitCode: 0, stdout: JSON.stringify({ decision: "block", reason }) };
+}
+
+const relTo = (root: string, file: string) =>
+  isAbsolute(file) ? relative(root, file).split("\\").join("/") : file;
+
+/** A short, secret-light description of a tool call for the live activity feed. */
+export function describeTool(
+  root: string,
+  tool: string,
+  input: Record<string, unknown> = {},
+): { file: string | null; summary: string } {
+  const pathOf = (input.file_path ?? input.notebook_path ?? input.path) as string | undefined;
+  const file = typeof pathOf === "string" ? relTo(root, pathOf) : null;
+  const clip = (s: string, n = 120) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+  switch (tool) {
+    case "Bash":
+      return {
+        file: null,
+        summary: clip(
+          String(input.command ?? "")
+            .split("\n")[0]
+            ?.replace(/\s+/g, " ")
+            .trim() ?? "",
+        ),
+      };
+    case "Edit":
+    case "MultiEdit":
+    case "NotebookEdit":
+      return { file, summary: `Edited ${file ?? "a file"}` };
+    case "Write":
+      return { file, summary: `Wrote ${file ?? "a file"}` };
+    case "Read":
+      return { file, summary: `Read ${file ?? "a file"}` };
+    case "Grep":
+      return { file, summary: clip(`Searched for "${String(input.pattern ?? "")}"`) };
+    case "Glob":
+      return { file, summary: clip(`Listed ${String(input.pattern ?? "")}`) };
+    case "Task":
+    case "Agent":
+      return {
+        file: null,
+        summary: clip(`Started an agent: ${String(input.description ?? input.prompt ?? "")}`),
+      };
+    case "WebFetch": {
+      let host = "";
+      try {
+        host = new URL(String(input.url ?? "")).host;
+      } catch {
+        host = "a page";
+      }
+      return { file: null, summary: `Fetched ${host}` };
+    }
+    default:
+      return { file, summary: tool };
+  }
+}
+
+/** What the agent has already been told through `scope`, starting from the session start. */
+function cursorOf(records: LiveRecord[], scope: "wake" | "prompt"): Cursor | null {
+  for (const r of [...records].reverse()) {
+    if (r.kind === "cursor" && r.scope === scope) return { at: r.at, keys: r.keys };
+    if (r.kind === "start") return { at: r.at, keys: [] };
+  }
+  return null;
+}
+
+function lastHandoff(root: string): string | null {
+  const sessions = loadProject(root).sessions.filter((s) => s.handoff.trim());
+  const latest = sessions.sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at))[0];
+  if (!latest) return null;
+  return `Last handoff (${latest.id}${latest.skill ? `, ${latest.skill}` : ""}: ${latest.goal}):\n${latest.handoff}`;
+}
+
+export async function sessionStart(input: HookInput, ctx: HookContext): Promise<HookOutput> {
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id) return OK;
+  const now = ctx.now ?? new Date();
+  ctx.writeEnv?.([
+    `export AZIMUTH_ACTOR=agent`,
+    `export AZIMUTH_CLAUDE_SESSION=${JSON.stringify(id)}`,
+  ]);
+  pruneLive(root, now);
+  appendLive(root, id, { kind: "start", at: stamp(now), source: input.source });
+  const autostart = ctx.env.AZIMUTH_NO_VIEWER !== "1" && ctx.env.CLAUDE_CODE_REMOTE !== "true";
+  const url = (autostart ? await ctx.ensureViewer?.(root) : null) ?? viewerUrl(root);
+
+  if (input.source === "compact") {
+    const live = summarizeLive(id, readLiveRecords(root, id));
+    const lines = ["Azimuth (context restored after compaction):"];
+    if (live?.ses) lines.push(`- You are in Azimuth session ${live.ses}.`);
+    if (live?.feature) {
+      lines.push(
+        `- You were working on ${live.task ?? live.feature}${live.task ? ` (${live.feature})` : ""}.`,
+      );
+      lines.push(
+        `- Run \`azimuth show ${live.feature} --brief\` to reload its state before continuing.`,
+      );
+    } else {
+      lines.push("- Run `azimuth status --brief` to reload the project state before continuing.");
+    }
+    return context("SessionStart", lines.join("\n"));
+  }
+
+  const { index } = buildIndex(root, { now });
+  const parts = [
+    "This repository is managed with Azimuth (protocol: .azimuth/PROTOCOL.md). Use the `azimuth` CLI and the /azimuth:* skills; never edit statuses by hand.",
+    url ? `The Azimuth viewer is live at ${url}` : null,
+    "",
+    statusBrief(index, url),
+  ];
+  const handoff = lastHandoff(root);
+  if (handoff) parts.push("", handoff);
+  return context("SessionStart", parts.filter((p) => p !== null).join("\n"));
+}
+
+export function postToolUse(input: HookInput, ctx: HookContext): HookOutput {
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id || !input.tool_name) return OK;
+  const now = ctx.now ?? new Date();
+  const { file, summary } = describeTool(root, input.tool_name, input.tool_input);
+  appendLive(root, id, {
+    kind: "tool",
+    at: stamp(now),
+    tool: input.tool_name,
+    file,
+    summary,
+    agent_id: input.agent_id ?? null,
+    agent_type: input.agent_type ?? null,
+  });
+  // Wake the agent (asyncRewake) when you acted on what it is working on.
+  const records = readLiveRecords(root, id);
+  const cursor = cursorOf(records, "wake");
+  if (!cursor) return OK;
+  const live = summarizeLive(id, records);
+  const model = loadProject(root);
+  const session = live?.ses ? model.sessions.find((s) => s.id === live.ses) : undefined;
+  const features = new Set([live?.feature, ...(session?.touched ?? [])].filter(Boolean));
+  const events = userEventsSince(model, cursor).filter(
+    (e) => e.feature !== null && features.has(e.feature),
+  );
+  if (events.length === 0) return OK;
+  appendLive(root, id, { kind: "cursor", scope: "wake", ...advance(cursor, events) });
+  return { exitCode: 2, stderr: `Azimuth: while you were working:\n${describeEvents(events)}` };
+}
+
+export function checkEdit(input: HookInput, ctx: HookContext): HookOutput {
+  const root = projectRoot(input, ctx.env);
+  const path = (input.tool_input?.file_path ?? input.tool_input?.notebook_path) as
+    string | undefined;
+  if (!root || typeof path !== "string") return OK;
+  const file = relTo(root, path);
+  if (!file.startsWith(".azimuth/") || file.startsWith(".azimuth/cache/")) return OK;
+  const { problems } = analyzeProject(root, ctx.now ?? new Date());
+  const errors = problems.filter((p) => p.severity === "error" && p.file === file);
+  if (errors.length === 0) return OK;
+  const lines = errors.map((p) => `- ${p.code}${p.line ? ` (line ${p.line})` : ""}: ${p.message}`);
+  return block(
+    `azimuth check found errors in ${file}:\n${lines.join("\n")}\nFix them before continuing.`,
+  );
+}
+
+export function userPromptSubmit(input: HookInput, ctx: HookContext): HookOutput {
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id) return OK;
+  const now = ctx.now ?? new Date();
+  const cursor = cursorOf(readLiveRecords(root, id), "prompt");
+  appendLive(root, id, { kind: "prompt", at: stamp(now) });
+  if (!cursor) return OK;
+  const events = userEventsSince(loadProject(root), cursor);
+  if (events.length === 0) return OK;
+  appendLive(root, id, { kind: "cursor", scope: "prompt", ...advance(cursor, events) });
+  return context("UserPromptSubmit", `Azimuth: since your last turn,\n${describeEvents(events)}`);
+}
+
+export function stop(input: HookInput, ctx: HookContext): HookOutput {
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id) return OK;
+  const now = ctx.now ?? new Date();
+  const records = readLiveRecords(root, id);
+  appendLive(root, id, { kind: "stop", at: stamp(now) });
+  if (input.stop_hook_active) return OK;
+  const touched = new Set(
+    records.flatMap((r) =>
+      r.kind === "tool" && r.file?.startsWith(".azimuth/") && r.tool !== "Read" ? [r.file] : [],
+    ),
+  );
+  if (touched.size === 0) return OK;
+  const { problems } = analyzeProject(root, now);
+  const errors = problems.filter((p) => p.severity === "error" && touched.has(p.file));
+  if (errors.length === 0) return OK;
+  const lines = errors.map(
+    (p) => `- ${p.file}${p.line ? `:${p.line}` : ""} ${p.code}: ${p.message}`,
+  );
+  return block(
+    `You left Azimuth errors in files you edited:\n${lines.join("\n")}\nFix them before finishing (run \`azimuth check\`).`,
+  );
+}
+
+export function sessionEnd(input: HookInput, ctx: HookContext): HookOutput {
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id) return OK;
+  appendLive(root, id, { kind: "end", at: stamp(ctx.now ?? new Date()), reason: input.reason });
+  return OK;
+}
+
+export const HOOKS: Record<
+  string,
+  (input: HookInput, ctx: HookContext) => HookOutput | Promise<HookOutput>
+> = {
+  "session-start": sessionStart,
+  "post-tool-use": postToolUse,
+  "check-edit": checkEdit,
+  "user-prompt-submit": userPromptSubmit,
+  stop,
+  "session-end": sessionEnd,
+};

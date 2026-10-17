@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import { isAzimuthError } from "../core/errors";
 import { VERSION } from "../core/version";
+import * as harness from "./commands/harness";
 import * as read from "./commands/read";
 import * as work from "./commands/work";
 import * as write from "./commands/write";
@@ -25,6 +26,9 @@ const COMMANDS: Record<string, Command> = {
   log: write.log,
   verify: work.verify,
   session: work.session,
+  doctor: harness.doctor,
+  statusline: harness.statusline,
+  hook: harness.hook,
 };
 
 function help(): string {

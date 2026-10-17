@@ -7,6 +7,7 @@ import { nextGate, type GateContext } from "./gates";
 import { gitFacts, toUtc } from "./git";
 import { buildInbox } from "./inbox";
 import { compareIds } from "./ids";
+import { readLiveSessions } from "./live";
 import { loadProject, type FeatureEntity, type Model } from "./model";
 import { traceTests } from "./trace";
 import type { Feature, FeatureDetail, Index, LiveSession, Problem, VerifyRun } from "./types";
@@ -173,7 +174,7 @@ export function buildIndex(root: string, options: BuildOptions = {}): BuildResul
     ),
     commits: facts.git.commits,
     runs: indexRuns(model.runs),
-    live: options.live ?? [],
+    live: options.live ?? readLiveSessions(root, now),
     inbox: buildInbox(ctx, analysis.derived),
     problems,
   };
