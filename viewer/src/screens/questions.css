@@ -283,3 +283,19 @@
   font-family: var(--font-mono);
   font-size: 12px;
 }
+
+/* Narrower windows: the side notes go under the question, then the list narrows. */
+@media (max-width: 1279px) {
+  .q-detail {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .q-aside {
+    width: auto;
+  }
+}
+@media (max-width: 1100px) {
+  .q-list {
+    width: 280px;
+  }
+}

@@ -1145,6 +1145,8 @@
 @media (max-width: 1100px) {
   .fd-body {
     flex-direction: column;
+    /* Stretch, so wide content (the task graph) scrolls inside the column instead of the page. */
+    align-items: stretch;
   }
   .fd-rail {
     width: 100%;
