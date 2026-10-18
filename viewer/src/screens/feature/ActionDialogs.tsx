@@ -166,11 +166,15 @@ export function ApproveDialog({ f, onClose }: { f: Feature; onClose: () => void 
       }
     >
       <div className="fd-dlg-body">
-        {moved && <MovedNotice f={f} to={moved} />}
-        <div className="fd-dlg-check">
-          <StatusGlyph glyph="s-done" />
-          All {checks.length} approval checks pass
-        </div>
+        {/* Once the feature moved, its next gate is no longer the approval gate. */}
+        {moved ? (
+          <MovedNotice f={f} to={moved} />
+        ) : (
+          <div className="fd-dlg-check">
+            <StatusGlyph glyph="s-done" />
+            All {checks.length} approval checks pass
+          </div>
+        )}
         <p>
           {specSize(f)}. Agents can start building once you approve. Later edits to the spec will
           ask for re-approval.
