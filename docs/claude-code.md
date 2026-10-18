@@ -80,14 +80,22 @@ ask for permission.
 Defined in `plugin/hooks/hooks.json`; each runs `plugin/bin/azimuth hook <event>`, which exits
 immediately (before starting Node) in repositories without `.azimuth/`.
 
-| Event                                | Mode                   | What it does                                                                         |
-| ------------------------------------ | ---------------------- | ------------------------------------------------------------------------------------ |
-| SessionStart                         | sync                   | Environment exports, live log, viewer autostart, status and handoff context.         |
-| PostToolUse (all tools)              | async, can wake Claude | Records the tool call; wakes Claude when you act on its feature.                     |
-| PostToolUse (Edit, Write, MultiEdit) | sync                   | Validates edited `.azimuth/` files and reports errors to Claude.                     |
-| UserPromptSubmit                     | sync                   | Adds what you did in the viewer since Claude's last turn; restarts a stopped viewer. |
-| Stop                                 | sync                   | Asks Claude to fix errors it left in `.azimuth/` files (once).                       |
-| SessionEnd                           | sync                   | Records the end of the session.                                                      |
+| Event                                | Mode                   | What it does                                                                             |
+| ------------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------- |
+| SessionStart                         | sync                   | Environment exports, live log, viewer autostart, status and handoff context.             |
+| PreToolUse (Agent)                   | sync                   | Records what a subagent is asked to do and the task or feature it names.                 |
+| PostToolUse (all tools)              | async, can wake Claude | Records the tool call; wakes Claude when you act on a feature it or a subagent works on. |
+| PostToolUse (Edit, Write, MultiEdit) | sync                   | Validates edited `.azimuth/` files and reports errors to Claude.                         |
+| UserPromptSubmit                     | sync                   | Adds what you did in the viewer since Claude's last turn; restarts a stopped viewer.     |
+| SubagentStart, SubagentStop          | sync, async            | Records each subagent starting and finishing.                                            |
+| Stop                                 | sync                   | Asks Claude to fix errors it left in `.azimuth/` files (once).                           |
+| SessionEnd                           | sync                   | Records the end of the session.                                                          |
+
+Subagents run inside their parent's Claude Code session, so their steps land in the same live log.
+The Agent tool's hooks record which task each subagent was given: exactly once the Agent tool
+returns (right away for a background subagent, when it finishes for a foreground one), and by
+launch order until then. The viewer shows each subagent's lane with its task and every feature the
+session has in flight.
 
 A hook that fails never blocks Claude: the error is logged to `.azimuth/cache/hooks.log` and
 `azimuth doctor` reports it.

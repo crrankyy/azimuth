@@ -50,7 +50,7 @@ connection drops, a banner says so, actions are disabled, and the page reconnect
 | Decisions    | `#/decisions/ADR-0004`         | ADRs with supersession chains; accept or reject proposed ones.                                                                                                          |
 | Questions    | `#/questions/Q-0003`           | Open (blocking first) and answered questions; answer with an option and/or text.                                                                                        |
 | Issues       | `#/issues/BUG-0001`            | Bugs, debt and risks; risk matrix; triage severity and status.                                                                                                          |
-| Activity     | `#/activity/SES-…`             | Live agents, then sessions with handoffs, commits and verify runs by day.                                                                                               |
+| Activity     | `#/activity/SES-…`             | Live agents (a lane per subagent with its task, and every feature in flight), then sessions with handoffs, commits and verify runs by day.                              |
 | Verification | `#/verification/R-0142`        | Scenario coverage matrix and verify runs with output.                                                                                                                   |
 | Knowledge    | `#/knowledge/architecture`     | Vision, architecture with the module map, conventions, glossary.                                                                                                        |
 
