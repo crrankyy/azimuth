@@ -42,6 +42,23 @@ function Title({ children }: { children: ReactNode }) {
 
 const statusLabel = (s: Feature["status"]) => FEATURE_LOOK[s].label.toLowerCase();
 
+/**
+ * The status the dialog opened on. Actions send it as the expected status, so the server refuses
+ * them if the feature moved meanwhile; `moved` is the new status, for the notice.
+ */
+function useSeenStatus(f: Feature) {
+  const [seen] = useState(f.status);
+  return { seen, moved: f.status === seen ? null : f.status };
+}
+
+function MovedNotice({ f, to }: { f: Feature; to: Feature["status"] }) {
+  return (
+    <p className="fd-dlg-moved" role="alert">
+      {f.id} moved to {statusLabel(to)} while this was open. Close this and check it again.
+    </p>
+  );
+}
+
 /** After a gate refusal: the failing checks, and nothing written. */
 function GateFailedDialog({
   f,
@@ -112,31 +129,34 @@ export function ApproveDialog({ f, onClose }: { f: Feature; onClose: () => void 
   const { busy, submit } = useSubmit();
   const { canAct, reason } = useCanAct();
   const [refused, setRefused] = useState<Gate | null>(null);
+  const { seen, moved } = useSeenStatus(f);
   const gate = f.derived.next_gate;
   const checks = gate?.checks ?? [];
   // Only while still a draft: after approving, next_gate moves on to the in-progress gate.
   const liveFailure =
-    f.status === "draft" && gate?.to === "approved" && checks.some((c) => !c.ok) ? gate : null;
+    !moved && f.status === "draft" && gate?.to === "approved" && checks.some((c) => !c.ok)
+      ? gate
+      : null;
   const failed = refused ?? liveFailure;
   if (failed) {
     return <GateFailedDialog f={f} gate={failed} confirmLabel="Approve spec" onClose={onClose} />;
   }
   const approve = async () => {
-    const result = await submit("approve", f.id, undefined, f.status);
+    const result = await submit("approve", f.id, undefined, seen);
     if (result?.gate && result.error === "gate") return setRefused(result.gate);
     onClose();
   };
   return (
     <Dialog
       title={<Title>Approve {f.id}?</Title>}
-      subtitle={`${f.title} · ${statusLabel(f.status)} → approved`}
+      subtitle={`${f.title} · ${statusLabel(seen)} → approved`}
       onClose={onClose}
       footer={
         <>
           <Button onClick={onClose}>Cancel</Button>
           <Button
             variant="primary"
-            disabled={busy || !canAct}
+            disabled={busy || !canAct || Boolean(moved)}
             title={reason ?? undefined}
             onClick={() => void approve()}
           >
@@ -146,6 +166,7 @@ export function ApproveDialog({ f, onClose }: { f: Feature; onClose: () => void 
       }
     >
       <div className="fd-dlg-body">
+        {moved && <MovedNotice f={f} to={moved} />}
         <div className="fd-dlg-check">
           <StatusGlyph glyph="s-done" />
           All {checks.length} approval checks pass
@@ -252,11 +273,12 @@ export function ReapproveDialog({ f, onClose }: { f: Feature; onClose: () => voi
   const { busy, submit } = useSubmit();
   const { canAct, reason } = useCanAct();
   const [refused, setRefused] = useState<Gate | null>(null);
+  const { seen, moved } = useSeenStatus(f);
   if (refused) {
     return <GateFailedDialog f={f} gate={refused} confirmLabel="Re-approve" onClose={onClose} />;
   }
   const reapprove = async () => {
-    const result = await submit("reapprove", f.id, undefined, f.status);
+    const result = await submit("reapprove", f.id, undefined, seen);
     if (result?.gate && result.error === "gate") return setRefused(result.gate);
     onClose();
   };
@@ -272,7 +294,7 @@ export function ReapproveDialog({ f, onClose }: { f: Feature; onClose: () => voi
           <Button onClick={onClose}>Cancel</Button>
           <Button
             variant="primary"
-            disabled={busy || !canAct}
+            disabled={busy || !canAct || Boolean(moved)}
             title={reason ?? undefined}
             onClick={() => void reapprove()}
           >
@@ -282,6 +304,7 @@ export function ReapproveDialog({ f, onClose }: { f: Feature; onClose: () => voi
       }
     >
       <div className="fd-dlg-body">
+        {moved && <MovedNotice f={f} to={moved} />}
         {changes.length > 0 && (
           <ul className="fd-changes">
             {changes.map((c) => (
@@ -390,9 +413,10 @@ export function ReasonDialog({
   const { busy, submit } = useSubmit();
   const { canAct, reason: blocked } = useCanAct();
   const [reason, setReason] = useState("");
+  const { seen, moved } = useSeenStatus(f);
   const verb = to === "deferred" ? "Defer" : "Cancel";
   const move = async () => {
-    const result = await submit("move", f.id, { to, reason: reason.trim() }, f.status);
+    const result = await submit("move", f.id, { to, reason: reason.trim() }, seen);
     if (result?.ok) onClose();
   };
   return (
@@ -403,7 +427,7 @@ export function ReasonDialog({
           {verb} {f.id}?
         </Title>
       }
-      subtitle={`${f.title} · ${statusLabel(f.status)} → ${to}`}
+      subtitle={`${f.title} · ${statusLabel(seen)} → ${to}`}
       onClose={onClose}
       footer={
         <>
@@ -411,7 +435,7 @@ export function ReasonDialog({
           <Button onClick={onClose}>Close</Button>
           <Button
             variant="primary"
-            disabled={busy || !canAct || !reason.trim()}
+            disabled={busy || !canAct || !reason.trim() || Boolean(moved)}
             title={blocked ?? (reason.trim() ? undefined : "A reason is required")}
             onClick={() => void move()}
           >
@@ -420,6 +444,7 @@ export function ReasonDialog({
         </>
       }
     >
+      {moved && <MovedNotice f={f} to={moved} />}
       <NoteField
         id="fd-reason"
         label="Reason (required)"
@@ -441,11 +466,12 @@ export function ResumeDialog({ f, onClose }: { f: Feature; onClose: () => void }
   const hasSpec = f.derived.progress.total > 0 || f.derived.coverage.total > 0;
   const [to, setTo] = useState<"draft" | "idea">(hasSpec ? "draft" : "idea");
   const [refused, setRefused] = useState<Gate | null>(null);
+  const { seen, moved } = useSeenStatus(f);
   if (refused) {
     return <GateFailedDialog f={f} gate={refused} confirmLabel="Resume" onClose={onClose} />;
   }
   const resume = async () => {
-    const result = await submit("move", f.id, { to }, f.status);
+    const result = await submit("move", f.id, { to }, seen);
     if (result?.gate && result.error === "gate") return setRefused(result.gate);
     if (result?.ok) onClose();
   };
@@ -463,7 +489,7 @@ export function ResumeDialog({ f, onClose }: { f: Feature; onClose: () => void }
           <Button onClick={onClose}>Cancel</Button>
           <Button
             variant="primary"
-            disabled={busy || !canAct}
+            disabled={busy || !canAct || Boolean(moved)}
             title={reason ?? undefined}
             onClick={() => void resume()}
           >
@@ -473,6 +499,7 @@ export function ResumeDialog({ f, onClose }: { f: Feature; onClose: () => void }
       }
     >
       <div className="fd-dlg-body">
+        {moved && <MovedNotice f={f} to={moved} />}
         <div className="row">
           <span className="fd-dlg-label">Resume as</span>
           <Segmented

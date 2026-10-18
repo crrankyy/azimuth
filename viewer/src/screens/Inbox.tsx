@@ -622,15 +622,20 @@ function SendBackDialog({ index, id, onClose }: { index: Index; id: string; onCl
   const feature = featureById(index, id);
   const decision = feature ? undefined : decisionById(index, id);
   const status = feature?.status ?? decision?.status;
+  // Sent as the expected status, so the server refuses if the item moved while this was open.
+  const [seen] = useState(status);
+  const moved = status !== seen;
   const blocked = !canAct
     ? cantAct
-    : feature && !reason.trim()
-      ? "Sending a feature back needs a reason"
-      : null;
+    : moved
+      ? `${id} moved to ${status ?? "another status"} while this was open`
+      : feature && !reason.trim()
+        ? "Sending a feature back needs a reason"
+        : null;
 
   const sendBack = async () => {
     setBusy(true);
-    const result = await run("revert", id, feature ? { reason: reason.trim() } : undefined, status);
+    const result = await run("revert", id, feature ? { reason: reason.trim() } : undefined, seen);
     setBusy(false);
     if (result.ok) onClose();
   };
@@ -641,8 +646,8 @@ function SendBackDialog({ index, id, onClose }: { index: Index; id: string; onCl
       title={feature ? `Send ${id} back to draft?` : `Move ${id} back to proposed?`}
       subtitle={
         feature
-          ? `${feature.title} · ${feature.status} → draft`
-          : `${decision?.title ?? id} · ${status ?? "accepted"} → proposed`
+          ? `${feature.title} · ${seen} → draft`
+          : `${decision?.title ?? id} · ${seen ?? "accepted"} → proposed`
       }
       onClose={onClose}
       footer={
@@ -680,6 +685,12 @@ function SendBackDialog({ index, id, onClose }: { index: Index; id: string; onCl
         </>
       ) : (
         <p className="dialog-note">It comes back to your inbox for review.</p>
+      )}
+      {moved && (
+        <p className="dialog-note" role="alert">
+          {id} moved to {status ?? "another status"} while this was open. Close this and check it
+          again.
+        </p>
       )}
       <div className="dialog-writes">
         Writes <FilePath path={feature ? `${feature.file}feature.md` : (decision?.file ?? id)} />

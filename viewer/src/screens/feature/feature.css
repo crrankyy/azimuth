@@ -1053,6 +1053,14 @@
   font-size: 13px;
   color: var(--ink-subtle);
 }
+.fd-dlg-moved {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--st-warning);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--st-warning);
+}
 .fd-dlg-hint {
   flex: 1;
   align-self: center;
