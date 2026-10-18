@@ -514,6 +514,14 @@ a:hover {
 .code-wrap {
   position: relative;
 }
+/* The handoff's `.az-prose code` is for inline code; it must not box every line of a block. */
+.az-prose pre code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
 .code-tools {
   position: absolute;
   top: 8px;
