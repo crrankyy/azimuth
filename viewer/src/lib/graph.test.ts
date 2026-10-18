@@ -42,6 +42,25 @@ describe("layoutDag", () => {
     expect(edge?.points.at(-1)?.[0]).toBe(200);
   });
 
+  it("leaves no empty rows when alignment pushes a column down", () => {
+    // Hookline's module map: both roots depend on store and config, which pulls column 1 down.
+    const layout = layoutDag(
+      ["api", "store", "signing", "worker", "config"],
+      [
+        ["api", "store"],
+        ["api", "config"],
+        ["worker", "store"],
+        ["worker", "signing"],
+        ["worker", "config"],
+      ],
+      OPTS,
+    );
+    const rows = new Set(layout.nodes.map((n) => n.row));
+    expect(Math.min(...rows)).toBe(0);
+    expect(rows.size).toBe(Math.max(...rows) + 1);
+    expect(layout.height).toBe(rows.size * 96 - 36);
+  });
+
   it("is deterministic and survives cycles", () => {
     const a = layoutDag(
       ["a", "b", "c"],

@@ -128,6 +128,10 @@ export function layoutDag(ids: string[], edges: [string, string][], opts: Layout
   };
   for (let i = 1; i < layers.length; i++) align(layers[i] as string[], preds);
   if (layers[0]) align(layers[0], succs);
+  // Alignment can push whole columns down; drop rows no node uses so no blank band remains.
+  const used = [...new Set(rowOf.values())].sort((a, b) => a - b);
+  const dense = new Map(used.map((row, i) => [row, i]));
+  for (const [id, row] of rowOf) rowOf.set(id, dense.get(row) ?? row);
 
   const colPitch = opts.nodeWidth + opts.colGap;
   const rowPitch = opts.nodeHeight + opts.rowGap;
