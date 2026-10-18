@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-18
-reconciled_at: 1dfddb7
+reconciled_at: 00ea596
 modules:
   - name: core
     path: src/core
@@ -26,6 +26,14 @@ modules:
     path: plugin
     responsibility: The Claude Code plugin (launcher, hooks.json, skills) that runs the bundled CLI
     depends_on: [cli]
+  - name: tests
+    path: test
+    responsibility: Vitest suites, the Hookline sample project and test helpers
+    depends_on: [core, cli, hooks, server]
+  - name: docs
+    path: docs
+    responsibility: User and contributor documentation
+    depends_on: []
 ---
 # Architecture
 
