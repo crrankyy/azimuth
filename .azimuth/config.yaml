@@ -1,0 +1,34 @@
+schema: 1
+project:
+  name: azimuth
+  description: "File-based project management for codebases built by one developer directing AI agents: a CLI, a live viewer and a Claude Code plugin."
+  mode: brownfield # greenfield | brownfield
+stack:
+  languages: [typescript]
+  package_manager: pnpm
+  test_runner: vitest
+  display: [TypeScript, Node.js, React, Vite]
+commands:
+  build: pnpm build
+  typecheck: pnpm typecheck
+  test: pnpm test
+  lint: pnpm lint
+  format: pnpm format
+tests:
+  globs: ["test/*.test.ts", "test/*/*.test.ts", "viewer/src/**/*.test.{ts,tsx}"] # test/fixtures/ holds sample projects, not our tests
+git:
+  log_depth: 500
+  agent_pattern: Claude # Co-Authored-By text that marks a commit as agent-made
+  arch_stale_after_commits: 10
+autonomy:
+  approve_specs: auto # auto: agents approve specs that pass every gate; manual: only you
+  accept_adrs: auto # auto: agents accept their own decisions; manual: only you
+  strict: false # true: automatic approval also requires zero warnings
+stale_after_days: 5
+verify:
+  timeout_seconds: 600
+  output_tail_lines: 40
+viewer:
+  port: 4319
+  autostart: true # Claude Code sessions start the viewer automatically
+  editor_url: null # e.g. "vscode://file/{abs}:{line}"

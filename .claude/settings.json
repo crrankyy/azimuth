@@ -1,0 +1,5 @@
+{
+  "env": {
+    "AZIMUTH_ACTOR": "agent"
+  }
+}

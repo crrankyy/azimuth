@@ -8,3 +8,4 @@ coverage/
 azimuth-viewer-handoff/
 docs/azimuth-spec.md
 docs/viewer-design-prompt.md
+.azimuth/cache/
