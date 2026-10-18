@@ -2,7 +2,7 @@
 id: BUG-0022
 type: bug
 title: The session that runs init records no start and starts no viewer
-status: open
+status: resolved
 severity: low
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/cli/commands/work.ts, src/core/init.ts]
 found_by: SES-20261018-1454
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 In a new repo, run `/azimuth:init` in a Claude Code session.

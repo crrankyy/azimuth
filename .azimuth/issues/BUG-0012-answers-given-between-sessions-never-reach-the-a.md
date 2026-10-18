@@ -2,7 +2,7 @@
 id: BUG-0012
 type: bug
 title: Answers given between sessions never reach the agent
-status: open
+status: in-progress
 severity: high
 likelihood: null
 impact: null

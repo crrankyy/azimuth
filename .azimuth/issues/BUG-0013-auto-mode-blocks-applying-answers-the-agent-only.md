@@ -2,7 +2,7 @@
 id: BUG-0013
 type: bug
 title: Auto mode blocks applying answers the agent only read from files
-status: open
+status: in-progress
 severity: high
 likelihood: null
 impact: null
