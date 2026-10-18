@@ -1,0 +1,206 @@
+/* DependencyGraph (RoadmapGraph handoff). Blocked relations are always danger-red. */
+
+/* Large graphs scroll inside the card so the hover panel below stays on screen. */
+.dg-card {
+  padding: 40px 24px;
+  overflow: auto;
+  max-height: calc(100vh - 260px);
+  min-height: 160px;
+}
+.dg-plane {
+  position: relative;
+  margin: 0 auto;
+}
+.dg-edges {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.dg-edge {
+  fill: none;
+  stroke-width: 2;
+  stroke: var(--edge);
+}
+.dg-edge.back {
+  stroke-dasharray: 4 4;
+}
+.dg-edge.faint,
+.dg-arrow.faint {
+  stroke: var(--edge-faint);
+}
+.dg-edge.ink {
+  stroke: var(--ink);
+}
+.dg-edge.muted {
+  stroke: var(--ink-subtle);
+}
+.dg-edge.danger {
+  stroke: var(--st-danger);
+}
+.dg-arrow {
+  fill: var(--edge);
+  stroke: none;
+}
+.dg-arrow.faint {
+  fill: var(--edge-faint);
+  stroke: none;
+}
+.dg-arrow.ink {
+  fill: var(--ink);
+}
+.dg-arrow.muted {
+  fill: var(--ink-subtle);
+}
+.dg-arrow.danger {
+  fill: var(--st-danger);
+}
+
+.dg-node {
+  --node-st: var(--st-neutral);
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  text-decoration: none;
+  transition: opacity 120ms ease;
+}
+.dg-node.st-draft {
+  --node-st: var(--st-draft);
+}
+.dg-node.st-approved {
+  --node-st: var(--st-approved);
+}
+.dg-node.st-in-progress {
+  --node-st: var(--st-active);
+}
+.dg-node.st-verifying {
+  --node-st: var(--st-verifying);
+}
+.dg-node.st-done {
+  --node-st: var(--st-success);
+}
+.dg-node.st-idea {
+  background: var(--surface-1);
+  border: 1px dashed var(--hairline-tertiary);
+}
+.dg-node.st-parked {
+  --node-st: var(--st-muted);
+  background: var(--surface-1);
+  border-style: dashed;
+}
+.dg-node:hover,
+.dg-node:focus-visible {
+  border-color: var(--hairline-strong);
+}
+.dg-node.hovered {
+  background: var(--surface-3);
+  border: 1px solid var(--node-st);
+  outline: 2px solid var(--primary-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-md);
+}
+.dg-node.up {
+  border: 1px solid var(--ink-subtle);
+}
+.dg-node.down {
+  border: 1px solid var(--st-danger-border);
+}
+.dg-node.dim {
+  opacity: 0.45;
+}
+.dg-node-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dg-id {
+  font-size: 12px;
+  color: var(--ink);
+}
+.dg-title {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dg-node.hovered .dg-title,
+.dg-node.up .dg-title,
+.dg-node.down .dg-title {
+  color: var(--ink);
+}
+.dg-node .az-prio {
+  font-size: 10px;
+  line-height: 14px;
+  padding: 0 4px;
+}
+.dg-tag {
+  font-size: 10px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.dg-tag.danger {
+  color: var(--st-danger);
+}
+
+.az-card.dg-panel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  min-height: 52px;
+  padding: 14px 18px;
+  background: var(--surface-2);
+  border-color: var(--hairline-strong);
+}
+.dg-panel-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+.dg-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--hairline-strong);
+}
+.dg-rel {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.dg-rel-id {
+  color: var(--ink);
+}
+.dg-none {
+  color: var(--ink-tertiary);
+}
+.dg-line {
+  width: 18px;
+  height: 2px;
+  background: var(--ink);
+}
+.dg-line.danger {
+  background: var(--st-danger);
+}
+.dg-line.muted {
+  background: var(--ink-subtle);
+}
+.dg-press,
+.dg-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.dg-hint {
+  font-size: 13px;
+}
