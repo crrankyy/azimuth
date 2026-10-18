@@ -201,8 +201,12 @@ function Inbox({ index }: { index: Index }) {
   const [autoFocus, setAutoFocus] = useState(false);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const found = items.findIndex((item) => itemKey(item) === selection.key);
-  // When the selected item itself is gone, its neighbour at the same position takes over.
+  // When the selected item itself is gone, its neighbour at the same position takes over...
   const cursor = found >= 0 ? found : Math.min(selection.at, Math.max(0, items.length - 1));
+  const heir = found < 0 ? items[cursor] : undefined;
+  // ...and becomes the selection, so later updates follow it rather than its row. (State set
+  // during render, React's pattern for state derived from changed data; it settles in one pass.)
+  if (heir) setSelection({ key: itemKey(heir), at: cursor });
 
   const select = (i: number) => {
     const item = items[i];
