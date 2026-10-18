@@ -267,3 +267,34 @@ describe("Claude Code's process ID", () => {
     }
   });
 });
+
+describe("viewer restart at each prompt", () => {
+  const waits = async (config: string, env: HookEnv = {}) => {
+    const project = writeTree({ ".azimuth/config.yaml": config });
+    const asked: (number | undefined)[] = [];
+    try {
+      await userPromptSubmit(
+        { session_id: "prompt-check", cwd: project.root },
+        {
+          env: { CLAUDE_PROJECT_DIR: project.root, ...env },
+          ensureViewer: async (_root, waitMs) => {
+            asked.push(waitMs);
+            return null;
+          },
+        },
+      );
+    } finally {
+      project.cleanup();
+    }
+    return asked;
+  };
+
+  it("S-001.3.1 asks for the viewer without waiting for it", async () => {
+    expect(await waits(MINIMAL_CONFIG)).toEqual([0]);
+  });
+
+  it("S-001.3.2 leaves the viewer alone when autostart is off", async () => {
+    expect(await waits(`${MINIMAL_CONFIG}viewer:\n  autostart: false\n`)).toEqual([]);
+    expect(await waits(MINIMAL_CONFIG, { AZIMUTH_NO_VIEWER: "1" })).toEqual([]);
+  });
+});

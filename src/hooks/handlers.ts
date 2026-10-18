@@ -58,6 +58,15 @@ export interface HookContext {
 
 const OK: HookOutput = { exitCode: 0 };
 
+/** Whether hooks may start the viewer: on in the config, and not turned off for this environment. */
+function autostartEnabled(root: string, env: HookEnv): boolean {
+  return (
+    loadConfig(root).config.viewer.autostart &&
+    env.AZIMUTH_NO_VIEWER !== "1" &&
+    env.CLAUDE_CODE_REMOTE !== "true"
+  );
+}
+
 /** Claude Code's process ID from CLAUDE_PID, when it is one; the viewer stays up while it runs. */
 function claudePid(env: HookEnv): { pid?: number } {
   const pid = Number(env.CLAUDE_PID);
@@ -169,11 +178,8 @@ export async function sessionStart(input: HookInput, ctx: HookContext): Promise<
     source: input.source,
     ...claudePid(ctx.env),
   });
-  const autostart =
-    loadConfig(root).config.viewer.autostart &&
-    ctx.env.AZIMUTH_NO_VIEWER !== "1" &&
-    ctx.env.CLAUDE_CODE_REMOTE !== "true";
-  const url = (autostart ? await ctx.ensureViewer?.(root) : null) ?? viewerUrl(root);
+  const url =
+    (autostartEnabled(root, ctx.env) ? await ctx.ensureViewer?.(root) : null) ?? viewerUrl(root);
 
   if (input.source === "compact") {
     const live = summarizeLive(id, readLiveRecords(root, id));
@@ -251,13 +257,16 @@ export function checkEdit(input: HookInput, ctx: HookContext): HookOutput {
   );
 }
 
-export function userPromptSubmit(input: HookInput, ctx: HookContext): HookOutput {
+export async function userPromptSubmit(input: HookInput, ctx: HookContext): Promise<HookOutput> {
   const root = projectRoot(input, ctx.env);
   const id = input.session_id;
   if (!root || !id) return OK;
   const now = ctx.now ?? new Date();
   const cursor = cursorOf(readLiveRecords(root, id), "prompt");
   appendLive(root, id, { kind: "prompt", at: stamp(now), ...claudePid(ctx.env) });
+  // A viewer that stopped (crashed, killed, replaced by a rebuild) comes back with the next
+  // prompt; it is started without waiting, so the prompt isn't held up.
+  if (autostartEnabled(root, ctx.env)) await ctx.ensureViewer?.(root, 0);
   if (!cursor) return OK;
   const events = userEventsSince(loadProject(root), cursor);
   if (events.length === 0) return OK;
