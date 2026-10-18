@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Feature, Index, Milestone } from "../../../../src/core/types";
 import { useCanAct } from "../../components/AppShell";
 import { IdChip } from "../../components/IdChip";
-import { Button } from "../../components/primitives";
+import { Button, EmptyState } from "../../components/primitives";
 import { StatusGlyph, StatusPill } from "../../components/Status";
 import { Dialog, useAction } from "../../components/Ui";
 import { useIndexState } from "../../data/IndexProvider";
@@ -82,6 +82,7 @@ export function RoadmapTimeline() {
   const loose = index.features.filter((f) => !f.milestone || !known.has(f.milestone));
   const todayPct = pct(axis, now);
   const step = axis.months.length > 12 ? 3 : 1;
+  const empty = lanes.length === 0 && index.features.length === 0;
 
   return (
     <div className="rm-page">
@@ -101,54 +102,63 @@ export function RoadmapTimeline() {
         </label>
       </div>
 
-      <div className="rm-timeline">
-        <div className="rm-overlay" aria-hidden="true">
-          {axis.months.slice(1).map((m) => (
-            <div key={m.at} className="rm-gridline" style={{ left: `${pct(axis, m.at)}%` }} />
+      {empty ? (
+        <EmptyState title="Nothing on the roadmap yet">
+          Features and the milestones that group them show up here. Run{" "}
+          <code className="az-c">/azimuth:idea</code> in Claude Code to capture your first feature.
+        </EmptyState>
+      ) : (
+        <div className="rm-timeline">
+          <div className="rm-overlay" aria-hidden="true">
+            {axis.months.slice(1).map((m) => (
+              <div key={m.at} className="rm-gridline" style={{ left: `${pct(axis, m.at)}%` }} />
+            ))}
+            <div className="rm-today" style={{ left: `${todayPct}%` }} />
+            <div className="rm-today-label" style={{ left: `${todayPct}%` }}>
+              {shortDate(new Date(now).toISOString())}
+            </div>
+          </div>
+
+          <div className="rm-lane rm-axis">
+            <span className="az-eyebrow rm-axis-label">Milestone</span>
+            <div className="rm-track rm-months">
+              {axis.months.map((m, i) =>
+                i % step === 0 ? (
+                  <span key={m.at} style={{ left: `calc(${pct(axis, m.at)}% + 6px)` }}>
+                    {m.label}
+                  </span>
+                ) : null,
+              )}
+            </div>
+          </div>
+
+          {lanes.map((m) => (
+            <MilestoneLane
+              key={m.id}
+              milestone={m}
+              features={sortFeatures(
+                index.features.filter((f) => f.milestone === m.id && visible(f)),
+                "activity",
+              )}
+              start={milestoneStart(index, m)}
+              axis={axis}
+              now={now}
+              expanded={open[m.id] ?? m.status !== "released"}
+              onToggle={() =>
+                setOpen({ ...open, [m.id]: !(open[m.id] ?? m.status !== "released") })
+              }
+            />
           ))}
-          <div className="rm-today" style={{ left: `${todayPct}%` }} />
-          <div className="rm-today-label" style={{ left: `${todayPct}%` }}>
-            {shortDate(new Date(now).toISOString())}
-          </div>
-        </div>
 
-        <div className="rm-lane rm-axis">
-          <span className="az-eyebrow rm-axis-label">Milestone</span>
-          <div className="rm-track rm-months">
-            {axis.months.map((m, i) =>
-              i % step === 0 ? (
-                <span key={m.at} style={{ left: `calc(${pct(axis, m.at)}% + 6px)` }}>
-                  {m.label}
-                </span>
-              ) : null,
-            )}
-          </div>
-        </div>
-
-        {lanes.map((m) => (
-          <MilestoneLane
-            key={m.id}
-            milestone={m}
-            features={sortFeatures(
-              index.features.filter((f) => f.milestone === m.id && visible(f)),
-              "activity",
-            )}
-            start={milestoneStart(index, m)}
-            axis={axis}
-            now={now}
-            expanded={open[m.id] ?? m.status !== "released"}
-            onToggle={() => setOpen({ ...open, [m.id]: !(open[m.id] ?? m.status !== "released") })}
+          <UnscheduledLane
+            features={sortFeatures(loose.filter(visible), "activity")}
+            hidden={loose.filter((f) => !visible(f)).length}
+            onShowParked={() => setShowParked(true)}
           />
-        ))}
+        </div>
+      )}
 
-        <UnscheduledLane
-          features={sortFeatures(loose.filter(visible), "activity")}
-          hidden={loose.filter((f) => !visible(f)).length}
-          onShowParked={() => setShowParked(true)}
-        />
-      </div>
-
-      <Legend />
+      {!empty && <Legend />}
     </div>
   );
 }
