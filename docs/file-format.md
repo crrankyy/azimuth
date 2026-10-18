@@ -218,8 +218,8 @@ files:
 ```
 
 The body is optional narrative. A `modify` or `read` path that doesn't exist produces
-`W-IMPACT-MISSING`. A path (other than a `test` path) outside every architecture module produces
-`W-PATH`. Two active features creating or modifying the same
+`W-IMPACT-MISSING`. A path outside every architecture module produces `W-PATH`, except `test` paths and files at
+the repository root (`package.json`, `tsconfig.json`), which configure the whole project. Two active features creating or modifying the same
 file produce `W-FILE-CONFLICT`.
 
 ### `stories.md`

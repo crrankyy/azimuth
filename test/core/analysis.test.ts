@@ -480,6 +480,26 @@ describe("validate", () => {
     );
   });
 
+  it("BUG-0020 doesn't ask root-level project files to sit under a module", () => {
+    const model = load({
+      ...featureFiles({
+        id: "F-001",
+        status: "draft",
+        impact: [
+          { path: "package.json", change: "modify" },
+          { path: "vitest.config.ts", change: "create" },
+          { path: "lib/x.ts", change: "create" },
+        ],
+      }),
+      ".azimuth/project/architecture.md": "---\nmodules:\n  - name: app\n    path: src\n---\n",
+    });
+    const facts = makeFacts();
+    const paths = validate(model, facts, derive(model, facts))
+      .filter((p) => p.code === "W-PATH")
+      .map((p) => p.message);
+    expect(paths).toEqual(["lib/ is not under any module path in architecture.md."]);
+  });
+
   it("reports one conflict per pair and a stale architecture", () => {
     const model = load({
       ...featureFiles({

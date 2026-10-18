@@ -263,7 +263,8 @@ function pathProblems(model: Model, facts: Facts, f: FeatureEntity): Problem[] {
   const modules = model.knowledge.architecture.modules.map((m) => m.path);
   const outside = new Set<string>();
   for (const entry of f.impact) {
-    if (entry.change === "test") continue;
+    // Files at the repository root (package.json, tsconfig.json…) configure the whole project.
+    if (entry.change === "test" || !entry.path.includes("/")) continue;
     if (modules.length > 0 && !underModule(entry.path, modules)) {
       const dir = entry.path.includes("/")
         ? entry.path.slice(0, entry.path.lastIndexOf("/") + 1)
