@@ -97,7 +97,7 @@ tests:
 git:
   log_depth: 500 # commits read for the index
   agent_pattern: Claude # Co-Authored-By text that marks a commit as agent-made
-  arch_stale_after_commits: 10
+  arch_stale_after_commits: 10 # W-ARCH-STALE after this many code commits (not .azimuth/-only)
 autonomy:
   approve_specs: auto # auto | manual
   accept_adrs: auto # auto | manual

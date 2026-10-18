@@ -525,6 +525,50 @@ describe("validate", () => {
     ]);
   });
 
+  it("BUG-0028 counts only code commits since architecture.md was reconciled", () => {
+    const model = load({
+      ".azimuth/project/architecture.md": "---\nreconciled_at: r000000\n---\n",
+    });
+    const commit = (sha: string) => ({
+      sha,
+      at: "2026-10-01T00:00:00Z",
+      author: "dev",
+      actor: "agent" as const,
+      session: null,
+      subject: sha,
+      refs: [],
+      files_changed: 1,
+    });
+    const history = (code: number, records: number) => {
+      const shas = [
+        ...Array.from({ length: code }, (_, i) => `c${i}00000`),
+        ...Array.from({ length: records }, (_, i) => `a${i}00000`),
+      ];
+      return makeFacts({
+        now: new Date("2026-10-02T00:00:00Z"),
+        git: {
+          available: true,
+          commits: [...shas, "r000000"].map(commit),
+          files: new Map(
+            shas.map((sha) => [
+              sha,
+              sha.startsWith("c") ? ["src/app.ts"] : [".azimuth/features/F-001-x/log.md"],
+            ]),
+          ),
+          commitsAfter: () => shas.length,
+        },
+      });
+    };
+    const stale = (facts: Facts) =>
+      validate(model, facts, derive(model, facts))
+        .filter((p) => p.code === "W-ARCH-STALE")
+        .map((p) => p.message);
+    expect(stale(history(2, 12))).toEqual([]);
+    expect(stale(history(11, 3))).toEqual([
+      "11 code commits since architecture.md was last reconciled (r000000).",
+    ]);
+  });
+
   it("reports unknown links", () => {
     const model = load({
       ...featureFiles({

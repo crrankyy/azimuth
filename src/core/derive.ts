@@ -91,6 +91,23 @@ export function codeChangedSince(sha: string, facts: Facts): boolean | null {
   return facts.git.commits.slice(0, at).some((c) => isCodeCommit(c.sha, facts));
 }
 
+/**
+ * How many code commits came after `sha`, up to HEAD. Past the history the index read, files are
+ * unknown, so every commit counts (`code: false`). Null when `sha` is unknown to git.
+ */
+export function codeCommitsAfter(
+  sha: string,
+  facts: Facts,
+): { count: number; code: boolean } | null {
+  const at = facts.git.commits.findIndex((c) => sameCommit(c.sha, sha));
+  if (at !== -1) {
+    const count = facts.git.commits.slice(0, at).filter((c) => isCodeCommit(c.sha, facts)).length;
+    return { count, code: true };
+  }
+  const count = facts.git.commitsAfter(sha);
+  return count === null ? null : { count, code: false };
+}
+
 /** Commits whose `Refs:` mention the feature or one of its tasks/stories/scenarios. */
 export function commitsFor(featureId: string, facts: Facts) {
   return facts.git.commits.filter((c) => c.refs.some((ref) => featureOf(ref) === featureId));

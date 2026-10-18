@@ -1,4 +1,4 @@
-import type { Derived } from "./derive";
+import { codeCommitsAfter, type Derived } from "./derive";
 import { ACTIVE_STATUSES } from "./flows";
 import type { Facts } from "./facts";
 import { idKind } from "./ids";
@@ -407,14 +407,15 @@ function sessionProblems(model: Model, facts: Facts): Problem[] {
 function architectureProblems(model: Model, facts: Facts): Problem[] {
   const arch = model.knowledge.architecture;
   if (!arch.reconciled_at || !facts.git.available) return [];
-  const behind = facts.git.commitsAfter(arch.reconciled_at);
-  if (behind === null || behind <= model.config.git.arch_stale_after_commits) return [];
+  // Commits that only change Azimuth's records can't make the architecture out of date.
+  const behind = codeCommitsAfter(arch.reconciled_at, facts);
+  if (behind === null || behind.count <= model.config.git.arch_stale_after_commits) return [];
   return [
     problem(
       "W-ARCH-STALE",
       arch.file,
       null,
-      `${behind} commits since architecture.md was last reconciled (${arch.reconciled_at}).`,
+      `${behind.count} ${behind.code ? "code commits" : "commits"} since architecture.md was last reconciled (${arch.reconciled_at}).`,
     ),
   ];
 }

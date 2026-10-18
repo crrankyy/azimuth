@@ -55,6 +55,9 @@ function expectedWithDeviations(): Index {
       item.since = "2026-10-18T12:05:00Z";
     }
   }
+  // W-ARCH-STALE counts only code commits (BUG-0028). Four of the 11 commits after the
+  // reconciliation only change .azimuth/ (specs), and 7 code commits are within the limit of 10.
+  e.problems = e.problems.filter((p) => p.code !== "W-ARCH-STALE");
   return e;
 }
 
