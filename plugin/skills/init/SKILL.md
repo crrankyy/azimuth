@@ -8,6 +8,9 @@ allowed-tools:
 
 # Initialize Azimuth
 
+`azimuth docs formats` describes every file and rule below, `azimuth docs concepts` the
+lifecycle and checks. When anything is unclear, read those, not Azimuth's code.
+
 1. If `.azimuth/config.yaml` is missing, run `azimuth init` in the repository root. If it
    exists, run `azimuth init --refresh` to update the protocol and templates only.
 2. Open `.azimuth/config.yaml` and confirm the detected commands by running each of them

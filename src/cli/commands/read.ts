@@ -1,4 +1,7 @@
 import { writeFileSync, mkdirSync } from "node:fs";
+import cliDoc from "../../../docs/cli.md?raw";
+import conceptsDoc from "../../../docs/concepts.md?raw";
+import formatsDoc from "../../../docs/file-format.md?raw";
 import { buildIndex } from "../../core/build-index";
 import { showBrief, statusBrief } from "../../core/brief";
 import { featureOf } from "../../core/ids";
@@ -188,5 +191,34 @@ export const trace: Command = {
           color.dim(`    ${t.file}: ${t.name}${t.confidence === "fallback" ? " (mention)" : ""}`),
         );
     }
+  },
+};
+
+const DOCS: Record<string, { text: string; summary: string }> = {
+  formats: { text: formatsDoc, summary: "Every file in .azimuth/: its fields, values and rules" },
+  concepts: { text: conceptsDoc, summary: "Lifecycles, gates, autonomy, traceability, problems" },
+  cli: { text: cliDoc, summary: "Every command and option" },
+};
+
+/** The reference docs, bundled into the CLI so agents read them instead of Azimuth's code. */
+export const docs: Command = {
+  usage: `docs [${Object.keys(DOCS).join("|")}]`,
+  summary: "Reference: file formats, concepts and commands (read these, not Azimuth's code)",
+  run({ positionals }) {
+    const topic = positionals[0];
+    if (!topic) {
+      const width = Math.max(...Object.keys(DOCS).map((k) => k.length));
+      const lines = Object.entries(DOCS).map(
+        ([name, d]) => `  azimuth docs ${name.padEnd(width)}  ${d.summary}`,
+      );
+      print(`Azimuth reference:\n${lines.join("\n")}`);
+      return 0;
+    }
+    const doc = DOCS[topic];
+    if (!doc) {
+      throw new UsageError(`Unknown topic "${topic}". Topics: ${Object.keys(DOCS).join(", ")}.`);
+    }
+    print(doc.text.trimEnd());
+    return 0;
   },
 };

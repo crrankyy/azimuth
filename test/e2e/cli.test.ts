@@ -224,6 +224,22 @@ describe("azimuth CLI (through the launcher, without node on PATH)", () => {
     );
   });
 
+  it("BUG-0057 prints the reference docs bundled into the CLI", () => {
+    const topics = az(["docs"]);
+    expect(topics.code).toBe(0);
+    expect(topics.out).toContain("azimuth docs formats");
+    const formats = az(["docs", "formats"]);
+    expect(formats.code).toBe(0);
+    expect(formats.out).toContain("# File format");
+    expect(formats.out).toContain("covers the path itself, everything under it");
+    expect(az(["docs", "concepts"]).out).toContain("## Traceability");
+    expect(az(["docs", "cli"]).out).toContain("azimuth verify");
+    const unknown = az(["docs", "nope"]);
+    expect(unknown.code).toBe(2);
+    expect(unknown.err).toContain('Unknown topic "nope"');
+    expect(az(["--help"]).out).toContain("azimuth docs");
+  });
+
   it("uses exit codes 2 for usage errors and 3 when the build is missing", () => {
     expect(az(["move", "F-001"]).code).toBe(2);
     expect(az(["move", "F-001", "nonsense"]).code).toBe(1);

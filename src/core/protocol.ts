@@ -9,6 +9,8 @@ Azimuth viewer. Follow this protocol whenever you work in this repository.
 
 - Read state through the CLI instead of scanning files: \`azimuth status --brief\` for the
   project, \`azimuth show <ID> --brief\` for one item, \`azimuth next\` for what to do.
+- File formats, rules and commands are in \`azimuth docs formats\`, \`azimuth docs concepts\`
+  and \`azimuth docs cli\`. Read them there, never in Azimuth's own code.
 - Change a status only with \`azimuth move <ID> <status>\`. Never edit \`status\`, approval
   fields or other values the CLI writes. When a move is refused, read the reason, fix the cause
   or ask the user; never work around a gate.

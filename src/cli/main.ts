@@ -17,6 +17,7 @@ const COMMANDS: Record<string, Command> = {
   check: read.check,
   index: read.index,
   trace: read.trace,
+  docs: read.docs,
   new: write.newCommand,
   move: write.move,
   reapprove: write.reapprove,
@@ -47,7 +48,8 @@ Commands:
 ${lines.join("\n")}
 
 Every command accepts --root <dir> (defaults to the nearest folder with .azimuth/).
-Run \`azimuth <command> --help\` for its options.`;
+Run \`azimuth <command> --help\` for its options. File formats, rules and commands are
+documented in \`azimuth docs\`; read them there rather than in Azimuth's code.`;
 }
 
 export async function main(argv: string[]): Promise<number> {

@@ -42,6 +42,7 @@ be on your PATH).
 | `azimuth next [F-ID] [--json]`          | The highest-priority unblocked work across the project (critical bugs and debt, then feature work by status and priority, then high-severity ones), or a feature's ready tasks. |
 | `azimuth check [ID…] [--json]`          | Validation problems (all, or those concerning the given IDs). Exit 1 when there are errors.                                                                                     |
 | `azimuth trace [F-ID] [--json]`         | Scenario → test coverage.                                                                                                                                                       |
+| `azimuth docs [formats\|concepts\|cli]` | Prints this reference: the file formats, the concepts, or this page. It is bundled into the CLI, so agents read it instead of Azimuth's code.                                   |
 | `azimuth index [--out <file>]`          | Writes the index JSON (default `.azimuth/cache/index.json`).                                                                                                                    |
 
 ## Create

@@ -21,6 +21,9 @@ support 7.x yet.
 
 To try the plugin in Claude Code without installing it: `claude --plugin-dir ./plugin`.
 
+The CLI bundle carries `docs/file-format.md`, `docs/concepts.md` and `docs/cli.md` for
+`azimuth docs`, so rebuild after editing them.
+
 ## Tests
 
 | Folder                   | Covers                                                                                                                                                                                                                  |
