@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { detectStack, upsertBlock } from "../../src/core/init";
 import { parseJunit, scenariosFromOutput } from "../../src/core/junit";
 import { parseFrontmatter } from "../../src/core/frontmatter";
+import { AGENTS_BLOCK, CLAUDE_BLOCK } from "../../src/core/protocol";
 import { fill, TEMPLATES } from "../../src/core/templates";
+import { format } from "prettier";
 import { writeTree } from "../helpers/tree";
 
 let cleanup: (() => void) | null = null;
@@ -83,6 +85,13 @@ describe("upsertBlock", () => {
     const updated = upsertBlock(once.replace("NEW", "OLD"), block);
     expect(updated).toBe(once);
     expect(upsertBlock(null, block)).toBe(`${block}\n`);
+  });
+
+  it("writes blocks that Prettier leaves unchanged", async () => {
+    for (const b of [CLAUDE_BLOCK, AGENTS_BLOCK]) {
+      const file = upsertBlock("# Project\n", b);
+      expect(await format(file, { parser: "markdown" })).toBe(file);
+    }
   });
 });
 

@@ -55,7 +55,9 @@ lives in \`.azimuth/features/F-NNN-<slug>/\`; \`.azimuth/templates/\` shows each
 - After committing a task, run \`azimuth verify <T-ID>\`; the result appears in the viewer.
 `;
 
+// The blank line after the start marker is what Prettier expects, so formatters leave the block alone.
 export const CLAUDE_BLOCK = `<!-- azimuth:start -->
+
 ## Azimuth
 
 This project is managed with Azimuth. Follow its protocol:
@@ -64,6 +66,7 @@ This project is managed with Azimuth. Follow its protocol:
 <!-- azimuth:end -->`;
 
 export const AGENTS_BLOCK = `<!-- azimuth:start -->
+
 ## Azimuth
 
 This project is managed with Azimuth. Read \`.azimuth/PROTOCOL.md\` before working and follow it.
