@@ -4,7 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { dirname, join } from "node:path";
 import { buildIndex } from "../core/build-index";
 import { sharedCacheDir } from "../core/lock";
-import { liveDir, readLiveSessions } from "../core/live";
+import { anySessionOpen, liveDir, processAlive, readLiveSessions } from "../core/live";
 import { azPath } from "../core/paths";
 import type { Index } from "../core/types";
 import { VERSION } from "../core/version";
@@ -271,13 +271,13 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
   };
 
   const idleMs = opts.idleMs ?? 2 * 3_600_000;
+  const alive = opts.alive ?? processAlive;
   const idleCheck = setInterval(
     () => {
       if (!existsSync(azPath(root))) return void close();
-      const agentActive = index.live.some(
-        (s) => !s.ended_at && Date.now() - Date.parse(s.last_seen_at) < idleMs,
-      );
-      if (clients.size === 0 && !agentActive && Date.now() - lastRequestAt > idleMs) void close();
+      // An open Claude Code session keeps the viewer up however long it has been quiet.
+      const sessionOpen = anySessionOpen(root, { now: now(), idleMs, alive });
+      if (clients.size === 0 && !sessionOpen && Date.now() - lastRequestAt > idleMs) void close();
     },
     Math.min(60_000, idleMs),
   );

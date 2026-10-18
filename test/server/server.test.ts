@@ -171,6 +171,31 @@ describe("viewer server", () => {
     );
   });
 
+  it("S-001.1.1 stays up past its idle limit while a Claude Code session is open", async () => {
+    const at = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+    appendLive(repo.root, "claude-keepalive", { kind: "start", at, pid: 4242 });
+    const keeper = await startServer({
+      root: repo.root,
+      viewerDir: VIEWER,
+      port: 0,
+      useFsWatch: false,
+      pollMs: 200,
+      idleMs: 300,
+      alive: (pid) => pid === 4242,
+    });
+    let closed = false;
+    void keeper.closed.then(() => (closed = true));
+    // No page and no requests for four idle limits: only the open session keeps it up.
+    await new Promise((r) => setTimeout(r, 1_200));
+    expect(closed).toBe(false);
+    expect((await fetch(`${keeper.url}api/health`)).status).toBe(200);
+    appendLive(repo.root, "claude-keepalive", { kind: "end", at });
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("still running after the session ended")), 3_000),
+    );
+    await Promise.race([keeper.closed, timeout]);
+  });
+
   it("approves as you even when the environment says agent, editing only frontmatter", async () => {
     process.env.AZIMUTH_ACTOR = "agent";
     const file = join(repo.root, ".azimuth/features/F-009-endpoint-rate-limits/feature.md");
