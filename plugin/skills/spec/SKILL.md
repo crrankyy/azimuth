@@ -64,6 +64,12 @@ Run `azimuth new spec <F-ID>` to scaffold missing files, then replace the placeh
    `go test -v`, not `go test`). Don't split a slice into a "red tests" task:
    its verify could only pass by not running the tests. Every scenario must be covered by a task.
 
+   Shape the graph so slices can be built at the same time, for example by subagents: give
+   each slice its own files (a module per slice rather than one shared file) and make it
+   depend only on what it needs, usually the scaffolding. Two tasks may list the same file
+   only if one comes `after` the other. `files` lists every file the task creates or changes,
+   since builders decide what can run in parallel from it.
+
 ## 4. Check, draft, commit, approve
 
 1. `azimuth check <F-ID>` until it reports no errors (warnings: fix unless deliberate).
