@@ -282,6 +282,16 @@ describe("decisions and questions", () => {
     expect(loadProject(tree.root).decisions[1]?.status).toBe("proposed");
   });
 
+  it("BUG-0002 treats a rejection with no recorded decider as yours", () => {
+    const tree = repo({
+      ".azimuth/decisions/ADR-0001-a.md": adr("ADR-0001")
+        .replace("status: proposed", "status: rejected")
+        .replace("date: 2026-10-18\n", "date: 2026-10-18\ndecision_note: Migrated.\n"),
+    });
+    expect(errorOf(() => move(tree.root, "ADR-0001", "proposed", agent)).code).toBe("policy");
+    expect(loadProject(tree.root).decisions[0]?.decision_note).toBe("Migrated.");
+  });
+
   it("supersedes a decision and links both sides", () => {
     const tree = repo({
       ".azimuth/decisions/ADR-0001-a.md": adr("ADR-0001").replace(

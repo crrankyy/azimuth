@@ -489,7 +489,8 @@ export function moveDecision(root: string, id: string, toRaw: string, opts: Move
       d.status === "rejected" &&
       to === "proposed" &&
       opts.actor !== "you" &&
-      d.decided_by === "you"
+      // A rejection with no recorded decider (written by hand, or migrated) counts as yours.
+      d.decided_by !== "agent"
     ) {
       throw new AzimuthError(
         "policy",
