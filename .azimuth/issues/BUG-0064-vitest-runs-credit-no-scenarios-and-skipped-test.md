@@ -2,7 +2,7 @@
 id: BUG-0064
 type: bug
 title: Vitest runs credit no scenarios, and skipped tests could pass
-status: in-progress
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/core/junit.ts, plugin/skills/spec/SKILL.md]
 found_by: SES-20261018-1825
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 In this repository, run a task whose verify command is `pnpm exec vitest run test/core/live.test.ts -t S-005.2`
@@ -29,3 +29,6 @@ BUG-0016's test used invented output with file lines.
 With `--reporter=verbose`, Vitest prints every test with its title, but also the skipped ones
 (`↓ test/core/live.test.ts > … > S-005.2.3 …`), and any line naming a scenario ID counts as a pass:
 a skipped test would pass its scenario.
+
+## Status notes
+- 2026-10-18T18:58:35Z · agent · in-progress → resolved: Fixed in 94d8d5b; F-005's verify runs then credited 18/18 scenarios from Vitest's verbose output
