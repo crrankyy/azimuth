@@ -193,10 +193,19 @@
   border-width: 1px;
 }
 .live-lane-name {
-  flex: none;
+  flex: 0 1 auto;
   min-width: 64px;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: 12px;
+}
+.live-finished {
+  flex: none;
+  font-size: 11px;
+  color: var(--ink-subtle);
 }
 .live-lane .live-summary {
   flex: 1;

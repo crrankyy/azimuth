@@ -40,6 +40,8 @@ interface IndexState {
 }
 
 const Ctx = createContext<IndexState | null>(null);
+/** The index state's context, for component tests that render without a live server. */
+export { Ctx as IndexContext };
 
 interface Boot {
   mode: "live" | "export";

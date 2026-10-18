@@ -1,4 +1,4 @@
-import type { LiveEvent, LiveSession } from "../../../../src/core/types";
+import type { LiveAgent, LiveEvent, LiveSession } from "../../../../src/core/types";
 import { IdChip } from "../../components/IdChip";
 import { KindTag } from "../../components/primitives";
 import { ago, plural } from "../../lib/format";
@@ -51,7 +51,9 @@ function LiveRow({ session: s, now }: { session: LiveSession; now: number }) {
             {s.claude_session.slice(0, 8)}
           </span>
         )}
-        {s.feature && <IdChip id={s.feature} />}
+        {(s.features.length > 0 ? s.features : s.feature ? [s.feature] : []).map((id) => (
+          <IdChip key={id} id={id} />
+        ))}
         {s.task && <IdChip id={s.task} />}
         <span className={`live-state ${idle ? "idle" : "working"}`}>
           {idle ? "Waiting for you" : "Working"}
@@ -95,38 +97,54 @@ function AgentLanes({ session: s, now }: { session: LiveSession; now: number }) 
       {s.agents.map((a) => (
         <Lane
           key={a.agent_id}
-          name={a.agent_type ?? "subagent"}
+          name={a.description ?? a.agent_type ?? "subagent"}
+          work={a.task ?? a.feature}
           event={latestFor(s, a.agent_id)}
           seen={a.last_seen_at}
           now={now}
-          active={isLive(a.last_seen_at, now)}
+          active={!a.stopped_at && isLive(a.last_seen_at, now)}
+          finished={finished(a)}
         />
       ))}
     </ul>
   );
 }
 
+const finished = (a: LiveAgent) => Boolean(a.stopped_at);
+
+/** One agent's lane: what it was asked to do (or its type), its task and its latest step. */
 function Lane({
   name,
+  work = null,
   event,
   seen,
   now,
   active,
+  finished = false,
 }: {
   name: string;
+  work?: string | null;
   event: LiveEvent | undefined;
   seen: string;
   now: number;
   active: boolean;
+  finished?: boolean;
 }) {
   return (
     <li className={`live-lane ${active ? "" : "quiet"}`.trim()}>
-      <span
-        className={active ? "az-live" : "live-off"}
-        role="img"
-        aria-label={active ? "Active" : "Quiet"}
-      />
-      <span className="live-lane-name">{name}</span>
+      {finished ? (
+        <span className="live-finished">Finished</span>
+      ) : (
+        <span
+          className={active ? "az-live" : "live-off"}
+          role="img"
+          aria-label={active ? "Active" : "Quiet"}
+        />
+      )}
+      <span className="live-lane-name" title={name}>
+        {name}
+      </span>
+      {work && <IdChip id={work} />}
       {event && <KindTag kind={event.tool} />}
       <span className="live-summary">{event?.summary ?? "No steps yet"}</span>
       <span className="live-seen">{ago(seen, now)}</span>
