@@ -1,6 +1,7 @@
 import { isAbsolute, relative } from "node:path";
 import { analyzeProject, buildIndex } from "../core/build-index";
 import { statusBrief } from "../core/brief";
+import { loadConfig } from "../core/config";
 import { advance, describeEvents, userEventsSince, type Cursor } from "../core/delta";
 import { toUtc } from "../core/git";
 import {
@@ -152,7 +153,10 @@ export async function sessionStart(input: HookInput, ctx: HookContext): Promise<
   ]);
   pruneLive(root, now);
   appendLive(root, id, { kind: "start", at: stamp(now), source: input.source });
-  const autostart = ctx.env.AZIMUTH_NO_VIEWER !== "1" && ctx.env.CLAUDE_CODE_REMOTE !== "true";
+  const autostart =
+    loadConfig(root).config.viewer.autostart &&
+    ctx.env.AZIMUTH_NO_VIEWER !== "1" &&
+    ctx.env.CLAUDE_CODE_REMOTE !== "true";
   const url = (autostart ? await ctx.ensureViewer?.(root) : null) ?? viewerUrl(root);
 
   if (input.source === "compact") {

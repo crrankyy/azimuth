@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
 import { readLiveRecords } from "../../src/core/live";
+import { sessionStart } from "../../src/hooks/handlers";
 import { featureFiles } from "../helpers/project";
 import { commitAll, gitEnv, initRepo } from "../helpers/git";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
@@ -198,5 +199,33 @@ describe("Claude Code hooks", () => {
     expect(hook("session-end", { reason: "prompt_input_exit" }).code).toBe(0);
     expect(Date.now() - started).toBeLessThan(1500);
     expect(buildIndex(tree.root).index.live[0]?.ended_at).not.toBeNull();
+  });
+});
+
+describe("viewer autostart at session start", () => {
+  const start = async (config: string) => {
+    const project = writeTree({ ".azimuth/config.yaml": config });
+    const started: string[] = [];
+    try {
+      await sessionStart(
+        { session_id: "autostart-check", source: "startup", cwd: project.root },
+        {
+          env: { CLAUDE_PROJECT_DIR: project.root },
+          ensureViewer: async (root) => {
+            started.push(root);
+            return null;
+          },
+          writeEnv: () => undefined,
+        },
+      );
+    } finally {
+      project.cleanup();
+    }
+    return started.length;
+  };
+
+  it("starts the viewer by default and not when viewer.autostart is false", async () => {
+    expect(await start(MINIMAL_CONFIG)).toBe(1);
+    expect(await start(`${MINIMAL_CONFIG}viewer:\n  autostart: false\n`)).toBe(0);
   });
 });
