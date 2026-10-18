@@ -60,6 +60,12 @@ export function duration(ms: number): string {
   return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
+/** "2.1 s" for dense lists of runs; longer runs fall back to "3m". */
+export function shortDuration(ms: number): string {
+  // Round in tenths first: 1650 ms as a float is 1.6499…, which toFixed(1) shows as 1.6.
+  return ms < 60_000 ? `${(Math.round(ms / 100) / 10).toFixed(1)} s` : duration(ms);
+}
+
 /** Day heading for activity feeds: "Today · Sunday, Oct 18". */
 export function dayHeading(iso: string, now: number): string {
   const d = new Date(iso);

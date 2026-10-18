@@ -21,7 +21,7 @@ import {
 import { RunResult, runFeature } from "../components/RunResult";
 import { StatusGlyph } from "../components/Status";
 import { useIndexState } from "../data/IndexProvider";
-import { age, duration, plural } from "../lib/format";
+import { age, plural, shortDuration } from "../lib/format";
 import { useListKeys } from "../lib/keys";
 import { href, navigate, routeForId, type Route } from "../lib/router";
 import { COVERAGE_LOOK, FEATURE_LOOK, PARKED } from "../lib/status";
@@ -32,12 +32,6 @@ type Filter = "all" | "gaps";
 const byNewest = (a: VerifyRun, b: VerifyRun) => Date.parse(b.at) - Date.parse(a.at);
 const gaps = (c: Coverage) => c.total - c.passing;
 const basename = (path: string) => path.split("/").pop() ?? path;
-
-/** "2.1 s" for the dense runs list; longer runs fall back to "3m". */
-function shortDuration(ms: number): string {
-  // Round in tenths first: 1650 ms as a float is 1.6499…, which toFixed(1) shows as 1.6.
-  return ms < 60_000 ? `${(Math.round(ms / 100) / 10).toFixed(1)} s` : duration(ms);
-}
 
 /** The newest run of a feature or any of its tasks (`runs` is newest first). */
 function latestRun(runs: VerifyRun[], featureId: string): VerifyRun | undefined {
