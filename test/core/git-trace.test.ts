@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
-import { gitFacts, readBlobs, toUtc } from "../../src/core/git";
+import { gitFacts, readBlobs, readCommits, toUtc } from "../../src/core/git";
 import { globToRegExp, inModule } from "../../src/core/glob";
 import { loadProject } from "../../src/core/model";
 import { scanTestFile, traceTests } from "../../src/core/trace";
@@ -114,6 +114,30 @@ describe("scanTestFile", () => {
 });
 
 describe("gitFacts", () => {
+  it("BUG-0065 links a commit without a Refs trailer by the IDs in its scope", () => {
+    const tree = writeTree({ ".azimuth/config.yaml": MINIMAL_CONFIG });
+    cleanup = tree.cleanup;
+    initRepo(tree.root);
+    commitAll(tree.root, "chore: start", "2026-10-01T10:00:00Z");
+    tree.write("a.rs", "1\n");
+    commitAll(tree.root, "feat(F-003): recognise inline code spans", "2026-10-01T11:00:00Z");
+    tree.write("a.rs", "2\n");
+    commitAll(
+      tree.root,
+      "docs(F-003, T-004.2): note BUG-0001 in the subject",
+      "2026-10-01T12:00:00Z",
+    );
+    tree.write("a.rs", "3\n");
+    commitAll(tree.root, "feat(F-003): tidy\n\nRefs: T-003.2", "2026-10-01T13:00:00Z");
+    const refs = readCommits(tree.root, 10).map((c) => [c.subject, c.refs]);
+    expect(refs).toEqual([
+      ["feat(F-003): tidy", ["T-003.2"]],
+      ["docs(F-003, T-004.2): note BUG-0001 in the subject", ["F-003", "T-004.2"]],
+      ["feat(F-003): recognise inline code spans", ["F-003"]],
+      ["chore: start", []],
+    ]);
+  });
+
   it("reads commits, trailers, actors, sessions and spec state at HEAD", () => {
     const tree = writeTree({
       ".azimuth/config.yaml": MINIMAL_CONFIG,

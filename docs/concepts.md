@@ -117,7 +117,8 @@ What needs you, grouped by urgency:
   the scenario IDs and marked tests' function names its output shows (see
   [`azimuth verify`](cli.md#verify)); a JUnit report written to `$AZIMUTH_JUNIT` makes that exact
   per test.
-- **Task → commit:** commits carry a `Refs: T-005.2` trailer.
+- **Task → commit:** commits carry a `Refs: T-005.2` trailer; a commit without one is linked by
+  the IDs in its Conventional Commits scope (`feat(F-005): …`).
 - **Question → decision → feature:** a resolved question points at the ADR or feature that
   applied it.
 

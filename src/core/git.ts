@@ -39,6 +39,15 @@ interface RawCommit extends Commit {
   files: string[];
 }
 
+/**
+ * IDs in a Conventional Commits scope (`feat(F-003): …`), which link a commit that has no
+ * `Refs:` trailer: agents often leave the trailer out but keep the scope.
+ */
+function scopeRefs(subject: string): string[] {
+  const scope = /^\w+(?:\(([^)]*)\))?!?:/.exec(subject)?.[1] ?? "";
+  return scope.match(MENTION_PATTERN) ?? [];
+}
+
 export function readCommits(root: string, depth: number): RawCommit[] {
   const format = [
     `${REC}%h`,
@@ -62,7 +71,7 @@ export function readCommits(root: string, depth: number): RawCommit[] {
         actor: "you" as const,
         session: null,
         subject,
-        refs: [...new Set(refs.match(MENTION_PATTERN) ?? [])],
+        refs: [...new Set(refs.match(MENTION_PATTERN) ?? scopeRefs(subject))],
         files_changed: files.length,
         coAuthors,
         files,
