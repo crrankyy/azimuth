@@ -44,14 +44,36 @@ function list(value: unknown): string[] {
     .filter(Boolean);
 }
 
-/** `--option key="Label: detail"` (repeatable); `--recommend key` marks the recommendation. */
-function parseOptions(raw: unknown, recommend: unknown): QuestionOption[] {
-  return list(raw).map((spec) => {
+/** Where the label ends: the first ": " outside brackets and quotes, or -1. */
+function labelEnd(text: string): number {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i] as string;
+    if (quote) {
+      if (c === "\\") i++;
+      else if (c === quote) quote = null;
+    } else if (c === '"' || c === "'" || c === "`") quote = c;
+    else if ("([{".includes(c)) depth++;
+    else if (")]}".includes(c)) depth = Math.max(0, depth - 1);
+    else if (c === ":" && text[i + 1] === " " && depth === 0) return i;
+  }
+  return -1;
+}
+
+/**
+ * `--option key="Label: detail"` (repeatable; commas are ordinary text, unlike `--links`);
+ * `--recommend key` marks the recommendation.
+ */
+export function parseOptions(raw: unknown, recommend: unknown): QuestionOption[] {
+  const specs = raw === undefined ? [] : Array.isArray(raw) ? raw : [raw];
+  return specs.map((value) => {
+    const spec = String(value).trim();
     const eq = spec.indexOf("=");
     if (eq <= 0) throw new UsageError(`--option must look like key="Label: detail" (got ${spec}).`);
     const key = spec.slice(0, eq).trim();
     const text = spec.slice(eq + 1).trim();
-    const colon = text.indexOf(": ");
+    const colon = labelEnd(text);
     return {
       key,
       label: colon === -1 ? text : text.slice(0, colon),

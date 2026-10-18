@@ -50,14 +50,14 @@ be on your PATH).
 from the project's templates. In a session, new features (and `new spec`) are added to the
 session's `touched` list, and new questions, ADRs and issues to its `raised` list.
 
-| Kind          | Options                                                                                                                             |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `feature`     | `--summary "…"`, `--priority P0–P3` (default P2), `--milestone M-NN`                                                                |
-| `spec <F-ID>` | Scaffolds the missing spec files (impact, stories, contract, plan) of a feature.                                                    |
-| `milestone`   | `--summary "<goal>"`                                                                                                                |
-| `adr`         | `--links <IDs>`                                                                                                                     |
-| `question`    | `--feature F-NNN`, `--blocking`, `--context "…"`, `--option key="Label: detail"` (repeatable), `--recommend <key>`, `--links <IDs>` |
-| `issue`       | `--type bug\|debt\|risk` (default bug), `--severity low\|medium\|high\|critical`, `--files <paths>`, `--links <IDs>`                |
+| Kind          | Options                                                                                                                                                                                                               |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `feature`     | `--summary "…"`, `--priority P0–P3` (default P2), `--milestone M-NN`                                                                                                                                                  |
+| `spec <F-ID>` | Scaffolds the missing spec files (impact, stories, contract, plan) of a feature.                                                                                                                                      |
+| `milestone`   | `--summary "<goal>"`                                                                                                                                                                                                  |
+| `adr`         | `--links <IDs>`                                                                                                                                                                                                       |
+| `question`    | `--feature F-NNN`, `--blocking`, `--context "…"`, `--option key="Label: detail"` (repeatable; commas are fine, and the label ends at the first `: ` outside brackets or quotes), `--recommend <key>`, `--links <IDs>` |
+| `issue`       | `--type bug\|debt\|risk` (default bug), `--severity low\|medium\|high\|critical`, `--files <paths>`, `--links <IDs>`                                                                                                  |
 
 ## Change
 
