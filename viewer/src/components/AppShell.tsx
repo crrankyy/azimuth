@@ -147,10 +147,13 @@ export interface Crumb {
 /** The 56px top bar: breadcrumb, optional hints and tools, and the ⌘K search trigger. */
 export function TopBar({
   crumbs,
+  views,
   hints,
   tools,
 }: {
   crumbs: Crumb[];
+  /** A view switch (Table / Board), shown right after the breadcrumb. */
+  views?: ReactNode;
   hints?: ReactNode;
   tools?: ReactNode;
 }) {
@@ -169,6 +172,7 @@ export function TopBar({
           </span>
         ))}
       </nav>
+      {views}
       <span className="spacer" />
       {tools}
       {hints && <span className="hints">{hints}</span>}
@@ -217,12 +221,14 @@ export function Banners() {
 /** A screen: top bar plus the padded content column. */
 export function Page({
   crumbs,
+  views,
   hints,
   tools,
   children,
   flush = false,
 }: {
   crumbs: Crumb[];
+  views?: ReactNode;
   hints?: ReactNode;
   tools?: ReactNode;
   children: ReactNode;
@@ -231,7 +237,7 @@ export function Page({
 }) {
   return (
     <>
-      <TopBar crumbs={crumbs} hints={hints} tools={tools} />
+      <TopBar crumbs={crumbs} views={views} hints={hints} tools={tools} />
       <div className={flush ? "app-content flush" : "app-content"}>{children}</div>
     </>
   );
