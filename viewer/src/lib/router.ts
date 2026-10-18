@@ -72,7 +72,7 @@ export function routeForId(id: string): string {
   if (/^F-\d{3}$/.test(id)) return href("features", id);
   if (/^(ST|S)-\d{3}\./.test(id))
     return href("features", `F-${id.split("-")[1]?.slice(0, 3)}`, "stories");
-  if (/^T-\d{3}\./.test(id)) return href("features", `F-${id.slice(2, 5)}`, "plan");
+  if (/^T-\d{3}\./.test(id)) return `${href("features", `F-${id.slice(2, 5)}`, "plan")}/${id}`;
   if (/^ADR-/.test(id)) return href("decisions", id);
   if (/^Q-/.test(id)) return href("questions", id);
   if (/^(BUG|DEBT|RISK)-/.test(id)) return href("issues", id);

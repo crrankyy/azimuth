@@ -1,0 +1,165 @@
+/* TaskDag: the plan's task graph card (FeaturePlan handoff). */
+.td-card {
+  padding: 16px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.td-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.td-meta {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.td-crit-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.td-crit-line {
+  width: 22px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ink);
+}
+
+/* The canvas scrolls on its own so a 30-task plan never widens the page. */
+.td-scroll {
+  margin: -6px;
+  overflow: auto;
+  max-height: 560px;
+}
+.td-plane {
+  position: relative;
+  flex: none;
+}
+.td-edges {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.td-edge path {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 2;
+}
+.td-edge .td-arrow {
+  fill: var(--edge);
+  stroke: none;
+}
+.td-edge.crit path {
+  stroke: var(--ink);
+}
+.td-edge.crit .td-arrow {
+  fill: var(--ink);
+  stroke: none;
+}
+.td-edge.back path {
+  stroke-dasharray: 4 3;
+}
+.td-edge.back .td-arrow {
+  stroke-dasharray: none;
+}
+
+.td-node {
+  appearance: none;
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-strong);
+  color: var(--ink);
+  font-family: var(--font-text);
+  text-align: left;
+  cursor: pointer;
+}
+.td-node:hover {
+  border-color: var(--hairline-tertiary);
+}
+.td-node.st-done {
+  border-color: var(--st-success-border);
+}
+.td-node.st-blocked {
+  border-color: var(--st-danger-border);
+}
+.td-node.st-in-progress {
+  border-color: var(--st-active);
+}
+.td-node.st-todo {
+  background: var(--surface-1);
+  border: 1px dashed var(--hairline-tertiary);
+}
+.td-node.st-skipped {
+  background: var(--surface-1);
+  border-color: var(--hairline);
+}
+.td-node.sel {
+  background: var(--surface-3);
+  outline: 2px solid var(--primary-focus);
+  outline-offset: 3px;
+}
+.td-node-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+.td-node-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.td-node-badge {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ink-tertiary);
+}
+.td-node-badge.danger {
+  color: var(--label-red);
+}
+.td-node-title {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.td-node.sel .td-node-title {
+  color: var(--ink);
+}
+.td-node.st-skipped .td-node-title {
+  color: var(--ink-tertiary);
+  text-decoration: line-through;
+}
+
+.td-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.td-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

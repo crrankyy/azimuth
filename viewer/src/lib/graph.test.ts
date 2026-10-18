@@ -26,10 +26,19 @@ describe("layoutDag", () => {
       "T-005.4": 400,
       "T-005.6": 600,
     });
+    const row = Object.fromEntries(layout.nodes.map((n) => [n.id, n.y]));
+    expect(row).toEqual({
+      "T-005.1": 96,
+      "T-005.2": 0,
+      "T-005.3": 96,
+      "T-005.5": 192,
+      "T-005.4": 0,
+      "T-005.6": 96,
+    });
     expect(layout.width).toBe(750);
     expect(layout.height).toBe(252);
     const edge = layout.edges.find((e) => e.from === "T-005.1" && e.to === "T-005.3");
-    expect(edge?.points[0]).toEqual([150, 30]);
+    expect(edge?.points[0]).toEqual([150, 126]);
     expect(edge?.points.at(-1)?.[0]).toBe(200);
   });
 

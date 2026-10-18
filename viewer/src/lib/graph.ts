@@ -110,11 +110,33 @@ export function layoutDag(ids: string[], edges: [string, string][], opts: Layout
     }
   }
 
+  // Vertical alignment on the row grid: each node level with the average of its predecessors
+  // (roots with their successors), keeping the column's order and never overlapping.
+  const rowOf = new Map<string, number>();
+  layers.forEach((l) => l.forEach((id, i) => rowOf.set(id, i)));
+  const average = (ids: string[]) =>
+    ids.reduce((sum, n) => sum + (rowOf.get(n) ?? 0), 0) / ids.length;
+  const align = (layer: string[], neighbours: Map<string, string[]>) => {
+    let next = 0;
+    for (const id of layer) {
+      const near = neighbours.get(id) ?? [];
+      const wanted = near.length > 0 ? Math.round(average(near)) : (rowOf.get(id) ?? 0);
+      const row = Math.max(next, wanted);
+      rowOf.set(id, row);
+      next = row + 1;
+    }
+  };
+  for (let i = 1; i < layers.length; i++) align(layers[i] as string[], preds);
+  if (layers[0]) align(layers[0], succs);
+
   const colPitch = opts.nodeWidth + opts.colGap;
   const rowPitch = opts.nodeHeight + opts.rowGap;
   const nodes: PlacedNode[] = [];
   layers.forEach((l, li) =>
-    l.forEach((id, row) => nodes.push({ id, layer: li, row, x: li * colPitch, y: row * rowPitch })),
+    l.forEach((id) => {
+      const row = rowOf.get(id) ?? 0;
+      nodes.push({ id, layer: li, row, x: li * colPitch, y: row * rowPitch });
+    }),
   );
   const at = new Map(nodes.map((n) => [n.id, n]));
   const placed: PlacedEdge[] = valid.map(([from, to]) => {
@@ -157,7 +179,7 @@ export function layoutDag(ids: string[], edges: [string, string][], opts: Layout
           ];
     return { from, to, back: false, points };
   });
-  const rows = Math.max(1, ...layers.map((l) => l.length));
+  const rows = Math.max(1, ...nodes.map((n) => n.row + 1));
   return {
     nodes,
     edges: placed,

@@ -1,0 +1,305 @@
+/* Verification screen (Verification handoff): summary cards, CoverageMatrix, runs list. */
+.vf {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.vf .mono {
+  font-family: var(--font-mono);
+}
+.vf-title-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.vf-sub {
+  font-size: 14px;
+  color: var(--ink-subtle);
+}
+.vf-red {
+  color: var(--label-red);
+}
+
+/* Summary cards */
+.vf-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.vf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: var(--ink);
+}
+a.vf-card:hover {
+  border-color: var(--hairline-strong);
+  color: var(--ink);
+}
+.vf-card.failing,
+a.vf-card.failing:hover {
+  border-color: var(--st-danger-border);
+}
+.vf-card-text {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.vf-range {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+/* Layout: matrix beside the runs list; stacked when the window is narrow. */
+.vf-cols {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+/* CoverageMatrix */
+.vf-matrix {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.vf-matrix-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.vf-table {
+  font-size: 13px;
+}
+.vf-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 72px 104px minmax(0, 1.4fr) 128px;
+  align-items: center;
+}
+.vf-th {
+  border-bottom: 1px solid var(--hairline);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-subtle);
+}
+.vf-th > span {
+  padding: 8px 10px;
+}
+.vf-group {
+  border-bottom: 1px solid var(--hairline);
+}
+.vf-group.expandable {
+  cursor: pointer;
+}
+.vf-group.open {
+  border-bottom: 0;
+}
+.vf-group-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 10px;
+}
+.vf-group.open .vf-group-cell {
+  padding: 14px 10px 6px;
+}
+.vf-chev {
+  appearance: none;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin: 0 -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--ink-subtle);
+  cursor: pointer;
+}
+.vf-chev:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.vf-chev:disabled {
+  cursor: default;
+  color: var(--ink-tertiary);
+}
+.vf-group-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vf-group-sum {
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vf-story {
+  padding: 8px 10px 4px 22px;
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.vf-scenario {
+  min-height: 38px;
+  border-bottom: 1px solid var(--hairline);
+}
+.vf-scenario.failing {
+  background: var(--st-danger-tint);
+}
+.vf-cell {
+  padding: 0 10px;
+  min-width: 0;
+}
+.vf-scn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 10px 0 22px;
+}
+.vf-sid {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.vf-sid:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+.vf-scn-title {
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vf-cov {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.vf-test {
+  font-size: 11.5px;
+  color: var(--ink-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vf-test.none {
+  color: var(--label-yellow);
+}
+.vf-last {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.vf-last a {
+  color: var(--ink-subtle);
+  text-decoration: none;
+}
+.vf-last a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+.vf-age {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.vf-none {
+  padding: 16px 10px;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+
+/* Runs list */
+.vf-runs {
+  width: 400px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.vf-count {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.vf-runlist {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-1);
+}
+.vf-run {
+  appearance: none;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 14px 56px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.vf-run:last-child,
+.vf-run.sel {
+  border-bottom: 0;
+}
+.vf-run:hover {
+  background: var(--surface-2);
+}
+.vf-run.sel {
+  background: var(--surface-2);
+}
+.vf-run-id {
+  font-size: 12px;
+}
+.vf-run-sum {
+  min-width: 0;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vf-run-sum .mono {
+  font-size: 12px;
+}
+.vf-runlist > .rr-drawer:last-child {
+  border-bottom: 0;
+}
+
+/* Narrow windows: the runs list moves under the matrix. Last, so it overrides the widths above. */
+@media (max-width: 1199px) {
+  .vf-cols {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .vf-runs {
+    width: auto;
+  }
+}
