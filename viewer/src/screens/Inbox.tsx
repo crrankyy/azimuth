@@ -407,7 +407,10 @@ function InboxItem({
         <div className="inbox-text">
           <div className="inbox-title-line">
             {item.ref && <IdChip id={item.ref} />}
-            <span className="inbox-title">{item.title}</span>
+            {/* Cut with an ellipsis beside the review buttons in narrower windows. */}
+            <span className="inbox-title" title={item.title}>
+              {item.title}
+            </span>
             {fresh && <span className="inbox-new">new</span>}
           </div>
           {item.detail && (
