@@ -2,7 +2,7 @@
 tasks:
   - id: T-001.1
     title: Types & scaffolding
-    status: todo
+    status: done
     after: []
     covers: []
     files: [src/core/live.ts, src/hooks/handlers.ts, src/server/server.ts, src/cli/commands/harness.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-001.2
     title: Open-session rule (red → green)
-    status: todo
+    status: done
     after: [T-001.1]
     covers: [S-001.1.2, S-001.1.3, S-001.1.4]
     files: [src/core/live.ts, test/core/live.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-001.3
     title: Viewer stays up while a session is open (red → green)
-    status: todo
+    status: done
     after: [T-001.2]
     covers: [S-001.1.1]
     files: [src/server/server.ts, test/server/server.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-001.4
     title: Hooks record Claude Code's process ID (red → green)
-    status: todo
+    status: done
     after: [T-001.1]
     covers: [S-001.2.1, S-001.2.2, S-001.2.3]
     files: [src/hooks/handlers.ts, test/hooks/hooks.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-001.5
     title: Prompt hook restarts a stopped viewer (red → green)
-    status: todo
+    status: done
     after: [T-001.4]
     covers: [S-001.3.1, S-001.3.2]
     files: [src/hooks/handlers.ts, src/cli/commands/harness.ts, test/hooks/hooks.test.ts]
@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-001.6
     title: Docs and full verification
-    status: todo
+    status: done
     after: [T-001.3, T-001.5]
     covers: []
     files: [docs/viewer.md, docs/claude-code.md]
