@@ -169,6 +169,7 @@
 }
 .adr-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
@@ -179,8 +180,10 @@
   color: var(--ink-muted);
   white-space: nowrap;
 }
+/* Wraps onto its own line rather than shrinking below a readable width. */
 .az-input.adr-note {
-  flex: 1;
+  flex: 1 1 220px;
+  min-width: 0;
   height: 32px;
   padding: 4px 10px;
   font-size: 13px;
@@ -353,8 +356,9 @@
   color: var(--ink);
 }
 
-/* Narrower windows: the linked items go under the ADR, then the list narrows. */
-@media (max-width: 1279px) {
+/* Below 1440px the linked items go under the ADR so its body keeps a readable width; below
+   1100px the list narrows too. */
+@media (max-width: 1439px) {
   .adr {
     flex-direction: column;
     align-items: stretch;
