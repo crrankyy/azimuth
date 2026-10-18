@@ -2,7 +2,7 @@
 id: BUG-0061
 type: bug
 title: The spec skill plans tasks as a chain, so subagents can't work in parallel
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [plugin/skills/spec/SKILL.md]
 found_by: SES-20261018-1745
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 Run `/azimuth:spec` on a feature that splits naturally (four Markdown block kinds).
@@ -22,3 +22,6 @@ Where the work splits, the plan gives each part its own files and a task that de
 The plan chained every task after the previous one and put all four kinds in `src/markdown/mod.rs`, so the build skill's delegation rule allowed no parallel work. It took a change request from the user to get four independent tasks.
 
 Found in the subagent-delegation rehearsal on 2026-10-18 (Sonnet orchestrating Haiku subagents, ~/projects/azimuth-rust-rehearsal F-002).
+
+## Status notes
+- 2026-10-18T18:20:00Z · agent · in-progress → resolved: Fixed in b89b943; an unhinted Sonnet spec planned 3 parallel slices with disjoint files
