@@ -1,3 +1,4 @@
+import { tidyPaths, type Places } from "../core/paths";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Index } from "../core/types";
@@ -35,14 +36,32 @@ export function inlineViewer(viewerDir: string, extraHead: string): string {
     .replace("</body>", () => `<script type="module">${scriptSafe(js)}</script></body>`);
 }
 
-/** A single self-contained HTML snapshot: no token, no absolute paths, write actions disabled. */
-export function exportHtml(viewerDir: string, index: Index): string {
-  const snapshot: Index = {
-    ...index,
-    mode: "export",
-    server: null,
-    project: { ...index.project, root: null },
-  };
+/** Applies `tidy` to every string in a JSON value. */
+function mapStrings<T>(value: T, tidy: (s: string) => string): T {
+  if (typeof value === "string") return tidy(value) as T;
+  if (Array.isArray(value)) return value.map((v) => mapStrings(v, tidy)) as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, mapStrings(v, tidy)])) as T;
+  }
+  return value;
+}
+
+/**
+ * A single self-contained HTML snapshot to share: no token, write actions disabled, no live
+ * agent activity (command lines can carry secrets and are stale anyway), and this machine's
+ * folders rewritten in every text (project paths relative, home as `~`).
+ */
+export function exportHtml(viewerDir: string, index: Index, places: Places): string {
+  const snapshot: Index = mapStrings(
+    {
+      ...index,
+      mode: "export",
+      server: null,
+      project: { ...index.project, root: null },
+      live: [],
+    },
+    (s) => tidyPaths(s, places),
+  );
   return inlineViewer(
     viewerDir,
     `<script type="application/json" id="azimuth-index">${embeddedJson(snapshot)}</script>`,

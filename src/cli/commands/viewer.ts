@@ -1,3 +1,4 @@
+import { homedir } from "node:os";
 import { spawn } from "node:child_process";
 import { existsSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -114,7 +115,7 @@ export const exportCommand: Command = {
     const rt = runtime(values);
     const out = resolve((values.out as string | undefined) ?? "azimuth-export.html");
     const { index } = buildIndex(rt.root, { mode: "export" });
-    writeFileSync(out, exportHtml(viewerDir(), index));
+    writeFileSync(out, exportHtml(viewerDir(), index, { root: rt.root, home: homedir() }));
     const size = statSync(out).size;
     if (rt.json) printJson({ file: out, bytes: size });
     else print(`Wrote ${out} (${Math.round(size / 1024)} KB)`);

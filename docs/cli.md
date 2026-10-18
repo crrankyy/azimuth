@@ -94,12 +94,12 @@ JUnit report. `$AZIMUTH_TASK` holds the task ID.
 
 ## Viewer
 
-| Command                                 | Effect                                                                                                                    |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `azimuth view [--port <n>] [--no-open]` | Opens this project's running viewer, or starts one in the foreground (127.0.0.1, default port 4319 or the next free one). |
-| `azimuth view --detach [--open]`        | Makes sure a background viewer is running and prints its URL.                                                             |
-| `azimuth view --stop`                   | Stops this project's background viewer.                                                                                   |
-| `azimuth export [-o <file>]`            | Writes a self-contained, read-only HTML snapshot (default `azimuth-export.html`).                                         |
+| Command                                 | Effect                                                                                                                                                                                  |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `azimuth view [--port <n>] [--no-open]` | Opens this project's running viewer, or starts one in the foreground (127.0.0.1, default port 4319 or the next free one).                                                               |
+| `azimuth view --detach [--open]`        | Makes sure a background viewer is running and prints its URL.                                                                                                                           |
+| `azimuth view --stop`                   | Stops this project's background viewer.                                                                                                                                                 |
+| `azimuth export [-o <file>]`            | Writes a self-contained, read-only HTML snapshot (default `azimuth-export.html`) to share: no live agent activity, and project paths relative and the home folder as `~` in every text. |
 
 ## Claude Code
 

@@ -1,5 +1,6 @@
 import { request } from "node:http";
 import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -282,15 +283,29 @@ describe("viewer server", () => {
 
 describe("export", () => {
   it("writes a self-contained snapshot without token or local paths", () => {
+    appendLive(repo.root, "claude-export", {
+      kind: "tool",
+      at: "2026-10-18T12:00:00Z",
+      tool: "Bash",
+      file: null,
+      summary: `cat ${repo.root}/src/x.ts`,
+    });
     const { index } = buildIndex(repo.root, { mode: "live" });
-    const html = exportHtml(VIEWER, index);
+    const runs = index.runs.map((r, i) =>
+      i === 0 ? { ...r, output_tail: `FAIL ${repo.root}/src/retry/policy.test.ts` } : r,
+    );
+    const html = exportHtml(VIEWER, { ...index, runs }, { root: repo.root, home: homedir() });
     expect(html).toContain('id="azimuth-index"');
     expect(html).not.toContain('<meta name="azimuth-token"');
+    // BUG-0017: no local paths anywhere, and no agent command lines.
     expect(html).not.toContain(repo.root);
+    expect(html).not.toContain(homedir());
     const json =
       /<script type="application\/json" id="azimuth-index">(.*?)<\/script>/s.exec(html)?.[1] ?? "";
     const snapshot = JSON.parse(json) as Index;
     expect(snapshot).toMatchObject({ mode: "export", server: null });
     expect(snapshot.project.root).toBeNull();
+    expect(snapshot.live).toEqual([]);
+    expect(snapshot.runs[0]?.output_tail).toBe("FAIL src/retry/policy.test.ts");
   });
 });
