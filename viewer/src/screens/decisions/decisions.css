@@ -1,0 +1,354 @@
+/* Decisions: list aside + AdrView (handoff screens/Decisions.html). */
+
+.dec-layout {
+  display: flex;
+  min-height: calc(100vh - var(--nav-height));
+}
+.dec-empty {
+  flex: 1;
+}
+
+/* List aside */
+.dec-list {
+  width: 340px;
+  flex: none;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 16px;
+  border-right: 1px solid var(--hairline);
+}
+.dec-list-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+.dec-list-head h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.dec-count {
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.dec-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px;
+}
+.dec-chips .az-chip:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.dec-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dec-none {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.dec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+.dec-item:hover {
+  background: var(--surface-1);
+}
+.dec-item[aria-current="true"] {
+  background: var(--surface-2);
+  outline: 2px solid var(--primary-focus);
+  outline-offset: -2px;
+}
+.dec-item-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.dec-item-id {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.dec-item-status {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.dec-item-date {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.dec-item-title {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+.dec-item[aria-current="true"] .dec-item-id,
+.dec-item[aria-current="true"] .dec-item-title {
+  color: var(--ink);
+}
+.dec-item.s-superseded .dec-item-id,
+.dec-item.s-rejected .dec-item-id,
+.dec-item.s-rejected .dec-item-title {
+  color: var(--ink-subtle);
+}
+.dec-item.s-superseded .dec-item-title {
+  color: var(--ink-subtle);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-tertiary);
+}
+
+/* AdrView */
+.adr {
+  flex: 1 1 0;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  padding: 32px 40px 64px;
+}
+.adr-main {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.adr-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.adr-head-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.az-id.adr-id {
+  padding: 0 8px;
+  color: var(--ink);
+}
+.adr-meta {
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.adr-meta-id {
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.adr-meta-id:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+.adr-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.6px;
+}
+.adr-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  box-shadow: var(--edge-highlight);
+}
+.adr-bar-label {
+  font-size: 13px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.az-input.adr-note {
+  flex: 1;
+  height: 32px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.adr-bar-text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.adr-bar.auto {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.adr-bar.auto > .az-g {
+  margin-top: 4px;
+}
+.adr-bar.auto .adr-bar-text {
+  flex: 1 1 360px;
+}
+.adr-bar-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+.adr-bar-text b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.adr-bar.note {
+  align-items: baseline;
+}
+.adr-bar.note .adr-bar-text {
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+.adr-prose > h2:first-child {
+  margin-top: 4px;
+}
+
+/* Linked aside */
+.adr-side {
+  width: 260px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.adr-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.adr-quiet {
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.adr-file {
+  font-size: 12px;
+  color: var(--ink-subtle);
+  word-break: break-all;
+}
+.adr-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  text-decoration: none;
+}
+.adr-link:hover {
+  border-color: var(--hairline-strong);
+}
+.adr-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.adr-link-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--ink);
+}
+.adr-link-note {
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+
+/* SupersessionChain */
+.chain-section {
+  gap: 10px;
+}
+.chain-related {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chain-via {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.chain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.chain li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 10px;
+}
+.chain-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.chain-rail .az-g {
+  margin-top: 3px;
+}
+.chain-line {
+  flex: 1;
+  width: 1.5px;
+  margin-top: 4px;
+  background: var(--hairline-strong);
+}
+.chain-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 14px;
+  text-decoration: none;
+}
+.chain li:last-child .chain-body {
+  padding-bottom: 0;
+}
+.chain-id {
+  font-size: 12px;
+  color: var(--ink);
+}
+.chain-id.s-superseded,
+.chain-id.s-rejected {
+  color: var(--ink-subtle);
+}
+.chain-title {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.chain-id.s-superseded + .chain-title,
+.chain-id.s-rejected + .chain-title {
+  color: var(--ink-subtle);
+}
+.chain li.current .chain-title {
+  color: var(--ink);
+  font-weight: 500;
+}
+.chain-note {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.chain-body:hover .chain-title {
+  color: var(--ink);
+}

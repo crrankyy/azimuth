@@ -1,0 +1,181 @@
+/* Knowledge: document tabs, article and GlossaryList (handoff screens/Knowledge.html). */
+
+.kn {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin-top: -8px;
+}
+.kn-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 48px;
+}
+.kn-article {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.kn-article .az-prose > h2:first-child {
+  margin-top: 0;
+}
+.kn-article .az-prose > :last-child {
+  margin-bottom: 0;
+}
+.kn-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kn-head h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.7px;
+  line-height: 1.2;
+}
+.kn-meta {
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.kn-quiet {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.kn-aside {
+  width: 300px;
+  flex: none;
+}
+
+/* Architecture freshness notice */
+.kn-fresh {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--st-warning) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--st-warning) 25%, transparent);
+  color: var(--label-yellow);
+}
+.kn-fresh svg {
+  flex: none;
+  margin-top: 2px;
+}
+.kn-fresh-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.kn-fresh-title {
+  font-weight: 500;
+}
+.kn-fresh-detail {
+  color: var(--ink-muted);
+}
+.kn-fresh-detail .az-id {
+  vertical-align: 1px;
+}
+.kn-unmapped {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.kn-unmapped .az-flag {
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* GlossaryList */
+.gl {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gl-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gl-count {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.gl-search {
+  position: relative;
+  display: block;
+}
+.gl-search svg {
+  position: absolute;
+  left: 10px;
+  top: 9px;
+  color: var(--ink-tertiary);
+  pointer-events: none;
+}
+.gl-search .az-input {
+  height: 32px;
+  padding: 4px 10px 4px 32px;
+  font-size: 13px;
+}
+.gl-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+.gl-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.gl-item:last-child {
+  border-bottom: 0;
+}
+.gl-item.on {
+  margin: 0 -8px;
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.gl-item dt {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.gl-item dd {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.gl-item dd.gl-aliases {
+  font-size: 11px;
+  color: var(--ink-tertiary);
+}
+.gl-none {
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.gl.wide .gl-search {
+  max-width: 420px;
+}
+.gl.wide .gl-item {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  column-gap: 24px;
+  padding: 14px 0;
+}
+.gl.wide .gl-item dd {
+  grid-column: 2;
+  margin: 0;
+  font-size: 14px;
+}
+.gl.wide .gl-item dd.gl-aliases {
+  margin-top: 4px;
+  font-size: 12px;
+}

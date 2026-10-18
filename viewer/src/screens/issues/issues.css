@@ -1,0 +1,327 @@
+/* Issues: table, issue detail and RiskMatrix (handoff screens/Issues.html). */
+
+.iss-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+}
+.iss-main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.iss-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.iss-summary {
+  font-size: 14px;
+  color: var(--ink-subtle);
+}
+.iss-none {
+  margin-top: -8px;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+/* Table */
+.iss-table tbody tr {
+  cursor: pointer;
+}
+.iss-table tbody tr:hover td {
+  background: var(--surface-1);
+}
+.iss-table tbody tr.sel td {
+  background: var(--surface-2);
+}
+.iss-table tr.closed td {
+  opacity: 0.7;
+}
+.iss-table .iss-title {
+  color: var(--ink);
+}
+.iss-table tr.closed .iss-title {
+  color: var(--ink-muted);
+}
+.iss-created {
+  text-align: right;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.iss-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+}
+.iss-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.iss-risk-levels {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Severity signal bars */
+.sev {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.sev .on {
+  fill: currentColor;
+}
+.sev .off {
+  fill: var(--surface-4);
+}
+.sev-critical {
+  color: var(--label-red);
+  font-weight: 600;
+}
+.sev-high {
+  color: var(--label-red);
+}
+.sev-medium {
+  color: var(--label-yellow);
+}
+.sev-low {
+  color: var(--ink-muted);
+}
+.sev-low .on {
+  fill: var(--ink-subtle);
+}
+.lvl-high {
+  color: var(--label-red);
+}
+
+/* Detail */
+.iss-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 24px;
+  box-shadow: var(--edge-highlight);
+}
+.iss-detail-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.az-id.iss-detail-id {
+  color: var(--ink);
+}
+.iss-found {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.iss-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.iss-field .lvl {
+  color: var(--ink);
+}
+.iss-field .lvl-high {
+  color: var(--label-red);
+}
+.iss-field .az-select {
+  min-width: 104px;
+}
+.iss-field .az-select:disabled {
+  color: var(--ink-subtle);
+  cursor: not-allowed;
+}
+.iss-detail-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+}
+.iss-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 32px;
+}
+.az-prose.iss-prose {
+  font-size: 14px;
+}
+.az-prose.iss-prose h2 {
+  margin-top: 20px;
+  font-size: 15px;
+}
+.iss-prose > h2:first-child {
+  margin-top: 0;
+}
+.iss-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.iss-side-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.iss-linked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  font-size: 13px;
+}
+.iss-linked-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-muted);
+}
+.iss-glyph-gap {
+  width: 12px;
+  flex: none;
+}
+.iss-path {
+  font-size: 12px;
+  color: var(--ink-muted);
+  word-break: break-all;
+}
+.iss-side .az-flag {
+  font-size: 11px;
+}
+
+/* RiskMatrix */
+.risk-aside {
+  width: 340px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 52px;
+}
+.risk-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.risk-count {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.risk-grid {
+  display: grid;
+  grid-template-columns: 22px repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, 84px) 24px;
+  gap: 4px;
+}
+.risk-axis-y {
+  grid-row: 1 / 4;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ink-subtle);
+}
+.risk-axis-x {
+  grid-column: 2 / 5;
+  align-self: center;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ink-subtle);
+}
+.risk-cell {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  background: var(--surface-1);
+}
+.risk-cell.warning {
+  background: color-mix(in srgb, var(--st-warning) 7%, transparent);
+}
+.risk-cell.danger {
+  background: color-mix(in srgb, var(--st-danger) 10%, transparent);
+}
+.risk-cell.filled {
+  border-color: var(--hairline-strong);
+}
+.risk-cell.warning.filled {
+  border-color: color-mix(in srgb, var(--st-warning) 40%, transparent);
+}
+.risk-cell.danger.filled {
+  border-color: color-mix(in srgb, var(--st-danger) 40%, transparent);
+}
+.risk-cell-label {
+  font-size: 11px;
+  color: var(--ink-tertiary);
+}
+.risk-cell.filled .risk-cell-label {
+  color: var(--ink-subtle);
+}
+.risk-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline-strong);
+  background: var(--canvas);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.risk-chip:hover,
+.risk-chip.sel {
+  border-color: var(--ink-subtle);
+}
+.risk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+}
+.risk-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.risk-card-levels {
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.risk-mitigation {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.az-prose.risk-prose {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.risk-aside > .az-flag {
+  align-self: flex-start;
+}

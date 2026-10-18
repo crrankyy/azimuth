@@ -1,0 +1,206 @@
+/* SessionCard (handoff screens/Activity.html). */
+
+.ses-card {
+  scroll-margin-top: calc(var(--nav-height) + 16px);
+  font-size: 13px;
+}
+.ses-card.collapsed {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  cursor: pointer;
+}
+.ses-card.collapsed:hover {
+  border-color: var(--hairline-strong);
+}
+.ses-card.expanded {
+  overflow: hidden;
+  box-shadow: var(--edge-highlight);
+}
+.ses-kind {
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.ses-card.collapsed .ses-kind {
+  font-size: 13px;
+}
+.ses-id {
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.ses-goal-inline {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--ink);
+}
+.ses-tally {
+  flex: none;
+  color: var(--ink-subtle);
+  white-space: nowrap;
+}
+.ses-card .az-flag {
+  flex: none;
+  padding: 0 6px;
+  font-size: 11px;
+}
+.ses-toggle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink-subtle);
+  cursor: pointer;
+}
+.ses-toggle:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.ses-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 16px;
+  border-bottom: 1px solid var(--hairline);
+  cursor: pointer;
+}
+.ses-when {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  white-space: nowrap;
+}
+.ses-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px 16px;
+}
+.ses-goal {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--ink);
+}
+
+/* The handoff is what the next session starts from, so it is the strongest block here. */
+.ses-handoff {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface-3);
+  border: 1px solid var(--hairline-strong);
+}
+.ses-handoff-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.az-prose.ses-handoff-prose {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.az-prose.ses-handoff-prose ul,
+.az-prose.ses-handoff-prose ol {
+  margin: 0;
+  padding-left: 18px;
+}
+.az-prose.ses-handoff-prose li {
+  margin: 0 0 4px;
+}
+.az-prose.ses-handoff-prose p:last-child {
+  margin-bottom: 0;
+}
+.az-prose.ses-handoff-prose code {
+  background: none;
+  padding: 0;
+  font-size: 12.5px;
+}
+.az-prose.ses-summary {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.az-prose.ses-summary p:last-child {
+  margin-bottom: 0;
+}
+.ses-facts {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px 12px;
+  margin: 0;
+}
+.ses-facts dt {
+  padding-top: 2px;
+  color: var(--ink-subtle);
+}
+.ses-facts dd {
+  margin: 0;
+  min-width: 0;
+}
+.ses-facts .ses-commits-label {
+  padding-top: 6px;
+}
+.ses-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ses-commits {
+  display: flex;
+  flex-direction: column;
+}
+.ses-commit {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.ses-commit:last-child {
+  border-bottom: 0;
+}
+.ses-sha {
+  font-size: 12px;
+  color: var(--ink);
+}
+.ses-subject {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-muted);
+}
+.ses-refs {
+  display: flex;
+  gap: 4px;
+}
+.ses-untracked {
+  font-size: 11px;
+  color: var(--label-yellow);
+}
+.ses-time {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}

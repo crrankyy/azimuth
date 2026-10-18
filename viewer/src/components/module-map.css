@@ -1,0 +1,76 @@
+/* ModuleMap (handoff screens/Knowledge.html). */
+
+.az-card.mm {
+  padding: 28px 24px 18px;
+  overflow-x: auto;
+}
+.mm-canvas {
+  position: relative;
+  margin: 0 auto;
+}
+.mm-edges {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.mm-edges path {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 2;
+}
+.mm-edges path.back {
+  stroke-dasharray: 4 4;
+}
+.mm-edges marker path,
+.mm-edges circle {
+  fill: var(--edge);
+  stroke: none;
+}
+.mm-node {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-strong);
+}
+.mm-node-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.mm-node-head b {
+  font-size: 13px;
+  color: var(--ink);
+}
+.mm-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ink-subtle);
+}
+.mm-resp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+.mm-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
