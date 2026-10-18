@@ -92,6 +92,44 @@ function pluginDir(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..");
 }
 
+interface PluginEntry {
+  id?: string;
+  scope?: string;
+  enabled?: boolean;
+  projectPath?: string;
+}
+
+/** What `claude plugin list --json`, run in the project, says about the Azimuth plugin. */
+export function pluginCheck(listJson: string): { ok: boolean | null; text: string } {
+  let entries: PluginEntry[];
+  try {
+    entries = JSON.parse(listJson) as PluginEntry[];
+  } catch {
+    return { ok: null, text: "Could not read `claude plugin list --json`" };
+  }
+  const ours = entries.filter((p) => p.id?.startsWith("azimuth@"));
+  const enabled = ours.find((p) => p.enabled);
+  if (enabled) {
+    return {
+      ok: true,
+      text: `Claude Code plugin ${enabled.id} is enabled here (${enabled.scope} scope)`,
+    };
+  }
+  if (ours.length > 0) {
+    const where = ours
+      .map((p) => (p.projectPath ? `${p.scope} scope in ${p.projectPath}` : `${p.scope} scope`))
+      .join(", ");
+    return {
+      ok: false,
+      text: `Claude Code plugin is installed (${where}) but not enabled for this project, so no hooks run here. Install it for all your projects (claude plugin install azimuth@azimuth) or for this one (--scope local).`,
+    };
+  }
+  return {
+    ok: false,
+    text: "Claude Code plugin is not installed (claude plugin install azimuth@azimuth)",
+  };
+}
+
 export const doctor: Command = {
   usage: "doctor [--print-path]",
   summary: "Check that Node, the plugin, hooks and the viewer are wired up",
@@ -110,19 +148,18 @@ export const doctor: Command = {
       print(`${ok === null ? color.yellow("?") : ok ? color.green("✓") : color.red("✗")} ${text}`);
     };
     line(true, `azimuth ${VERSION} on Node ${process.versions.node} (${process.execPath})`);
-    const plugins = spawnSync("claude", ["plugin", "list", "--json"], { encoding: "utf8" });
+    const root = findProjectRoot(values.root ?? process.cwd());
+    // Run from the project: `enabled` reflects the settings that apply in that folder.
+    const plugins = spawnSync("claude", ["plugin", "list", "--json"], {
+      encoding: "utf8",
+      cwd: root ?? process.cwd(),
+    });
     if (plugins.status === 0) {
-      const installed = /"azimuth@azimuth"|"name":\s*"azimuth"/.test(plugins.stdout);
-      line(
-        installed,
-        installed
-          ? "Claude Code plugin azimuth@azimuth is installed"
-          : "Claude Code plugin is not installed (claude plugin install azimuth@azimuth)",
-      );
+      const check = pluginCheck(plugins.stdout);
+      line(check.ok, check.text);
     } else {
       line(null, "Could not run `claude plugin list` to check the plugin");
     }
-    const root = findProjectRoot(values.root ?? process.cwd());
     if (!root) {
       line(null, "No .azimuth/ here (run `azimuth init` in a repository)");
       return failed ? 1 : 0;
