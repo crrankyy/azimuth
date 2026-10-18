@@ -2,7 +2,7 @@
 id: BUG-0002
 type: bug
 title: An agent can move your rejected ADR back to proposed, erasing your note
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/core/transitions.ts]
 found_by: SES-20261018-0136
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. In Decisions, reject ADR-0008 with a note.

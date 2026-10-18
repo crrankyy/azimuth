@@ -2,7 +2,7 @@
 id: BUG-0005
 type: bug
 title: Decisions note field is too narrow to read at 1280px
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [viewer/src/screens/decisions/decisions.css]
 found_by: SES-20261018-0136
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. Open a proposed ADR in `#/decisions` at 1280px wide.
