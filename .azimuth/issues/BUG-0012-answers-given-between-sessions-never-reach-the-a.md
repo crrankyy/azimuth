@@ -2,7 +2,7 @@
 id: BUG-0012
 type: bug
 title: Answers given between sessions never reach the agent
-status: in-progress
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/hooks/handlers.ts, src/core/brief.ts, src/core/next.ts]
 found_by: SES-20261018-1454
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. A session raises a blocking question and ends (greenfield test, session 3).

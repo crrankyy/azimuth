@@ -2,7 +2,7 @@
 id: BUG-0013
 type: bug
 title: Auto mode blocks applying answers the agent only read from files
-status: in-progress
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/hooks/handlers.ts, src/core/brief.ts]
 found_by: SES-20261018-1454
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 As in BUG-0012, with `--permission-mode auto`; the agent reads the answers from `.azimuth/questions/*.md` and edits the spec to apply them.
