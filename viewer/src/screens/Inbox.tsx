@@ -338,7 +338,7 @@ function agentLine(index: Index, now: number): string {
     return `An agent is working${on ? ` on ${on}` : ""}${live.current ? `: ${live.current.summary}` : "."}`;
   }
   const last = index.sessions[0];
-  if (!last) return "No agent sessions yet. Run /pm-idea in Claude Code to capture a feature.";
+  if (!last) return "No agent sessions yet. Run /azimuth:idea in Claude Code to capture a feature.";
   const when = last.ended_at
     ? `ended ${ago(last.ended_at, now)}`
     : `started ${ago(last.started_at, now)}`;

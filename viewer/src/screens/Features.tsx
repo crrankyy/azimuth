@@ -210,7 +210,7 @@ export function FeaturesScreen({ route: _route }: { route: Route }) {
 
         {all.length === 0 ? (
           <EmptyState title="No features yet">
-            Run <code className="az-c">/pm-idea</code> in Claude Code to capture your first feature.
+            Run <code className="az-c">/azimuth:idea</code> in Claude Code to capture your first feature.
           </EmptyState>
         ) : rows.length === 0 && !isBoard ? (
           <EmptyState title="No features match these filters">

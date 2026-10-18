@@ -36,7 +36,7 @@ export function OverviewScreen({ route: _route }: { route: Route }) {
 
         {index.features.length === 0 ? (
           <EmptyState title="No features yet">
-            Run <code className="az-c">/pm-idea</code> in Claude Code to capture your first feature.
+            Run <code className="az-c">/azimuth:idea</code> in Claude Code to capture your first feature.
           </EmptyState>
         ) : (
           <FeaturesByStatus features={index.features} />
