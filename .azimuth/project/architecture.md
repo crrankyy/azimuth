@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-18
-reconciled_at: be604cb
+reconciled_at: b48cc93
 modules:
   - name: core
     path: src/core
@@ -9,7 +9,7 @@ modules:
   - name: cli
     path: src/cli
     responsibility: Command parsing and output for the azimuth CLI, bundled to plugin/dist/cli.mjs
-    depends_on: [core, hooks, server]
+    depends_on: [core, hooks, server, docs]
   - name: hooks
     path: src/hooks
     responsibility: Claude Code hook handlers (session context, live activity, inbox delta, stop checks)
@@ -51,7 +51,8 @@ frontmatter, Vitest, ESLint and Prettier. pnpm only.
 - `viewer/`: React app, built to `plugin/dist/viewer/`
 - `plugin/`: the plugin; `.claude-plugin/marketplace.json` makes the repo its own marketplace
 - `test/`: tests, fixtures (`test/fixtures/hookline` is a sample project) and helpers
-- `docs/`: user and contributor documentation
+- `docs/`: user and contributor documentation; `file-format.md`, `concepts.md` and `cli.md` are
+  also bundled into the CLI for `azimuth docs`
 
 ## Commands
 - build: `pnpm build`
@@ -64,7 +65,8 @@ frontmatter, Vitest, ESLint and Prettier. pnpm only.
 - Files under `.azimuth/` are the source of truth; derived values are never stored.
 - Every write goes through the project lock and an atomic rename; frontmatter edits are surgical
   and never re-serialize the Markdown body.
-- `src/core/flows.ts`, `ids.ts` and `types.ts` import no Node modules, so the viewer can use them.
+- `src/core/flows.ts`, `glob.ts`, `ids.ts` and `types.ts` import no Node modules, so the viewer can
+  use them.
 - The viewer server binds 127.0.0.1, checks `Host` on every request and the token and `Origin` on
   writes, and always acts as you.
 
