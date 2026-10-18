@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-18
-reconciled_at: d82eaee
+reconciled_at: 16f5577
 modules:
   - name: core
     path: src/core
