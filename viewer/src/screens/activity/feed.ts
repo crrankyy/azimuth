@@ -1,4 +1,5 @@
 import { featureOf } from "../../../../src/core/ids";
+import { localDay } from "../../lib/format";
 import type {
   Commit,
   Feature,
@@ -91,11 +92,11 @@ export function featureCounts(items: FeedItem[]): { id: string; count: number }[
     .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
 }
 
-/** Items grouped by UTC day, keeping the newest-first order. */
+/** Items grouped by local day, keeping the newest-first order. */
 export function byDay(items: FeedItem[]): { day: string; items: FeedItem[] }[] {
   const groups: { day: string; items: FeedItem[] }[] = [];
   for (const item of items) {
-    const day = item.at.slice(0, 10);
+    const day = localDay(item.at);
     const last = groups.at(-1);
     if (last?.day === day) last.items.push(item);
     else groups.push({ day, items: [item] });

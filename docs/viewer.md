@@ -58,8 +58,8 @@ Hovering any ID shows a summary card. The problems panel lists `azimuth check` r
 "Copy path" and, when `viewer.editor_url` is set (schemes `vscode:`, `cursor:`, `zed:`, `idea:`,
 `file:`), "Open in editor".
 
-Dates and times are shown in UTC, as Azimuth stores them; "Today" and "Yesterday" in Activity are
-UTC days too. Layouts are designed at 1440 pixels wide, hold up from 1280 to 1920 and stay usable
+Times are shown in your machine's time zone, and "Today" and "Yesterday" in Activity are local
+days; files store UTC. Dates without a time (created, due, released) are shown as written. Layouts are designed at 1440 pixels wide, hold up from 1280 to 1920 and stay usable
 down to 1024, where side panels move under the main content.
 
 ## Keyboard

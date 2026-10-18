@@ -23,19 +23,38 @@ export function ago(iso: string | null | undefined, now: number): string {
   return a === "now" ? "just now" : `${a} ago`;
 }
 
-/** "Oct 9" (dates or timestamps, UTC). */
-export function shortDate(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/**
+ * The calendar day of a value: a date ("2026-10-18") as written, since it names a day rather than
+ * a moment; a timestamp in the viewer's local time zone (files store UTC).
+ */
+function calendar(iso: string): { year: number; month: number; day: number } | null {
+  const date = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (date) return { year: Number(date[1]), month: Number(date[2]) - 1, day: Number(date[3]) };
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
 }
 
-/** "11:56" (UTC). */
+/** "2026-10-17": the local day of a timestamp (a date as written), for grouping by day. */
+export function localDay(iso: string): string {
+  const c = calendar(iso);
+  return c ? `${c.year}-${pad(c.month + 1)}-${pad(c.day)}` : iso.slice(0, 10);
+}
+
+/** "Oct 9" (dates as written, timestamps in local time). */
+export function shortDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const c = calendar(iso);
+  return c ? `${MONTHS[c.month]} ${c.day}` : iso;
+}
+
+/** "11:56" (local time). */
 export function clock(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 /** "Oct 18, 12:05". */
@@ -43,10 +62,11 @@ export function dateTime(iso: string | null | undefined): string {
   return iso ? `${shortDate(iso)}, ${clock(iso)}` : "";
 }
 
-/** Whole days from now until a date (negative when past). */
+/** Whole days from now until a date's local midnight (negative when past). */
 export function daysUntil(date: string | null | undefined, now: number): number | null {
-  if (!date) return null;
-  return Math.ceil((Date.parse(`${date}T00:00:00Z`) - now) / 86_400_000);
+  const c = date ? calendar(date) : null;
+  if (!c) return null;
+  return Math.ceil((new Date(c.year, c.month, c.day).getTime() - now) / 86_400_000);
 }
 
 export function plural(n: number, word: string, many = `${word}s`): string {
@@ -66,16 +86,15 @@ export function shortDuration(ms: number): string {
   return ms < 60_000 ? `${(Math.round(ms / 100) / 10).toFixed(1)} s` : duration(ms);
 }
 
-/** Day heading for activity feeds: "Today · Sunday, Oct 18". */
+/** Day heading for activity feeds, in local days: "Today · Sunday, Oct 18". */
 export function dayHeading(iso: string, now: number): string {
-  const d = new Date(iso);
-  const today = new Date(now);
-  const sameDay = (a: Date, b: Date) =>
-    a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
-  const yesterday = new Date(now - 86_400_000);
-  const name = d.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
-  const label = `${name}, ${shortDate(iso)}`;
-  if (sameDay(d, today)) return `Today · ${label}`;
-  if (sameDay(d, yesterday)) return `Yesterday · ${label}`;
+  const c = calendar(iso);
+  if (!c) return iso;
+  const day = new Date(c.year, c.month, c.day);
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const label = `${day.toLocaleDateString("en-US", { weekday: "long" })}, ${shortDate(iso)}`;
+  if (localDay(iso) === localDay(new Date(now).toISOString())) return `Today · ${label}`;
+  if (localDay(iso) === localDay(yesterday.toISOString())) return `Yesterday · ${label}`;
   return label;
 }

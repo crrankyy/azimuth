@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Index, Task, VerifyRun } from "../../../src/core/types";
 import { expectedIndex } from "../../../test/fixtures/hookline/expected-index";
 import { junitSummary, RunResult, runFeature } from "./RunResult";
@@ -75,6 +75,16 @@ describe("TaskDag", () => {
 });
 
 describe("RunResult", () => {
+  // The viewer shows local times (BUG-0030); pin the zone so the sample's 11:56 UTC reads as such.
+  const zone = process.env.TZ;
+  beforeAll(() => {
+    process.env.TZ = "UTC";
+  });
+  afterAll(() => {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  });
+
   it("shows a failed run's facts and output tail", () => {
     const html = renderToStaticMarkup(<RunResult run={run("R-0142")} now={NOW} />);
     expect(html).toContain("rr-card fail");

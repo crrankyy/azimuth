@@ -7,7 +7,7 @@ import { StatusGlyph, StatusPill } from "../components/Status";
 import { useUi } from "../components/Ui";
 import { useIndexState } from "../data/IndexProvider";
 import { describe, featureById, questionLook, sessionById } from "../data/selectors";
-import { age, ago, clock, dateTime, shortDate } from "../lib/format";
+import { age, ago, clock, dateTime, localDay, shortDate } from "../lib/format";
 import { useListKeys } from "../lib/keys";
 import { Markdown, Prose } from "../lib/markdown";
 import { href, navigate, routeForId, type Route } from "../lib/router";
@@ -43,8 +43,8 @@ function groupQuestions(questions: Question[]): Group[] {
 
 /** "today 10:12" or "Oct 7, 10:40". */
 function when(iso: string, now: number): string {
-  const today = new Date(now).toISOString().slice(0, 10);
-  return iso.slice(0, 10) === today ? `today ${clock(iso)}` : dateTime(iso);
+  const today = localDay(new Date(now).toISOString());
+  return localDay(iso) === today ? `today ${clock(iso)}` : dateTime(iso);
 }
 
 /** What a blocking question holds up, worded like the CLI's inbox detail. */

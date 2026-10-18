@@ -13,7 +13,15 @@ import { Button, Card, Eyebrow, FlagBadge } from "../../components/primitives";
 import { StatusGlyph, StatusPill } from "../../components/Status";
 import { useUi } from "../../components/Ui";
 import { questionLook } from "../../data/selectors";
-import { age, clock, daysUntil, plural, shortDate, shortDuration } from "../../lib/format";
+import {
+  age,
+  clock,
+  daysUntil,
+  localDay,
+  plural,
+  shortDate,
+  shortDuration,
+} from "../../lib/format";
 import { href, routeForId } from "../../lib/router";
 import { FEATURE_LOOK, LIFECYCLE, MILESTONE_LOOK, PARKED } from "../../lib/status";
 import { isRetired, orderedMilestones } from "../features/model";
@@ -456,7 +464,7 @@ export function ProblemsCard({ index }: { index: Index }) {
 }
 
 export function RecentActivity({ index, now }: { index: Index; now: number }) {
-  const today = new Date(now).toISOString().slice(0, 10);
+  const today = localDay(new Date(now).toISOString());
   const lines = recentActivity(index, 6);
   return (
     <Card className="ov-card">
@@ -469,7 +477,7 @@ export function RecentActivity({ index, now }: { index: Index; now: number }) {
         {lines.map((l) => (
           <div key={`${l.kind}-${l.id}-${l.at}`} className="ov-act-row">
             <span className="ov-act-time">
-              {l.at.slice(0, 10) === today ? clock(l.at) : shortDate(l.at)}
+              {localDay(l.at) === today ? clock(l.at) : shortDate(l.at)}
             </span>
             {l.glyph === "commit" ? (
               <span className="ov-commit" aria-hidden="true">

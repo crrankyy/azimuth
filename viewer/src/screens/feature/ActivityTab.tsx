@@ -4,7 +4,7 @@ import { IdChip } from "../../components/IdChip";
 import { EmptyState, Tag } from "../../components/primitives";
 import { StatusGlyph } from "../../components/Status";
 import { useIndexState } from "../../data/IndexProvider";
-import { clock, dayHeading, duration, plural, shortDuration } from "../../lib/format";
+import { clock, dayHeading, duration, localDay, plural, shortDuration } from "../../lib/format";
 import { Prose } from "../../lib/markdown";
 import { FEATURE_LOOK } from "../../lib/status";
 import { Chevron } from "./FeatureHeader";
@@ -215,7 +215,7 @@ function FeedRow({ item, firstSession }: { item: FeedItem; firstSession: boolean
 function byDay(feed: FeedItem[]): [string, FeedItem[]][] {
   const days = new Map<string, FeedItem[]>();
   for (const item of feed) {
-    const day = item.at.slice(0, 10);
+    const day = localDay(item.at);
     days.set(day, [...(days.get(day) ?? []), item]);
   }
   return [...days.entries()];
