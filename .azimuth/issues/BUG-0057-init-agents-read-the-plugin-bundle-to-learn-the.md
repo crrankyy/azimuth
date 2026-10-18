@@ -22,3 +22,6 @@ The skill and the files it writes say how `reconciled_at` is set for a greenfiel
 The agent grepped `plugin/dist/cli.mjs` for `reconciled_at`, `depends_on`, `greenfield` and the `underModule` rule, and for how trace finds Rust scenario markers: 6 of its 25 tool calls. BUG-0019's commented examples show the entry format but not these rules; the marker format is in PROTOCOL.md, which it didn't rely on.
 
 Found in the Rust rehearsal on 2026-10-18 (~/projects/azimuth-rust-rehearsal).
+
+## Status notes
+- 2026-10-18T17:36:30Z · agent · in-progress → open: Partly fixed in 5036d7d: layout and marker convention now right, but re-runs still read plugin/dist/cli.mjs in 4 and 11 tool calls. Next approach awaits the user's decision.
