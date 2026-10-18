@@ -2,7 +2,7 @@
 id: BUG-0015
 type: bug
 title: Question options containing a comma are refused
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/cli/commands/create.ts]
 found_by: SES-20261018-1454
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 `azimuth new question "Where?" --option a="Per-user: XDG path, else ~/.config" --option b="Project: .tallyrc"`

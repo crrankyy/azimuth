@@ -2,7 +2,7 @@
 id: BUG-0014
 type: bug
 title: Clicking the preselected recommended option clears the answer's choice
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [viewer/src/components/AnswerComposer.tsx]
 found_by: SES-20261018-1454
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. Open a question whose recommended option is shown as selected.

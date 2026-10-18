@@ -2,7 +2,7 @@
 id: BUG-0023
 type: bug
 title: Live steps show absolute paths, including the plugin's skill files
-status: open
+status: resolved
 severity: low
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/hooks/handlers.ts, plugin/skills/ship/SKILL.md]
 found_by: SES-20261018-1454
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 Run `/azimuth:ship` (it reads other skills' SKILL.md files) and watch the Inbox or the Live strip.

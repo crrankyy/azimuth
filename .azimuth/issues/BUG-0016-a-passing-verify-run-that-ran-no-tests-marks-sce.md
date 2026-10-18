@@ -2,7 +2,7 @@
 id: BUG-0016
 type: bug
 title: A passing verify run that ran no tests marks scenarios passing
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/core/junit.ts, src/core/verify.ts, plugin/skills/spec/SKILL.md]
 found_by: SES-20261018-1454
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. A plan task "Red tests for count" covers 8 scenarios with `verify: pnpm typecheck`.

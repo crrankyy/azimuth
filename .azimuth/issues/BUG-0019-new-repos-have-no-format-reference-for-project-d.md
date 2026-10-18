@@ -2,7 +2,7 @@
 id: BUG-0019
 type: bug
 title: New repos have no format reference for project docs and as-built
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/core/init.ts, src/core/templates.ts, plugin/skills/verify/SKILL.md]
 found_by: SES-20261018-1454
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 Run `azimuth init` in a new repo, then `/azimuth:init` and `/azimuth:verify` as an agent.

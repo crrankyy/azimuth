@@ -2,7 +2,7 @@
 id: BUG-0017
 type: bug
 title: Export embeds agent commands and local paths
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/server/export.ts]
 found_by: SES-20261018-1454
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. Work in a project with live agent activity and verify runs.
