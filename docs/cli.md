@@ -90,6 +90,10 @@ its tests ran (so a typecheck passes nothing):
 - or the name of a test file that references it appears, except for Rust files: cargo lists every
   test binary even when its filter ran none of their tests, and never lists module files.
 
+Where the output names a scenario, only a line showing its test passed counts, since verbose
+reporters also list skipped tests. Vitest's default reporter names no tests or files when it isn't
+printing to a terminal, so verify commands use `vitest run --reporter=verbose`.
+
 A failing run fails covered scenarios unless the output shows them passing the same way. Function
 names are matched without their module path, so give marked tests unique names; `azimuth check`
 warns (`W-TEST-NAME`) when marked tests in different files share one. Test runners that

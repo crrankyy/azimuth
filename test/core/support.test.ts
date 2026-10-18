@@ -163,6 +163,26 @@ describe("scenariosFromOutput", () => {
     });
   });
 
+  it("BUG-0064 credits the tests Vitest's verbose reporter ran, not the ones it skipped", () => {
+    // Real `vitest run --reporter=verbose -t …` output (Vitest 5.0.5), outside a terminal.
+    const output = [
+      " ↓ test/core/live.test.ts > sessionOpen > S-001.1.2 doesn't count a session that ended, until it starts again",
+      " ✓ test/core/live.test.ts > F-005 subagent assignments > S-005.2.1 matches a subagent exactly by the Agent tool's response 3ms",
+      " ✓ test/core/live.test.ts > F-005 subagent assignments > S-005.2.2 matches running subagents to launches in order 1ms",
+      " ↓ test/core/live.test.ts > F-005 subagent assignments > S-005.2.3 lets an exact match override the order",
+      " Test Files  1 passed (1)",
+      "      Tests  2 passed | 12 skipped (14)",
+    ].join("\n");
+    const covers = ["S-001.1.2", "S-005.2.1", "S-005.2.2", "S-005.2.3"];
+    const tests = new Map<string, TestRef[]>(
+      covers.map((id) => [id, [ref("test/core/live.test.ts", `${id} title`)]]),
+    );
+    expect(Object.fromEntries(scenariosFromOutput(output, true, covers, tests))).toEqual({
+      "S-005.2.1": "passing",
+      "S-005.2.2": "passing",
+    });
+  });
+
   it("BUG-0016 passes a covered scenario only when the output shows its test ran", () => {
     const tests = new Map([
       ["S-900.1.1", [ref("src/count.test.ts", "S-900.1.1 counts lines")]],

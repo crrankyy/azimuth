@@ -78,6 +78,9 @@ export function parseJunit(
 
 const FAIL = /\b(FAIL|FAILED|failed|Error|ERROR)\b|✗|×|✕/;
 const PASS = /\b(PASS|PASSED|passed|ok)\b|✓|✔/;
+/** Skipped tests: Vitest `↓`, Jest `○`, pytest `SKIPPED`, `go test` `--- SKIP`, cargo `... ignored`. */
+const SKIP = /↓|○|\bSKIP(?:PED)?\b|\.\.\. ignored\b/;
+const passedLine = (line: string) => PASS.test(line) && !SKIP.test(line);
 
 /**
  * Scenario results inferred from plain test output when no JUnit report exists. A passing run
@@ -98,17 +101,20 @@ export function scenariosFromOutput(
     // A zero exit code alone proves nothing (a typecheck covers no scenario), so a scenario
     // passes only when the output shows one of its tests ran.
     const ranByName = new Set(
-      names.filter(([, p]) => lines.some((l) => p.test(l) && PASS.test(l))).map(([id]) => id),
+      names.filter(([, p]) => lines.some((l) => p.test(l) && passedLine(l))).map(([id]) => id),
     );
     for (const id of covers) {
+      // Where the output names the scenario (Vitest --reporter=verbose, Jest --verbose), only a
+      // line showing it passed counts: verbose reporters list skipped tests too.
+      const named = lines.filter((l) => l.includes(id));
+      if (named.length > 0) {
+        if (named.some(passedLine)) result.set(id, "passing");
+        continue;
+      }
       // cargo prints every test binary it runs, even when the filter skipped all of its tests, and
       // never prints module files, so a Rust file's name says nothing about what ran.
       const files = (tests.get(id) ?? []).map((t) => t.file).filter((f) => !f.endsWith(".rs"));
-      if (
-        output.includes(id) ||
-        ranByName.has(id) ||
-        files.some((f) => output.includes(basename(f)))
-      ) {
+      if (ranByName.has(id) || files.some((f) => output.includes(basename(f)))) {
         result.set(id, "passing");
       }
     }
