@@ -196,6 +196,7 @@ function IssueSide({ index, issue }: { index: Index; issue: Issue }) {
       {others.length > 0 && (
         <LinkGroup index={index} title={features.length > 0 ? "Related" : "Linked"} ids={others} />
       )}
+      <CommitGroup index={index} issue={issue} />
       {issue.files.length > 0 && (
         <div className="iss-side-group">
           <Eyebrow>Files</Eyebrow>
@@ -208,6 +209,23 @@ function IssueSide({ index, issue }: { index: Index; issue: Issue }) {
         <Eyebrow>File</Eyebrow>
         <span className="az-mono iss-path">{issue.file}</span>
       </div>
+    </div>
+  );
+}
+
+/** Commits whose `Refs:` name the issue, newest first, as the index lists them. */
+function CommitGroup({ index, issue }: { index: Index; issue: Issue }) {
+  const commits = index.commits.filter((c) => c.refs.includes(issue.id));
+  if (commits.length === 0) return null;
+  return (
+    <div className="iss-side-group">
+      <Eyebrow>Commits</Eyebrow>
+      {commits.map((c) => (
+        <span key={c.sha} className="iss-linked" title={c.subject}>
+          <span className="az-mono iss-sha">{c.sha}</span>
+          <span className="iss-linked-title">{c.subject}</span>
+        </span>
+      ))}
     </div>
   );
 }
