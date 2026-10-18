@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-002.5
     title: Verify skill, docs and full verification
-    status: in-progress
+    status: done
     after: [T-002.4]
     covers: []
     files: [plugin/skills/verify/SKILL.md, docs/concepts.md, test/golden/index.test.ts]

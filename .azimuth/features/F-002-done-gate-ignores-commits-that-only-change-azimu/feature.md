@@ -2,7 +2,7 @@
 id: F-002
 title: Done gate ignores commits that only change Azimuth's records
 summary: Commits that only touch .azimuth/ (as-built, architecture reconciliation, recorded decisions) no longer make verify runs stale or put the architecture behind a feature, so close-out works in its natural order.
-status: in-progress
+status: verifying
 priority: P2
 size: M
 mode: brownfield
