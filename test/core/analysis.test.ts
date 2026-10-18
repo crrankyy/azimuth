@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { statusBrief } from "../../src/core/brief";
 import { derive } from "../../src/core/derive";
 import { evaluateGate, nextGate, type GateContext } from "../../src/core/gates";
 import { buildInbox } from "../../src/core/inbox";
 import type { Model } from "../../src/core/model";
+import { nextWork } from "../../src/core/next";
 import { specHash } from "../../src/core/spec-hash";
+import type { Index, Issue } from "../../src/core/types";
 import { sortProblems, validate } from "../../src/core/validate";
 import type { Facts } from "../../src/core/facts";
+import { expectedIndex } from "../fixtures/hookline/expected-index";
 import { featureFiles, loadTree, makeFacts } from "../helpers/project";
 import { MINIMAL_CONFIG } from "../helpers/tree";
 
@@ -419,5 +423,42 @@ describe("inbox", () => {
     const manual = buildInbox(ctx, ctx.derived);
     expect(manual.map((i) => i.kind)).toContain("review-adr");
     expect(manual.find((i) => i.kind === "approve-spec")).toBeUndefined();
+  });
+});
+
+describe("next and status brief", () => {
+  const withIssues = (issues: Partial<Issue>[]): Index => ({
+    ...structuredClone(expectedIndex),
+    issues: issues.map((i, n) => ({
+      ...(expectedIndex.issues[0] as Issue),
+      id: `BUG-${String(n + 1).padStart(4, "0")}`,
+      ...i,
+    })),
+  });
+
+  it("puts critical issues first and high ones after feature work", () => {
+    const index = withIssues([
+      { severity: "high" },
+      { severity: "critical" },
+      { severity: "high", status: "in-progress" },
+      { severity: "medium" },
+      { severity: "critical", status: "resolved" },
+    ]);
+    const refs = nextWork(index).map((n) => n.ref);
+    expect(refs[0]).toBe("BUG-0002");
+    expect(refs.slice(-2)).toEqual(["BUG-0003", "BUG-0001"]);
+    expect(refs.filter((r) => r.startsWith("BUG-"))).toHaveLength(3);
+    expect(nextWork(index).at(-1)).toMatchObject({
+      action: "azimuth move BUG-0001 in-progress",
+      reason: "high bug",
+    });
+  });
+
+  it("lists open high and critical issues in the status brief", () => {
+    const brief = statusBrief(withIssues([{ severity: "high", title: "Lost writes" }]));
+    expect(brief).toContain(
+      "Open issues, high or critical (1):\n  BUG-0001 open high: Lost writes",
+    );
+    expect(statusBrief(withIssues([{ severity: "low" }]))).not.toContain("Open issues");
   });
 });

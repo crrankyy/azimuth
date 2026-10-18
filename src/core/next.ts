@@ -1,4 +1,4 @@
-import { PRIORITIES, type Feature, type Index, type Task } from "./types";
+import { PRIORITIES, SEVERITIES, type Feature, type Index, type Issue, type Task } from "./types";
 
 export interface NextItem {
   ref: string;
@@ -131,9 +131,37 @@ export function nextForFeature(index: Index, f: Feature): NextItem[] {
 
 const GROUPS: Feature["status"][] = ["in-progress", "verifying", "approved", "draft", "idea"];
 
-/** Highest-value unblocked work across the project, best first. */
+/** Open critical and high-severity bugs and debt: in-progress first, then most severe, then by ID. */
+export function urgentIssues(index: Index): Issue[] {
+  const rank = (i: Issue) => SEVERITIES.indexOf(i.severity ?? "low");
+  return index.issues
+    .filter(
+      (i) =>
+        (i.status === "open" || i.status === "in-progress") &&
+        (i.severity === "critical" || i.severity === "high"),
+    )
+    .sort(
+      (a, b) =>
+        Number(b.status === "in-progress") - Number(a.status === "in-progress") ||
+        rank(b) - rank(a) ||
+        a.id.localeCompare(b.id),
+    );
+}
+
+function issueItem(i: Issue): NextItem {
+  return {
+    ref: i.id,
+    title: i.title,
+    action: i.status === "in-progress" ? `Continue ${i.id}` : `azimuth move ${i.id} in-progress`,
+    reason: `${i.severity} ${i.type}`,
+  };
+}
+
+/** Highest-value unblocked work across the project, best first: critical issues, feature work,
+ * then high-severity issues. */
 export function nextWork(index: Index): NextItem[] {
-  const items: NextItem[] = [];
+  const urgent = urgentIssues(index);
+  const items: NextItem[] = urgent.filter((i) => i.severity === "critical").map(issueItem);
   for (const status of GROUPS) {
     const features = index.features.filter((f) => f.status === status).sort(byPriority);
     for (const f of features) {
@@ -144,5 +172,6 @@ export function nextWork(index: Index): NextItem[] {
       }
     }
   }
+  items.push(...urgent.filter((i) => i.severity === "high").map(issueItem));
   return items;
 }

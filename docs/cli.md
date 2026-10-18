@@ -35,14 +35,14 @@ be on your PATH).
 
 ## Read
 
-| Command                                 | Output                                                                                                                                          |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `azimuth status [--brief \| --json]`    | What needs you, work in flight, what's next, problem counts. `--json` prints the whole index. Outside a project, `--brief` says so and exits 0. |
-| `azimuth show <ID> [--brief \| --json]` | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log.            |
-| `azimuth next [F-ID] [--json]`          | The highest-priority unblocked work across the project, or a feature's ready tasks.                                                             |
-| `azimuth check [ID…] [--json]`          | Validation problems (all, or those concerning the given IDs). Exit 1 when there are errors.                                                     |
-| `azimuth trace [F-ID] [--json]`         | Scenario → test coverage.                                                                                                                       |
-| `azimuth index [--out <file>]`          | Writes the index JSON (default `.azimuth/cache/index.json`).                                                                                    |
+| Command                                 | Output                                                                                                                                                                          |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `azimuth status [--brief \| --json]`    | What needs you, work in flight, open high and critical issues, what's next, problem counts. `--json` prints the whole index. Outside a project, `--brief` says so and exits 0.  |
+| `azimuth show <ID> [--brief \| --json]` | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log.                                            |
+| `azimuth next [F-ID] [--json]`          | The highest-priority unblocked work across the project (critical bugs and debt, then feature work by status and priority, then high-severity ones), or a feature's ready tasks. |
+| `azimuth check [ID…] [--json]`          | Validation problems (all, or those concerning the given IDs). Exit 1 when there are errors.                                                                                     |
+| `azimuth trace [F-ID] [--json]`         | Scenario → test coverage.                                                                                                                                                       |
+| `azimuth index [--out <file>]`          | Writes the index JSON (default `.azimuth/cache/index.json`).                                                                                                                    |
 
 ## Create
 

@@ -1,5 +1,5 @@
 import { idKind } from "./ids";
-import { nextForFeature, nextWork } from "./next";
+import { nextForFeature, nextWork, urgentIssues } from "./next";
 import type { Feature, Index } from "./types";
 
 /** Compact, line-oriented summaries for agents (and hook context): cheap to read, no files. */
@@ -44,6 +44,13 @@ export function statusBrief(index: Index, viewerUrl: string | null = null): stri
   if (flight.length) {
     lines.push("", "In flight:");
     for (const f of flight) lines.push(`  ${featureLine(f)}`);
+  }
+  const issues = urgentIssues(index);
+  if (issues.length) {
+    lines.push("", `Open issues, high or critical (${issues.length}):`);
+    for (const i of issues.slice(0, 6))
+      lines.push(`  ${i.id} ${i.status} ${i.severity}: ${i.title}`);
+    if (issues.length > 6) lines.push(`  … and ${issues.length - 6} more`);
   }
   const next = nextWork(index).slice(0, 5);
   if (next.length) {
