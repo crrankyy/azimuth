@@ -9,6 +9,7 @@ import { azPath } from "../core/paths";
 import type { Index } from "../core/types";
 import { VERSION } from "../core/version";
 import { runAction, type ActionRequest } from "./actions";
+import { buildId } from "./autostart";
 import { approvalDiff } from "./diff";
 import { embeddedJson, inlineViewer } from "./export";
 import { hostAllowed, originAllowed, readBody, sendJson } from "./http";
@@ -73,6 +74,7 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
   const root = realpathSync(opts.root);
   const now = opts.now ?? (() => new Date());
   const instance = randomBytes(8).toString("hex");
+  const build = buildId();
   const token = randomBytes(24).toString("hex");
   const server = { instance, version: VERSION };
   let index: Index = buildIndex(root, { now: now(), server }).index;
@@ -141,7 +143,7 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
       return res.end(body);
     }
     if (req.method === "GET" && url.pathname === "/api/health") {
-      return sendJson(res, 200, { ok: true, instance, version: VERSION, root });
+      return sendJson(res, 200, { ok: true, instance, version: VERSION, build, root });
     }
     if (req.method === "GET" && url.pathname === "/api/index") {
       if (req.headers["if-none-match"] === index.rev) {

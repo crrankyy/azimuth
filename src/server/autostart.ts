@@ -14,22 +14,35 @@ function cliPath(): string {
     : resolve(here, "../../plugin/dist/cli.mjs");
 }
 
+/**
+ * The version plus the bundle's modification time. A local clone rebuilt after `git pull` keeps
+ * its version, so the version alone would leave a viewer running the old server code.
+ */
+export function buildId(): string {
+  try {
+    return `${VERSION}+${Math.round(statSync(cliPath()).mtimeMs)}`;
+  } catch {
+    return VERSION;
+  }
+}
+
 export function viewerUrlFor(record: ViewerRecord): string {
   return `http://127.0.0.1:${record.port}/`;
 }
 
-/** Whether the recorded server answers as this project's viewer of this version. */
+/** Whether the recorded server answers as this project's viewer of this build. */
 export async function healthy(
   record: ViewerRecord,
   root: string,
+  expected = buildId(),
 ): Promise<"ok" | "stale" | "down"> {
   try {
     const res = await fetch(`http://127.0.0.1:${record.port}/api/health`, {
       signal: AbortSignal.timeout(500),
     });
-    const body = (await res.json()) as { instance?: string; version?: string; root?: string };
+    const body = (await res.json()) as { build?: string; root?: string };
     if (body.root !== realpathSync(root)) return "down";
-    return body.version === VERSION ? "ok" : "stale";
+    return body.build === expected ? "ok" : "stale";
   } catch {
     return "down";
   }
@@ -69,9 +82,10 @@ function releaseStart(root: string): void {
  * `waitMs` for it to come up; returns null if it isn't up yet.
  */
 export async function ensureViewer(root: string, waitMs = 1_500): Promise<string | null> {
+  const build = buildId();
   const existing = readViewerRecord(root);
   if (existing) {
-    const state = await healthy(existing, root);
+    const state = await healthy(existing, root, build);
     if (state === "ok") return viewerUrlFor(existing);
     if (state === "stale") {
       try {
@@ -94,7 +108,7 @@ export async function ensureViewer(root: string, waitMs = 1_500): Promise<string
   while (Date.now() < deadline) {
     await sleep(100);
     const record = readViewerRecord(root);
-    if (record && record.pid !== existing?.pid && (await healthy(record, root)) === "ok") {
+    if (record && record.pid !== existing?.pid && (await healthy(record, root, build)) === "ok") {
       releaseStart(root);
       return viewerUrlFor(record);
     }

@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ensureViewer } from "../../src/server/autostart";
+import { buildId, ensureViewer, healthy } from "../../src/server/autostart";
 import { readViewerRecord, viewerRecordPath } from "../../src/server/registry";
 import { featureFiles } from "../helpers/project";
 import { commitAll, initRepo } from "../helpers/git";
@@ -43,6 +43,9 @@ describe("viewer autostart", () => {
 
     expect(await ensureViewer(tree.root, 8_000)).toBe(url);
     expect(readViewerRecord(tree.root)?.pid).toBe(first?.pid);
+    // A rebuilt bundle with the same version must count as a different build.
+    expect(await healthy(first!, tree.root)).toBe("ok");
+    expect(await healthy(first!, tree.root, `${buildId()}0`)).toBe("stale");
 
     process.kill(first!.pid, "SIGTERM");
     await new Promise((r) => setTimeout(r, 300));
