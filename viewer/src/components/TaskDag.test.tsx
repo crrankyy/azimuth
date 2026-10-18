@@ -3,12 +3,22 @@ import { describe, expect, it } from "vitest";
 import type { Index, Task, VerifyRun } from "../../../src/core/types";
 import { expectedIndex } from "../../../test/fixtures/hookline/expected-index";
 import { junitSummary, RunResult, runFeature } from "./RunResult";
-import { arrowHead, TaskDag, taskEdges } from "./TaskDag";
+import { arrowHead, hiddenNodes, TaskDag, taskEdges } from "./TaskDag";
 
 const index = expectedIndex as unknown as Index;
 const tasks = index.features.find((f) => f.id === "F-005")?.detail?.tasks as Task[];
 const run = (id: string) => index.runs.find((r) => r.id === id) as VerifyRun;
 const NOW = Date.parse("2026-10-18T12:05:00Z");
+
+describe("hiddenNodes", () => {
+  it("BUG-0008 counts tasks cut off on either side of the visible canvas", () => {
+    // Columns at 0, 200, 400, 600 and 800; nodes are 150 wide, plus 6px of padding.
+    const xs = [0, 200, 400, 600, 800];
+    expect(hiddenNodes(xs, { left: 0, width: 600 })).toEqual({ left: 0, right: 2 });
+    expect(hiddenNodes(xs, { left: 300, width: 700 })).toEqual({ left: 2, right: 0 });
+    expect(hiddenNodes(xs, { left: 0, width: 1000 })).toEqual({ left: 0, right: 0 });
+  });
+});
 
 describe("TaskDag", () => {
   const html = renderToStaticMarkup(

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { Task, TaskStatus } from "../../../src/core/types";
 import { plural } from "../lib/format";
 import { edgePath, layoutDag, longestPath, type PlacedEdge } from "../lib/graph";
@@ -42,6 +42,37 @@ function nodeBadge(task: Task): { text: string; danger: boolean; label?: string 
     return { text: "run ✕", danger: true, label: "Last run failed" };
   }
   return { text: TASK_LOOK[task.status].label.toLowerCase(), danger: false };
+}
+
+/** How many nodes lie wholly or partly outside the visible strip of the canvas, on each side. */
+export function hiddenNodes(
+  xs: number[],
+  view: { left: number; width: number },
+): { left: number; right: number } {
+  const right = view.left + view.width;
+  return {
+    left: xs.filter((x) => x + PAD < view.left).length,
+    right: xs.filter((x) => x + PAD + OPTS.nodeWidth > right).length,
+  };
+}
+
+/** The canvas's visible strip, kept current as it scrolls or resizes. */
+function useView(ref: RefObject<HTMLDivElement | null>): { left: number; width: number } | null {
+  const [view, setView] = useState<{ left: number; width: number } | null>(null);
+  useEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    const update = () => setView({ left: box.scrollLeft, width: box.clientWidth });
+    // ResizeObserver also reports the first size, so this needs no synchronous update.
+    const observer = new ResizeObserver(update);
+    observer.observe(box);
+    box.addEventListener("scroll", update, { passive: true });
+    return () => {
+      observer.disconnect();
+      box.removeEventListener("scroll", update);
+    };
+  }, [ref]);
+  return view;
 }
 
 /** Scrolls the canvas (never the page) just enough to show a node. */
@@ -145,6 +176,19 @@ export function TaskDag({
     };
   }, [tasks]);
   const scroller = useRef<HTMLDivElement>(null);
+  const view = useView(scroller);
+  // macOS hides scrollbars, so say when tasks are out of view instead of relying on one.
+  const hidden = view
+    ? hiddenNodes(
+        layout.nodes.map((n) => n.x),
+        view,
+      )
+    : { left: 0, right: 0 };
+  const scrollBy = (dir: 1 | -1) =>
+    scroller.current?.scrollBy({
+      left: dir * scroller.current.clientWidth * 0.8,
+      behavior: "smooth",
+    });
   const placed = layout.nodes.find((n) => n.id === selected);
   const selX = placed?.x;
   const selY = placed?.y;
@@ -164,6 +208,16 @@ export function TaskDag({
         <Eyebrow>Task graph</Eyebrow>
         <span className="td-meta">{plural(tasks.length, "task")} · edges from after</span>
         <span className="spacer" />
+        {hidden.left > 0 && (
+          <button type="button" className="td-more left" onClick={() => scrollBy(-1)}>
+            ← {plural(hidden.left, "more task")}
+          </button>
+        )}
+        {hidden.right > 0 && (
+          <button type="button" className="td-more right" onClick={() => scrollBy(1)}>
+            {plural(hidden.right, "more task")} →
+          </button>
+        )}
         {pathLength > 1 && (
           <span className="td-crit-key">
             <span className="td-crit-line" aria-hidden="true" />
