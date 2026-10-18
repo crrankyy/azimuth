@@ -21,18 +21,24 @@ export function HoverCardLayer({ children }: { children: ReactNode }) {
   const { index } = useIndexState();
   const show = (id: string, el: HTMLElement) => {
     if (timer.current) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(
-      () => setHover({ id, rect: el.getBoundingClientRect() }),
-      350,
-    );
+    // A click focuses the chip and then navigates away; by the time the delay ends the chip may
+    // be gone, and a detached element measures as an all-zero rect at the top-left corner.
+    timer.current = window.setTimeout(() => {
+      if (el.isConnected) setHover({ id, rect: el.getBoundingClientRect() });
+    }, 350);
   };
   const hide = () => {
     if (timer.current) window.clearTimeout(timer.current);
     setHover(null);
   };
   useEffect(() => {
+    // Navigation removes the chip without a mouseleave or blur.
     window.addEventListener("scroll", hide, true);
-    return () => window.removeEventListener("scroll", hide, true);
+    window.addEventListener("hashchange", hide);
+    return () => {
+      window.removeEventListener("scroll", hide, true);
+      window.removeEventListener("hashchange", hide);
+    };
   }, []);
   const summary = hover && index ? describe(index, hover.id) : null;
   return (
