@@ -27,6 +27,8 @@ export interface ServerOptions {
   pollMs?: number;
   /** Exit after this long with no clients, requests or active agent sessions. */
   idleMs?: number;
+  /** Whether a process is running, for open Claude Code sessions (tests inject one). */
+  alive?: (pid: number) => boolean;
   /** Record the server in the shared cache so CLIs and hooks can find it. */
   register?: boolean;
   now?: () => Date;

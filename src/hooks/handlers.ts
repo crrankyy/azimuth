@@ -40,13 +40,18 @@ export interface HookEnv {
   CLAUDE_ENV_FILE?: string;
   AZIMUTH_NO_VIEWER?: string;
   CLAUDE_CODE_REMOTE?: string;
+  /** Claude Code's own process ID, set in hook commands. */
+  CLAUDE_PID?: string;
 }
 
 export interface HookContext {
   env: HookEnv;
   now?: Date;
-  /** Starts the viewer if needed and returns its URL (wired by the server module). */
-  ensureViewer?: (root: string) => Promise<string | null>;
+  /**
+   * Starts the viewer if needed and returns its URL (wired by the server module). `waitMs` is how
+   * long to wait for a newly started one; 0 returns at once.
+   */
+  ensureViewer?: (root: string, waitMs?: number) => Promise<string | null>;
   /** Writes the session's environment exports (defaults to appending to CLAUDE_ENV_FILE). */
   writeEnv?: (lines: string[]) => void;
 }

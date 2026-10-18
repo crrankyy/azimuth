@@ -21,7 +21,8 @@ import type { LiveEvent, LiveSession } from "./types";
  * once), and readers take the tail of each file.
  */
 export type LiveRecord =
-  | { kind: "start"; at: string; source?: string }
+  // `pid` is Claude Code's own process ID (CLAUDE_PID), when the hook had one.
+  | { kind: "start"; at: string; source?: string; pid?: number }
   | {
       kind: "tool";
       at: string;
@@ -32,10 +33,19 @@ export type LiveRecord =
       agent_type?: string | null;
     }
   | { kind: "session"; at: string; ses: string }
-  | { kind: "prompt"; at: string }
+  | { kind: "prompt"; at: string; pid?: number }
   | { kind: "stop"; at: string }
   | { kind: "end"; at: string; reason?: string }
   | { kind: "cursor"; at: string; scope: "wake" | "prompt"; keys: string[] };
+
+/** What deciding whether a Claude Code session is still open needs from the outside world. */
+export interface OpenCheck {
+  now: Date;
+  /** How long a session without a process ID counts as open after its last record. */
+  idleMs: number;
+  /** Whether a process is running (injected so tests don't depend on real processes). */
+  alive: (pid: number) => boolean;
+}
 
 const TAIL_BYTES = 64 * 1024;
 const MAX_EVENTS = 20;

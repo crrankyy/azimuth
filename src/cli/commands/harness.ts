@@ -72,7 +72,7 @@ export const hook: Command = {
     try {
       const out = await handler(input, {
         env: process.env,
-        ensureViewer: (root) => ensureViewer(root),
+        ensureViewer: (root, waitMs) => ensureViewer(root, waitMs),
         writeEnv: (lines) => writeEnvFile(process.env.CLAUDE_ENV_FILE, lines),
       });
       if (out.stdout) process.stdout.write(out.stdout);
