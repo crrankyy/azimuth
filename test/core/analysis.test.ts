@@ -424,6 +424,33 @@ describe("inbox", () => {
     expect(manual.map((i) => i.kind)).toContain("review-adr");
     expect(manual.find((i) => i.kind === "approve-spec")).toBeUndefined();
   });
+
+  it("BUG-0004 asks you to review decisions an agent accepted or rejected", () => {
+    const adr = (id: string, status: string, extra = "") =>
+      `---\nid: ${id}\ntitle: Use ${id}\nstatus: ${status}\ndate: 2026-10-11\n${extra}---\n`;
+    const agent = "decided_by: agent\ndecided_at: 2026-10-12T10:00:00Z\n";
+    const ctx = analyze(
+      load({
+        ".azimuth/decisions/ADR-0001-a.md": adr("ADR-0001", "accepted", agent),
+        ".azimuth/decisions/ADR-0002-b.md": adr("ADR-0002", "rejected", agent),
+        ".azimuth/decisions/ADR-0003-c.md": adr("ADR-0003", "rejected", "decided_by: you\n"),
+        ".azimuth/decisions/ADR-0004-d.md": adr(
+          "ADR-0004",
+          "rejected",
+          `${agent}review_ack_at: 2026-10-12T11:00:00Z\n`,
+        ),
+      }),
+      makeFacts(),
+    );
+    const review = buildInbox(ctx, ctx.derived).filter((i) => i.kind === "review-auto");
+    expect(review.map((i) => [i.ref, i.title])).toEqual([
+      ["ADR-0001", "Use ADR-0001 was accepted automatically"],
+      ["ADR-0002", "Use ADR-0002 was rejected automatically"],
+    ]);
+    expect(review[1]?.detail).toBe(
+      "An agent rejected this decision. Acknowledge it or move it back to proposed.",
+    );
+  });
 });
 
 describe("next and status brief", () => {

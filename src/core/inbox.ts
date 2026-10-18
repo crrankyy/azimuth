@@ -146,12 +146,13 @@ export function buildInbox(ctx: GateContext, derived: Derived): InboxItem[] {
         urgency: "normal",
       });
     }
-    if (d.status === "accepted" && d.decided_by === "agent" && !d.review_ack_at) {
+    const decided = d.status === "accepted" || d.status === "rejected";
+    if (decided && d.decided_by === "agent" && !d.review_ack_at) {
       items.push({
         kind: "review-auto",
         ref: d.id,
-        title: `${d.title} was accepted automatically`,
-        detail: "An agent accepted this decision. Acknowledge it or move it back to proposed.",
+        title: `${d.title} was ${d.status} automatically`,
+        detail: `An agent ${d.status} this decision. Acknowledge it or move it back to proposed.`,
         since: d.decided_at ?? `${d.date}T00:00:00Z`,
         urgency: "low",
       });

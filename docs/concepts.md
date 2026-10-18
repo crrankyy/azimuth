@@ -72,7 +72,7 @@ autonomy:
 ```
 
 With `auto`, an agent that finishes a spec approves it and moves on to building; the gates still
-apply. Every automatic approval of a spec and acceptance of a decision appears in your inbox as
+apply. Every automatic approval of a spec and acceptance or rejection of a decision appears in your inbox as
 **Review** until you acknowledge it or send it back (a spec to draft, a decision to proposed). Guardrails hold in every mode:
 
 - Only you answer questions, release milestones and override gates.

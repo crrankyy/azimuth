@@ -84,7 +84,7 @@ Every action goes through the same gated transitions as the CLI and is recorded 
 | Defer, cancel, resume                       | Feature                                            | Moves the feature (defer and cancel need a reason).                                                                   |
 | Answer                                      | Questions, Inbox                                   | Writes your answer; the agent applies it.                                                                             |
 | Accept / reject                             | Decisions (the Inbox's Review opens it)            | Decides a proposed ADR, with an optional note for the agent.                                                          |
-| Acknowledge / send back                     | Inbox, Decisions; Feature (acknowledge only)       | Reviews an automatic approval or acceptance.                                                                          |
+| Acknowledge / send back                     | Inbox, Decisions; Feature (acknowledge only)       | Reviews an automatic approval, acceptance or rejection.                                                               |
 | Priority, milestone, severity, issue status | Feature header, Features table (`p` / `m`), Issues | Sets the field.                                                                                                       |
 | Release                                     | Roadmap                                            | Releases a milestone.                                                                                                 |
 
