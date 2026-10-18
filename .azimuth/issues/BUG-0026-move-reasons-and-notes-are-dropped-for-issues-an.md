@@ -2,7 +2,7 @@
 id: BUG-0026
 type: bug
 title: Move reasons and notes are dropped for issues and some task moves
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/core/transitions.ts]
 found_by: SES-20261018-1612
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 `azimuth move BUG-NNNN wontfix --reason "duplicate"`, or reopen a resolved issue with `--reason`; move a task with `--reason` or `--note` where the note isn't a blocked/skipped note.
