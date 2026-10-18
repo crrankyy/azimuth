@@ -13,7 +13,7 @@ support 7.x yet.
 | Script                              | What it does                                                                                     |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `pnpm build`                        | Builds the viewer and the CLI bundle                                                             |
-| `pnpm test`                         | Builds, then runs every test (Vitest)                                                            |
+| `pnpm test`                         | Builds, then runs every test (Vitest), one file at a time so timing budgets hold                 |
 | `pnpm typecheck`                    | `tsc` for the core/CLI and for the viewer                                                        |
 | `pnpm lint`                         | ESLint (typescript-eslint, React hooks rules for the viewer)                                     |
 | `pnpm format` / `pnpm format:check` | Prettier                                                                                         |

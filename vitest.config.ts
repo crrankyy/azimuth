@@ -7,5 +7,7 @@ export default defineConfig({
     environment: "node",
     passWithNoTests: true,
     testTimeout: 30_000,
+    // The scale and hook tests assert wall-clock budgets, which parallel files push over.
+    fileParallelism: false,
   },
 });
