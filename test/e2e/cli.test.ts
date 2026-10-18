@@ -199,6 +199,16 @@ describe("azimuth CLI (through the launcher, without node on PATH)", () => {
     ]);
   });
 
+  it("finds the current session from Claude Code's session ID when no hook ran", () => {
+    const claude = { CLAUDE_CODE_SESSION_ID: "claude-e2e-1" };
+    const ses = az(["session", "start", "--skill", "bug", "--goal", "Triage"], "agent", claude);
+    expect(ses.code).toBe(0);
+    expect(az(["session", "handoff", "Fix the triaged bug."], "agent", claude).code).toBe(0);
+    expect(json<{ handoff: string }>(["show", ses.out.trim()]).handoff).toBe(
+      "Fix the triaged bug.",
+    );
+  });
+
   it("reports hand-edited status as drift", () => {
     const path = ".azimuth/features/F-002-refunds/feature.md";
     tree.write(

@@ -18,6 +18,7 @@ export interface SessionEnv {
   AZIMUTH_ACTOR?: string;
   AZIMUTH_SESSION?: string;
   AZIMUTH_CLAUDE_SESSION?: string;
+  CLAUDE_CODE_SESSION_ID?: string;
   AZIMUTH_AGENT?: string;
   CLAUDECODE?: string;
 }
@@ -28,11 +29,21 @@ export function actorFromEnv(env: SessionEnv): Actor {
   return env.CLAUDECODE === "1" ? "agent" : "you";
 }
 
+/**
+ * The Claude Code session running this command. Claude Code sets CLAUDE_CODE_SESSION_ID for Bash
+ * commands itself, so this works even when our SessionStart hook didn't run (a plugin enabled
+ * mid-session, or hooks that failed).
+ */
+export function claudeSessionFromEnv(env: SessionEnv): string | null {
+  return env.AZIMUTH_CLAUDE_SESSION || env.CLAUDE_CODE_SESSION_ID || null;
+}
+
 /** The current Azimuth session: explicit env, or the last one started in this Claude session. */
 export function currentSession(root: string, env: SessionEnv): string | null {
   if (env.AZIMUTH_SESSION) return env.AZIMUTH_SESSION;
-  if (!env.AZIMUTH_CLAUDE_SESSION) return null;
-  const records = readLiveRecords(root, env.AZIMUTH_CLAUDE_SESSION);
+  const claude = claudeSessionFromEnv(env);
+  if (!claude) return null;
+  const records = readLiveRecords(root, claude);
   const last = [...records].reverse().find((r) => r.kind === "session");
   return last?.kind === "session" ? last.ses : null;
 }

@@ -1,5 +1,11 @@
 import { initProject } from "../../core/init";
-import { closeSession, closeStaleSessions, startSession, writeHandoff } from "../../core/session";
+import {
+  claudeSessionFromEnv,
+  closeSession,
+  closeStaleSessions,
+  startSession,
+  writeHandoff,
+} from "../../core/session";
 import { runVerify, verifyTargets } from "../../core/verify";
 import { color, print, printJson, requirePositional, runtime, UsageError } from "../io";
 import type { Command } from "../types";
@@ -57,7 +63,7 @@ export const session: Command = {
           goal,
           touched,
           agent: process.env.AZIMUTH_AGENT,
-          claudeSession: process.env.AZIMUTH_CLAUDE_SESSION ?? null,
+          claudeSession: claudeSessionFromEnv(process.env),
         });
         if (rt.json) printJson({ id: ses });
         else print(ses);
