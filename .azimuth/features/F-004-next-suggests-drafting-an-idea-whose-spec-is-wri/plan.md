@@ -2,7 +2,7 @@
 tasks:
   - id: T-004.1
     title: Draft suggestion for a specced idea (red → green)
-    status: todo
+    status: done
     after: []
     covers: [S-004.1.1, S-004.1.2]
     files: [src/core/next.ts, test/core/analysis.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-004.2
     title: Full verification
-    status: todo
+    status: done
     after: [T-004.1]
     covers: []
     files: []

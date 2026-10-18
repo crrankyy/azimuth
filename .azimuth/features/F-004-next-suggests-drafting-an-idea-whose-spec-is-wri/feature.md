@@ -2,7 +2,7 @@
 id: F-004
 title: Next suggests drafting an idea whose spec is written
 summary: azimuth next and the brief suggest azimuth move <F-ID> draft once an idea's spec files exist, instead of telling the agent to write the spec again.
-status: approved
+status: verifying
 priority: P2
 size: S
 mode: brownfield
