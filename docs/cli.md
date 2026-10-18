@@ -90,7 +90,8 @@ its tests ran (so a typecheck passes nothing):
   test binary even when its filter ran none of their tests, and never lists module files.
 
 A failing run fails covered scenarios unless the output shows them passing the same way. Function
-names are matched without their module path, so give marked tests unique names. Test runners that
+names are matched without their module path, so give marked tests unique names; `azimuth check`
+warns (`W-TEST-NAME`) when marked tests in different files share one. Test runners that
 print none of these (`go test` without `-v`) need a JUnit report, whose test cases are matched by
 scenario ID or function name too. `$AZIMUTH_TASK` holds the task ID.
 

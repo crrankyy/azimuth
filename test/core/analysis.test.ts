@@ -569,6 +569,37 @@ describe("validate", () => {
     ]);
   });
 
+  it("BUG-0029 warns when marked tests in different files share a function name", () => {
+    const model = load({});
+    const ref = (file: string, name: string, confidence: "marker" | "fallback" = "marker") => ({
+      file,
+      name,
+      confidence,
+    });
+    const facts = makeFacts({
+      tests: new Map([
+        ["S-001.1.1", [ref("src/buffer.rs", "parses_empty")]],
+        ["S-001.2.1", [ref("src/render.rs", "parses_empty"), ref("src/render.rs", "renders")]],
+        // One test covering two scenarios is a single test, not a duplicate.
+        ["S-001.2.2", [ref("src/render.rs", "renders")]],
+        // Titles and unmarked mentions aren't matched by name, so they can't clash.
+        ["S-001.3.1", [ref("a.test.ts", "S-001.3.1 works"), ref("b.rs", "renders", "fallback")]],
+      ]),
+    });
+    const problems = validate(model, facts, derive(model, facts));
+    expect(problems.filter((p) => p.code === "W-TEST-NAME")).toEqual([
+      {
+        code: "W-TEST-NAME",
+        severity: "warning",
+        file: "src/buffer.rs",
+        line: null,
+        ref: "S-001.1.1",
+        message:
+          "Marked tests in src/buffer.rs and src/render.rs are both named parses_empty, so verify can't tell their results apart. Rename one.",
+      },
+    ]);
+  });
+
   it("reports unknown links", () => {
     const model = load({
       ...featureFiles({

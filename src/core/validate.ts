@@ -2,6 +2,7 @@ import { codeCommitsAfter, type Derived } from "./derive";
 import { ACTIVE_STATUSES } from "./flows";
 import type { Facts } from "./facts";
 import { idKind } from "./ids";
+import { printedName } from "./junit";
 import type { FeatureEntity, Model } from "./model";
 import { problem } from "./parse/common";
 import type { FeatureStatus, Problem } from "./types";
@@ -18,6 +19,7 @@ export function validate(model: Model, facts: Facts, derived: Derived): Problem[
     ...questionProblems(model),
     ...sessionProblems(model, facts),
     ...architectureProblems(model, facts),
+    ...testNameProblems(facts),
   ];
 }
 
@@ -402,6 +404,36 @@ function sessionProblems(model: Model, facts: Facts): Problem[] {
         s.id,
       ),
     );
+}
+
+/**
+ * Verify matches marked tests by function name without the module path, so two such tests in
+ * different files with the same name would share their results.
+ */
+function testNameProblems(facts: Facts): Problem[] {
+  const byName = new Map<string, { files: Set<string>; scenario: string }>();
+  for (const [scenario, refs] of [...facts.tests].sort(([a], [b]) => a.localeCompare(b))) {
+    for (const ref of refs) {
+      const name = printedName(ref);
+      if (!name) continue;
+      const seen = byName.get(name) ?? { files: new Set<string>(), scenario };
+      seen.files.add(ref.file);
+      byName.set(name, seen);
+    }
+  }
+  return [...byName]
+    .filter(([, { files }]) => files.size > 1)
+    .map(([name, { files, scenario }]) => {
+      const sorted = [...files].sort();
+      const list = `${sorted.slice(0, -1).join(", ")} and ${sorted.at(-1)}`;
+      return problem(
+        "W-TEST-NAME",
+        sorted[0] as string,
+        null,
+        `Marked tests in ${list} are ${sorted.length === 2 ? "both" : "all"} named ${name}, so verify can't tell their results apart. Rename one.`,
+        scenario,
+      );
+    });
 }
 
 function architectureProblems(model: Model, facts: Facts): Problem[] {

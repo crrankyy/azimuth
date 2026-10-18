@@ -5,13 +5,17 @@ import type { CoverageStatus, VerifyRun } from "./types";
 const SCENARIO = /S-\d{3}\.\d+\.\d+/g;
 
 /**
- * How a runner prints a test that carries a scenario marker: its function name (`fn`, `def`,
- * `func`) as a whole word, e.g. `buffer::tests::inserts_text_at_cursor` in cargo's output. Titles
- * that start with the scenario ID are matched by the ID instead.
+ * The name a runner prints for a test that carries a scenario marker: its function name (`fn`,
+ * `def`, `func`), e.g. `inserts_text_at_cursor` in cargo's `buffer::tests::inserts_text_at_cursor`.
+ * Null for titles that start with the scenario ID, which are matched by the ID instead.
  */
+export function printedName(test: TestRef): string | null {
+  return test.confidence === "marker" && /^[A-Za-z_]\w*$/.test(test.name) ? test.name : null;
+}
+
 function testName(test: TestRef): RegExp | null {
-  if (test.confidence !== "marker" || !/^[A-Za-z_]\w*$/.test(test.name)) return null;
-  return new RegExp(String.raw`(?<!\w)${test.name}(?!\w)`);
+  const name = printedName(test);
+  return name ? new RegExp(String.raw`(?<!\w)${name}(?!\w)`) : null;
 }
 
 function namePatterns(tests: Map<string, TestRef[]>): [string, RegExp][] {
