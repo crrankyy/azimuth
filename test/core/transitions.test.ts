@@ -220,6 +220,21 @@ describe("tasks", () => {
     expect(task).toMatchObject({ status: "blocked", note: "Waiting on ADR-0001" });
   });
 
+  it("BUG-0026 logs the reason for any task move that has one", () => {
+    const tree = repo(
+      featureFiles({
+        id: "F-001",
+        status: "in-progress",
+        tasks: [{ id: "T-001.1", status: "done" }, { id: "T-001.2" }],
+      }),
+    );
+    move(tree.root, "T-001.1", "in-progress", { ...agent, reason: "The retry test is flaky" });
+    move(tree.root, "T-001.2", "in-progress", agent);
+    const log = readFileSync(join(tree.root, ".azimuth/features/F-001-thing/log.md"), "utf8");
+    expect(log).toContain("T-001.1: done → in-progress. The retry test is flaky");
+    expect(log).not.toContain("T-001.2");
+  });
+
   it("requires the feature to be in progress", () => {
     const tree = repo(featureFiles({ id: "F-001", status: "approved" }));
     expect(errorOf(() => move(tree.root, "T-001.1", "in-progress", agent)).message).toContain(
@@ -341,6 +356,42 @@ describe("milestones, issues, fields and logs", () => {
     const model = loadProject(tree.root);
     expect(model.milestones[0]).toMatchObject({ status: "released", released_at: "2026-10-18" });
     expect(model.issues[0]).toMatchObject({ status: "resolved", resolved_at: "2026-10-18" });
+  });
+
+  it("BUG-0026 keeps the reasons given for issue moves in a Status notes section", () => {
+    const file = ".azimuth/issues/BUG-0001-x.md";
+    const tree = repo({
+      [file]:
+        "---\nid: BUG-0001\ntype: bug\ntitle: X\nseverity: low\ncreated: 2026-10-01\n---\n## Repro\nRun it.\n",
+    });
+    move(tree.root, "BUG-0001", "wontfix", { ...agent, reason: "Duplicate of BUG-0002" });
+    move(tree.root, "BUG-0001", "open", { ...you, reason: "Not a duplicate:\nit fails offline" });
+    move(tree.root, "BUG-0001", "in-progress", agent);
+    expect(readFileSync(join(tree.root, file), "utf8").split("---\n")[2]).toBe(
+      [
+        "## Repro",
+        "Run it.",
+        "",
+        "## Status notes",
+        "- 2026-10-18T12:00:00Z · agent · open → wontfix: Duplicate of BUG-0002",
+        "- 2026-10-18T12:00:00Z · you · wontfix → open: Not a duplicate:",
+        "  it fails offline",
+        "",
+      ].join("\n"),
+    );
+    expect(loadProject(tree.root).issues[0]).toMatchObject({ status: "in-progress" });
+  });
+
+  it("BUG-0026 adds a status note inside the section, before any section after it", () => {
+    const file = ".azimuth/issues/BUG-0001-x.md";
+    const tree = repo({
+      [file]:
+        "---\nid: BUG-0001\ntype: bug\ntitle: X\nseverity: low\ncreated: 2026-10-01\n---\n## Status notes\n- earlier\n\n## Actual\nIt breaks.\n",
+    });
+    move(tree.root, "BUG-0001", "resolved", { ...agent, reason: "Fixed in abc1234" });
+    expect(readFileSync(join(tree.root, file), "utf8").split("---\n")[2]).toBe(
+      "## Status notes\n- earlier\n- 2026-10-18T12:00:00Z · agent · open → resolved: Fixed in abc1234\n\n## Actual\nIt breaks.\n",
+    );
   });
 
   it("sets fields, adds log entries and acknowledges automatic approvals", () => {

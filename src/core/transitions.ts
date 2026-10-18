@@ -101,6 +101,26 @@ export function appendLogText(
   return `${base}\n${formatLogHeader(entry)}\n${entry.body.trim()}\n`;
 }
 
+const STATUS_NOTES = "## Status notes";
+
+/**
+ * Adds a bullet to the body's "Status notes" section, creating the section at the end when it is
+ * missing. Issues have no log, so the reasons given for their moves are kept here.
+ */
+export function addStatusNote(text: string, note: string): string {
+  const eol = text.includes("\r\n") ? "\r\n" : "\n";
+  const lines = text.replace(/(\r?\n)+$/, "").split(/\r?\n/);
+  const bodyStart = lines[0] === "---" ? lines.indexOf("---", 1) + 1 : 0;
+  const heading = lines.indexOf(STATUS_NOTES, bodyStart);
+  const bullet = `- ${note.trim().split(/\r?\n/).join(`${eol}  `)}`;
+  if (heading === -1) return [...lines, "", STATUS_NOTES, bullet, ""].join(eol);
+  let end = lines.findIndex((line, i) => i > heading && line.startsWith("## "));
+  if (end === -1) end = lines.length;
+  while (end > heading + 1 && (lines[end - 1] ?? "").trim() === "") end--;
+  lines.splice(end, 0, bullet);
+  return lines.join(eol) + eol;
+}
+
 function logWrite(
   root: string,
   f: FeatureEntity,
@@ -388,7 +408,7 @@ export function moveTask(root: string, taskId: string, toRaw: string, opts: Move
         `${featureId} is ${f.status}. Move it to in-progress first (\`azimuth move ${featureId} in-progress\`).`,
       );
     }
-    const note = opts.note ?? opts.reason;
+    const note = (opts.note ?? opts.reason)?.trim() || undefined;
     const updates: Record<string, unknown> = { status: to };
     if (to === "blocked" || to === "skipped")
       updates.note = requireReason(note, `Marking ${taskId} ${to}`);
@@ -403,7 +423,7 @@ export function moveTask(root: string, taskId: string, toRaw: string, opts: Move
     if (planText === null)
       throw new AzimuthError("not-found", `${taskId} is not in ${f.files.plan}.`);
     const writes: Write[] = [{ file: f.files.plan, text: planText }];
-    if (to === "done" || to === "blocked" || to === "skipped") {
+    if (to === "done" || to === "blocked" || to === "skipped" || note) {
       const body = `${taskId}: ${task.status} → ${to}${note ? `. ${note}` : ""}`;
       writes.push(
         logWrite(root, f, {
@@ -695,10 +715,14 @@ export function moveIssue(root: string, id: string, toRaw: string, opts: MoveOpt
     }
     if (to === "wontfix") requireReason(opts.reason, `Closing ${id} as wontfix`);
     const closing = to === "resolved" || to === "wontfix";
-    const updated = updateFrontmatter(read(root, issue.file), {
+    const reason = opts.reason?.trim();
+    const moved = updateFrontmatter(read(root, issue.file), {
       status: to,
       resolved_at: closing ? today(now) : null,
     });
+    const updated = reason
+      ? addStatusNote(moved, `${stamp(now)} · ${opts.actor} · ${issue.status} → ${to}: ${reason}`)
+      : moved;
     return {
       ref: id,
       from: issue.status,

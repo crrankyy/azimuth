@@ -392,7 +392,14 @@ resolved_at: null
 ```
 
 Suggested body sections: bug `Repro`, `Expected`, `Actual`; debt `Problem`, `Proposed fix`;
-risk `Scenario`, `Mitigation`.
+risk `Scenario`, `Mitigation`. When a move is given a reason (required for `wontfix`), `azimuth
+move` adds it to a `Status notes` section, created at the end of the body:
+
+```markdown
+## Status notes
+
+- 2026-10-18T16:20:00Z · you · resolved → open: Still fails offline
+```
 
 ## Sessions
 
