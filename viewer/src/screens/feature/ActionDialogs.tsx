@@ -265,7 +265,7 @@ export function ReapproveDialog({ f, onClose }: { f: Feature; onClose: () => voi
     <Dialog
       width={640}
       title={<Title>Re-approve {f.id}?</Title>}
-      subtitle={`${f.title} · the spec changed after you approved it${f.approved_at ? ` on ${shortDate(f.approved_at)}` : ""}`}
+      subtitle={`${f.title} · the spec changed after ${f.approved_by === "agent" ? "it was approved" : "you approved it"}${f.approved_at ? ` on ${shortDate(f.approved_at)}` : ""}`}
       onClose={onClose}
       footer={
         <>

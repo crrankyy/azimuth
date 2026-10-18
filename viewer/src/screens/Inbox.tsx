@@ -1,9 +1,6 @@
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import type {
-  ApprovalChange,
   Feature,
-  Gate,
-  GateCheck,
   Index,
   InboxItem as Item,
   InboxKind,
@@ -23,6 +20,7 @@ import { useListKeys } from "../lib/keys";
 import { inline, Markdown } from "../lib/markdown";
 import { href, navigate, routeForId, type Route } from "../lib/router";
 import { FEATURE_LOOK } from "../lib/status";
+import { ApproveDialog, ReapproveDialog } from "./feature/ActionDialogs";
 import "./inbox.css";
 
 const URGENCIES: { level: Urgency; label: string }[] = [
@@ -594,10 +592,9 @@ function InboxDialog({
   onClose: () => void;
 }) {
   const feature = featureById(index, dialog.ref);
-  if (dialog.kind === "approve" && feature)
-    return <ApproveDialog feature={feature} onClose={onClose} />;
+  if (dialog.kind === "approve" && feature) return <ApproveDialog f={feature} onClose={onClose} />;
   if (dialog.kind === "reapprove" && feature)
-    return <ReapproveDialog index={index} feature={feature} onClose={onClose} />;
+    return <ReapproveDialog f={feature} onClose={onClose} />;
   if (dialog.kind === "send-back")
     return <SendBackDialog index={index} id={dialog.ref} onClose={onClose} />;
   return (
@@ -606,285 +603,6 @@ function InboxDialog({
       onClose={onClose}
       footer={<Button onClick={onClose}>Close</Button>}
     />
-  );
-}
-
-/** A gate's checks: failures with their detail first, then the passing ones (folded if any fail). */
-function GateList({ checks }: { checks: GateCheck[] }) {
-  const [showAll, setShowAll] = useState(false);
-  const failing = checks.filter((c) => !c.ok);
-  const passing = checks.filter((c) => c.ok);
-  const folded = failing.length > 0 && !showAll;
-  return (
-    <ul className="gate-list">
-      {failing.map((c) => (
-        <li key={c.id} className="fail">
-          <StatusGlyph glyph="s-failing" />
-          <span>
-            <span className="gate-rule">{c.rule}</span>
-            {c.detail && <span className="gate-detail">{c.detail}</span>}
-          </span>
-          <span className="gate-fail">Fail</span>
-        </li>
-      ))}
-      {folded && passing.length > 0 && (
-        <li className="muted">
-          <StatusGlyph glyph="s-done" />
-          <span className="spacer">
-            {plural(passing.length, "other check")} {passing.length === 1 ? "passes" : "pass"}
-          </span>
-          <button type="button" className="link-btn" onClick={() => setShowAll(true)}>
-            Show
-          </button>
-        </li>
-      )}
-      {!folded &&
-        passing.map((c) => (
-          <li key={c.id}>
-            <StatusGlyph glyph="s-done" />
-            <span>{c.rule}</span>
-          </li>
-        ))}
-    </ul>
-  );
-}
-
-function specCounts(f: Feature): string {
-  const scenarios = plural(f.derived.coverage.total, "scenario");
-  const tasks = plural(f.derived.progress.total, "task");
-  if (!f.detail) return `${scenarios}, ${tasks}.`;
-  return `${plural(f.detail.stories.length, "story", "stories")}, ${scenarios}, ${tasks}.`;
-}
-
-/** The ConfirmDialog for draft → approved, showing the gate; gate failures replace its body. */
-function ApproveDialog({ feature, onClose }: { feature: Feature; onClose: () => void }) {
-  const run = useAction();
-  const { canAct, reason } = useCanAct();
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState<Gate | null>(null);
-  const gate = feature.derived.next_gate?.to === "approved" ? feature.derived.next_gate : null;
-  const checks = failed?.checks ?? gate?.checks ?? [];
-  const failing = checks.filter((c) => !c.ok).length;
-  const blocked = !canAct
-    ? reason
-    : feature.status !== "draft"
-      ? `${feature.id} is ${FEATURE_LOOK[feature.status].label.toLowerCase()}, not draft`
-      : failing > 0
-        ? "Approve unlocks when every check passes"
-        : null;
-
-  const approve = async () => {
-    setBusy(true);
-    const result = await run("approve", feature.id, undefined, "draft");
-    setBusy(false);
-    if (result.ok) return onClose();
-    if (result.gate) setFailed(result.gate);
-  };
-
-  return (
-    <Dialog
-      title={failed ? "The gate no longer passes" : `Approve ${feature.id}?`}
-      subtitle={
-        failed
-          ? `An agent changed ${feature.id} while this was open. Nothing was written.`
-          : `${feature.title} · draft → approved`
-      }
-      onClose={onClose}
-      footer={
-        <>
-          <Button onClick={onClose}>{failed ? "Close" : "Cancel"}</Button>
-          <Button
-            variant="primary"
-            disabled={Boolean(blocked) || Boolean(failed) || busy}
-            title={blocked ?? undefined}
-            onClick={() => void approve()}
-          >
-            Approve spec
-          </Button>
-        </>
-      }
-    >
-      {!failed && (
-        <div className="gate-summary">
-          {failing === 0 ? (
-            <>
-              <StatusGlyph glyph="s-done" />
-              All {plural(checks.length, "approval check")} pass
-            </>
-          ) : (
-            <>
-              <StatusGlyph glyph="s-failing" />
-              {plural(failing, "check")} {failing === 1 ? "fails" : "fail"}
-            </>
-          )}
-        </div>
-      )}
-      <GateList checks={checks} />
-      {!failed && (
-        <p className="dialog-note">
-          {specCounts(feature)} Agents can start building once you approve. Later edits to the spec
-          will ask for re-approval.
-        </p>
-      )}
-      <div className="dialog-writes">
-        Writes <FilePath path={`${feature.file}feature.md`} />
-      </div>
-    </Dialog>
-  );
-}
-
-type DiffState = { status: "idle" | "loading" | "failed" } | { status: "ok"; files: FileDiff[] };
-interface FileDiff {
-  path: string;
-  diff: string;
-}
-
-/** Spec diffs since approval, from `azimuth view` (not available in exports or the dev server). */
-function useApprovalDiff(id: string, enabled: boolean): DiffState {
-  const [state, setState] = useState<DiffState>({ status: enabled ? "loading" : "idle" });
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
-    fetch(`/api/features/${encodeURIComponent(id)}/approval-diff`)
-      .then((r) => (r.ok ? (r.json() as Promise<{ ok: boolean; files?: FileDiff[] }>) : null))
-      .then((body) => {
-        if (cancelled) return;
-        setState(
-          body?.ok && body.files ? { status: "ok", files: body.files } : { status: "failed" },
-        );
-      })
-      .catch(() => !cancelled && setState({ status: "failed" }));
-    return () => {
-      cancelled = true;
-    };
-  }, [id, enabled]);
-  return state;
-}
-
-function DiffView({ diff }: { diff: string }) {
-  const lines = diff
-    .split("\n")
-    .filter((l) => !/^(diff --git|index |--- |\+\+\+ |new file mode|deleted file mode)/.test(l));
-  if (lines.every((l) => !l.trim())) return null;
-  return (
-    <pre className="az-code inbox-diff">
-      {lines.map((line, i) => {
-        const cls = line.startsWith("@@")
-          ? "hunk"
-          : line.startsWith("+")
-            ? "add"
-            : line.startsWith("-")
-              ? "del"
-              : undefined;
-        return (
-          <span key={i} className={cls}>
-            {line || " "}
-          </span>
-        );
-      })}
-    </pre>
-  );
-}
-
-function ChangedFiles({ changes, diffs }: { changes: ApprovalChange[]; diffs: DiffState }) {
-  const files = diffs.status === "ok" ? diffs.files : [];
-  const paths = [...new Set([...changes.map((c) => c.path), ...files.map((f) => f.path)])];
-  if (paths.length === 0) return <p className="dialog-note">No changed files were recorded.</p>;
-  return (
-    <div className="changed-files">
-      {paths.map((path) => {
-        const change = changes.find((c) => c.path === path);
-        const diff = files.find((f) => f.path === path)?.diff;
-        return (
-          <div key={path} className="changed-file">
-            <div className="changed-file-head">
-              <span className="path" title={path}>
-                {path.split("/").pop()}
-              </span>
-              <span className="spacer" />
-              {change && (
-                <>
-                  <span className="az-mono">{change.commit ?? "uncommitted"}</span>
-                  {change.session && <span>{change.session}</span>}
-                  {change.at && <span>{shortDate(change.at)}</span>}
-                </>
-              )}
-            </div>
-            {diff && <DiffView diff={diff} />}
-          </div>
-        );
-      })}
-      {diffs.status === "loading" && <div className="dialog-writes">Loading the diff…</div>}
-      {diffs.status === "failed" && <div className="dialog-writes">The diff isn't available.</div>}
-    </div>
-  );
-}
-
-/** Re-approval after the spec changed: the changed files with their diff, then reapprove. */
-function ReapproveDialog({
-  index,
-  feature,
-  onClose,
-}: {
-  index: Index;
-  feature: Feature;
-  onClose: () => void;
-}) {
-  const run = useAction();
-  const { connection } = useIndexState();
-  const { canAct, reason } = useCanAct();
-  const diffs = useApprovalDiff(feature.id, index.server !== null && connection === "live");
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState<Gate | null>(null);
-  const who = feature.approved_by === "agent" ? "it was approved" : "you approved it";
-  const since = feature.approved_at ? ` on ${shortDate(feature.approved_at)}` : "";
-
-  const reapprove = async () => {
-    setBusy(true);
-    const result = await run("reapprove", feature.id, undefined, feature.status);
-    setBusy(false);
-    if (result.ok) return onClose();
-    if (result.gate) setFailed(result.gate);
-  };
-
-  return (
-    <Dialog
-      width={560}
-      title={failed ? "The gate no longer passes" : `Re-approve ${feature.id}?`}
-      subtitle={
-        failed
-          ? `${feature.id} can't be re-approved until these pass. Nothing was written.`
-          : `${feature.title} · changed since ${who}${since}`
-      }
-      onClose={onClose}
-      footer={
-        <>
-          <Button onClick={onClose}>{failed ? "Close" : "Cancel"}</Button>
-          <Button
-            variant="primary"
-            disabled={!canAct || Boolean(failed) || busy}
-            title={reason ?? undefined}
-            onClick={() => void reapprove()}
-          >
-            Re-approve
-          </Button>
-        </>
-      }
-    >
-      {failed ? (
-        <GateList checks={failed.checks} />
-      ) : (
-        <>
-          <ChangedFiles changes={feature.derived.approval_changes} diffs={diffs} />
-          <p className="dialog-note">
-            Re-approving accepts these edits as the spec agents build against.
-          </p>
-        </>
-      )}
-      <div className="dialog-writes">
-        Writes <FilePath path={`${feature.file}feature.md`} />
-      </div>
-    </Dialog>
   );
 }
 
