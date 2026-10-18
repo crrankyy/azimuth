@@ -1,4 +1,4 @@
-import { commitsFor, type Derived } from "./derive";
+import { codeChangedSince, commitsFor, type Derived } from "./derive";
 import type { Facts } from "./facts";
 import type { FeatureEntity, Model } from "./model";
 import type { FeatureStatus, Gate, GateCheck, Problem } from "./types";
@@ -221,6 +221,13 @@ function verifyGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
   ];
 }
 
+/** A run at HEAD is current, and so is one followed only by commits to Azimuth's records. */
+function runCurrent(commit: string | null, head: string, facts: Facts): boolean {
+  if (commit === null) return false;
+  if (commit === head) return true;
+  return codeChangedSince(commit, facts) === false;
+}
+
 function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
   const head = ctx.facts.git.head;
   const failed: string[] = [];
@@ -230,7 +237,7 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
     const run = ctx.derived.lastRun.get(task.id);
     if (!run) stale.push(`${task.id} has no run`);
     else if (!run.ok) failed.push(`${task.id} failed at ${run.commit ?? "an uncommitted tree"}`);
-    else if (head && run.commit !== head)
+    else if (head && !runCurrent(run.commit, head, ctx.facts))
       stale.push(`${task.id} last passed at ${run.commit ?? "an uncommitted tree"}`);
   }
   const verifyDetail = (failed.length > 0 ? failed : stale).join("; ");

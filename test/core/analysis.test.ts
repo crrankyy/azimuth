@@ -327,6 +327,65 @@ describe("gates", () => {
     ]);
   });
 
+  describe("record-only commits after a passing run", () => {
+    const verifyCheck = (laterFiles: string[] | null) => {
+      const model = load({
+        ...featureFiles({
+          id: "F-001",
+          status: "verifying",
+          tasks: [{ id: "T-001.1", status: "done", covers: ["S-001.1.1", "S-001.1.2"] }],
+        }),
+        ".azimuth/cache/runs/R-0001.json": JSON.stringify({
+          id: "R-0001",
+          target: "T-001.1",
+          at: "2026-10-17T10:00:00Z",
+          ok: true,
+          commit: "aaaaaaa",
+          scenarios: [],
+        }),
+      });
+      const commit = (sha: string, refs: string[]) => ({
+        sha,
+        at: "2026-10-17T11:00:00Z",
+        actor: "agent" as const,
+        session: null,
+        subject: sha,
+        refs,
+        files_changed: 1,
+      });
+      const files = new Map([["aaaaaaa", ["src/app.ts"]]]);
+      if (laterFiles) files.set("bbbbbbb", laterFiles);
+      const facts = makeFacts({
+        git: {
+          available: true,
+          head: "bbbbbbb",
+          commits: [commit("bbbbbbb", ["F-001"]), commit("aaaaaaa", ["T-001.1"])],
+          files,
+        },
+      });
+      const gate = nextGate(analyze(model, facts), model.features[0]!);
+      return gate?.checks.find((c) => c.id === "done.verify-passed");
+    };
+
+    it("S-002.1.1 keeps the run current when only .azimuth/ changed after it", () => {
+      expect(verifyCheck([".azimuth/features/F-001-x/as-built.md"])?.ok).toBe(true);
+    });
+
+    it("S-002.1.2 makes the run stale when code changed after it", () => {
+      expect(verifyCheck(["src/app.ts"])).toMatchObject({
+        ok: false,
+        detail: "T-001.1 last passed at aaaaaaa",
+      });
+    });
+
+    it("S-002.1.3 makes the run stale when the later commit's files are unknown", () => {
+      expect(verifyCheck(null)).toMatchObject({
+        ok: false,
+        detail: "T-001.1 last passed at aaaaaaa",
+      });
+    });
+  });
+
   it("has no gate for retired features or backwards moves", () => {
     const model = load(featureFiles({ id: "F-001", status: "cancelled", ideaOnly: true }));
     const ctx = analyze(model, makeFacts());
