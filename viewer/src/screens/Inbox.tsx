@@ -189,17 +189,24 @@ function Inbox({ index }: { index: Index }) {
   const items = ordered(index.inbox);
   // Items present when the screen opened; anything after that is marked "new".
   const [seen] = useState(() => new Set(index.inbox.map(itemKey)));
-  const [selected, setSelected] = useState(0);
+  // The selection follows an item, not a row: live updates add and remove rows above it.
+  const [selection, setSelection] = useState(() => ({
+    key: items[0] ? itemKey(items[0]) : null,
+    at: 0,
+  }));
   const [expanded, setExpanded] = useState<string | null>(() => {
     const first = ordered(index.inbox)[0];
     return first?.kind === "answer-question" ? itemKey(first) : null;
   });
   const [autoFocus, setAutoFocus] = useState(false);
   const [dialog, setDialog] = useState<DialogState | null>(null);
-  const cursor = Math.min(selected, Math.max(0, items.length - 1));
+  const found = items.findIndex((item) => itemKey(item) === selection.key);
+  // When the selected item itself is gone, its neighbour at the same position takes over.
+  const cursor = found >= 0 ? found : Math.min(selection.at, Math.max(0, items.length - 1));
 
   const select = (i: number) => {
-    setSelected(i);
+    const item = items[i];
+    setSelection({ key: item ? itemKey(item) : null, at: i });
     document.querySelector(`[data-inbox-row="${i}"]`)?.scrollIntoView({ block: "nearest" });
   };
 
@@ -309,7 +316,7 @@ function Inbox({ index }: { index: Index }) {
                         autoFocus={autoFocus}
                         fresh={!seen.has(key)}
                         flash={item.ref !== null && changed.has(item.ref)}
-                        onSelect={() => setSelected(at)}
+                        onSelect={() => setSelection({ key, at })}
                         onPrimary={() => primary(item)}
                         onSendBack={() =>
                           item.ref && setDialog({ kind: "send-back", ref: item.ref })
