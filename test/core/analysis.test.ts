@@ -4,9 +4,9 @@ import { codeChangedSince, derive, isCodeCommit } from "../../src/core/derive";
 import { evaluateGate, nextGate, type GateContext } from "../../src/core/gates";
 import { buildInbox } from "../../src/core/inbox";
 import type { Model } from "../../src/core/model";
-import { nextWork } from "../../src/core/next";
+import { nextForFeature, nextWork } from "../../src/core/next";
 import { specHash } from "../../src/core/spec-hash";
-import type { Index, Issue } from "../../src/core/types";
+import type { Feature, Index, Issue } from "../../src/core/types";
 import { sortProblems, validate } from "../../src/core/validate";
 import type { Facts } from "../../src/core/facts";
 import { expectedIndex } from "../fixtures/hookline/expected-index";
@@ -622,6 +622,33 @@ describe("next and status brief", () => {
     expect(nextWork(index).at(-1)).toMatchObject({
       action: "azimuth move BUG-0001 in-progress",
       reason: "high bug",
+    });
+  });
+
+  describe("an idea's next step", () => {
+    const ideaWithDraftGate = (ok: boolean) => {
+      const f = structuredClone(expectedIndex.features.find((x) => x.id === "F-010")) as Feature;
+      f.derived.next_gate = {
+        to: "draft",
+        checks: [{ id: "draft.spec-files", rule: "Spec files written", ok }],
+      };
+      return nextForFeature(expectedIndex as Index, f);
+    };
+
+    it("S-004.1.1 suggests the draft move once the spec is written", () => {
+      expect(ideaWithDraftGate(true)).toMatchObject([
+        {
+          ref: "F-010",
+          action: "azimuth move F-010 draft",
+          reason: "Spec written; ready for draft",
+        },
+      ]);
+    });
+
+    it("S-004.1.2 asks for the spec while it isn't written", () => {
+      expect(ideaWithDraftGate(false)).toMatchObject([
+        { ref: "F-010", action: "/azimuth:spec F-010", reason: "Idea without a spec" },
+      ]);
     });
   });
 

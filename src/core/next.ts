@@ -38,15 +38,25 @@ function failingChecks(f: Feature): string {
 export function nextForFeature(index: Index, f: Feature): NextItem[] {
   const blockers = f.derived.blocked_by.map((b) => b.id).join(", ");
   switch (f.status) {
-    case "idea":
+    case "idea": {
+      // Once the spec files exist the draft gate passes; the spec's content is judged at approval.
+      const written = f.derived.next_gate?.checks.every((c) => c.ok) ?? false;
       return [
-        {
-          ref: f.id,
-          title: f.title,
-          action: `/azimuth:spec ${f.id}`,
-          reason: "Idea without a spec",
-        },
+        written
+          ? {
+              ref: f.id,
+              title: f.title,
+              action: `azimuth move ${f.id} draft`,
+              reason: "Spec written; ready for draft",
+            }
+          : {
+              ref: f.id,
+              title: f.title,
+              action: `/azimuth:spec ${f.id}`,
+              reason: "Idea without a spec",
+            },
       ];
+    }
     case "draft": {
       const gate = f.derived.next_gate;
       if (gate?.checks.every((c) => c.ok)) {
