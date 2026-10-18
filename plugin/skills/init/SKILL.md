@@ -17,11 +17,12 @@ allowed-tools:
    handling and test setup, then write:
    - `.azimuth/project/architecture.md`: overview, stack, directory layout, commands,
      boundaries and invariants, data flow, and the `modules` list (name, path, responsibility,
-     depends_on) covering every source directory. Set `reconciled_at` to the current
+     depends_on; the comment after `modules:` shows an entry) covering every source directory. Set `reconciled_at` to the current
      `git rev-parse --short HEAD`.
    - `.azimuth/project/conventions.md`: how this code handles errors, tests, naming, logging,
      dependencies and commits, with file references.
-   - `.azimuth/project/glossary.md`: domain terms used in the code (`terms` list).
+   - `.azimuth/project/glossary.md`: domain terms used in the code (`terms` list; the comment
+     after `terms:` shows an entry).
 
    **Greenfield** (empty repository): agree the stack, layout and commands with the user, then
    write the same files as the plan of record.

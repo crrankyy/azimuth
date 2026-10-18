@@ -18,7 +18,8 @@ Target: $ARGUMENTS
    (`azimuth move <F-ID> in-progress --reason "…"` first if it needs real work), commit, verify again.
 3. `azimuth trace <F-ID>`: every scenario must have a passing test. Add missing tests (named
    with the scenario ID), commit them and rerun verify.
-4. Write `.azimuth/features/<F-ID>-<slug>/as-built.md`: compare the files actually changed
+4. Write `.azimuth/features/<F-ID>-<slug>/as-built.md` from
+   `.azimuth/templates/feature/as-built.md`: compare the files actually changed
    (`git log --name-only` for commits with `Refs:` to this feature) with impact.md; list
    `files_changed`, `deviations` with reasons, and `follow_ups`. File each follow-up with
    `/azimuth:bug` (debt or bug) and list its ID.

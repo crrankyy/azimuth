@@ -1,6 +1,10 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { configYaml, detectStack, upsertBlock } from "../../src/core/init";
+import { configYaml, detectStack, initProject, upsertBlock } from "../../src/core/init";
 import { parseJunit, scenariosFromOutput } from "../../src/core/junit";
+import { loadProject } from "../../src/core/model";
+import { parseAsBuilt } from "../../src/core/parse/feature";
 import { parseFrontmatter } from "../../src/core/frontmatter";
 import { AGENTS_BLOCK, CLAUDE_BLOCK } from "../../src/core/protocol";
 import { fill, TEMPLATES } from "../../src/core/templates";
@@ -115,6 +119,30 @@ describe("upsertBlock", () => {
       const file = upsertBlock("# Project\n", b);
       expect(await format(file, { parser: "markdown" })).toBe(file);
     }
+  });
+});
+
+describe("format references in a new project", () => {
+  it("BUG-0019 shows how modules, glossary terms and the as-built are written", () => {
+    const tree = writeTree({ "README.md": "# New\n" });
+    cleanup = tree.cleanup;
+    initProject(tree.root, { now: new Date("2026-10-18T12:00:00Z") });
+    const read = (p: string) => readFileSync(join(tree.root, ".azimuth", p), "utf8");
+    expect(read("project/architecture.md")).toMatch(
+      /modules: \[\] # .*name: .*path: .*depends_on:/,
+    );
+    expect(read("project/glossary.md")).toMatch(/terms: \[\] # .*term: .*definition: .*aliases:/);
+    // The examples are comments: the stubs still load with no modules or terms.
+    const model = loadProject(tree.root);
+    expect(model.knowledge.architecture.modules).toEqual([]);
+    expect(model.problems).toEqual([]);
+    const asBuilt = fill(read("templates/feature/as-built.md"), {
+      id: "F-001",
+      date: "2026-10-18",
+    });
+    const parsed = parseAsBuilt(asBuilt, "as-built.md", "F-001");
+    expect(parsed.problems).toEqual([]);
+    expect(parsed.asBuilt?.completed_at).toBe("2026-10-18");
   });
 });
 

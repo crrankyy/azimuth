@@ -168,13 +168,14 @@ viewer:
 function projectDocs(d: Detected, date: string): Record<string, string> {
   return {
     "project/vision.md": `---\nupdated: ${date}\n---\n# Vision\n\n## Problem\n\n## Users\n\n## Goals\n\n## Non-goals\n\n## Success metrics\n\n## Constraints\n`,
-    "project/architecture.md": `---\nupdated: ${date}\nreconciled_at: null\nmodules: []\n---\n# Architecture\n\n## Overview\n\n## Tech stack\n${d.languages.join(", ")}\n\n## Directory layout\n\n## Commands\n${Object.entries(
+    // The comments show the entry formats, since docs/file-format.md isn't in the target repo.
+    "project/architecture.md": `---\nupdated: ${date}\nreconciled_at: null\nmodules: [] # - { name: api, path: src/api, responsibility: Serves the HTTP API, depends_on: [store] }\n---\n# Architecture\n\n## Overview\n\n## Tech stack\n${d.languages.join(", ")}\n\n## Directory layout\n\n## Commands\n${Object.entries(
       d.commands,
     )
       .map(([k, v]) => `- ${k}: \`${v}\``)
       .join("\n")}\n\n## Boundaries & invariants\n\n## Data flow\n`,
     "project/conventions.md": `---\nupdated: ${date}\n---\n# Conventions\n\n## Error handling\n\n## Testing\nStart each test name with the scenario ID it covers.\n\n## Naming\n\n## Logging\n\n## Dependencies\n\n## Commits\nConventional Commits with a \`Refs:\` trailer naming the task or feature.\n`,
-    "project/glossary.md": `---\nupdated: ${date}\nterms: []\n---\n# Glossary\n`,
+    "project/glossary.md": `---\nupdated: ${date}\nterms: [] # - { term: Lease, definition: A time-bounded claim on a job, aliases: [lease_until] }\n---\n# Glossary\n`,
   };
 }
 
