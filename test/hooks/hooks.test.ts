@@ -475,3 +475,65 @@ describe("F-005 subagent records", () => {
     rmSync(outside, { recursive: true, force: true });
   });
 });
+
+describe("F-005 wake-ups", () => {
+  function project() {
+    const p = writeTree({
+      ".azimuth/config.yaml": MINIMAL_CONFIG,
+      ...featureFiles({ id: "F-002", status: "in-progress", slug: "blocks" }),
+      ...featureFiles({ id: "F-003", status: "in-progress", slug: "spans" }),
+      ...featureFiles({ id: "F-004", status: "in-progress", slug: "search" }),
+      "src/app.ts": "export {};\n",
+    });
+    initRepo(p.root);
+    commitAll(p.root, "chore: start");
+    const run = (args: string[], input: Record<string, unknown>, extra = {}) =>
+      spawnSync(LAUNCHER, args, {
+        cwd: p.root,
+        env: env({ CLAUDE_PROJECT_DIR: p.root, ...extra }),
+        input: JSON.stringify({ session_id: "f005-wake", cwd: p.root, ...input }),
+        encoding: "utf8",
+      });
+    // The orchestrator works on F-003 while a subagent builds T-002.2.
+    run(["hook", "session-start"], { source: "startup" });
+    run(["hook", "post-tool-use"], {
+      tool_name: "Bash",
+      tool_input: { command: "azimuth move T-003.4 in-progress" },
+    });
+    run(["hook", "pre-tool-use"], {
+      tool_name: "Agent",
+      tool_use_id: "toolu_1",
+      tool_input: { description: "Build T-002.2 heading recognizer", prompt: "…" },
+    });
+    run(["hook", "subagent-start"], { agent_id: "a1", agent_type: "general-purpose" });
+    const review = (feature: string) =>
+      run(["log", feature, "Keep ATX headings only", "--review"], {}, { AZIMUTH_ACTOR: "you" });
+    const step = () =>
+      run(["hook", "post-tool-use"], { tool_name: "Bash", tool_input: { command: "ls" } });
+    return { ...p, review, step };
+  }
+
+  it("S-005.4.1 wakes the orchestrator for a feature its subagent is building", () => {
+    const p = project();
+    try {
+      expect(p.review("F-002").status).toBe(0);
+      const woke = p.step();
+      expect(woke.status).toBe(2);
+      expect(woke.stderr).toContain("F-002");
+    } finally {
+      p.cleanup();
+    }
+  });
+
+  it("S-005.4.2 stays quiet for a feature nobody is working on", () => {
+    const p = project();
+    try {
+      expect(p.review("F-004").status).toBe(0);
+      const r = p.step();
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe("");
+    } finally {
+      p.cleanup();
+    }
+  });
+});

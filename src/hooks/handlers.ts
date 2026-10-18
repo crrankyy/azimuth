@@ -290,7 +290,10 @@ export function postToolUse(input: HookInput, ctx: HookContext): HookOutput {
   const live = summarizeLive(id, records);
   const model = loadProject(root);
   const session = live?.ses ? model.sessions.find((s) => s.id === live.ses) : undefined;
-  const features = new Set([live?.feature, ...(session?.touched ?? [])].filter(Boolean));
+  // Every feature in flight, so an orchestrator hears about features its subagents are building.
+  const features = new Set(
+    [live?.feature, ...(live?.features ?? []), ...(session?.touched ?? [])].filter(Boolean),
+  );
   const events = userEventsSince(model, cursor).filter(
     (e) => e.feature !== null && features.has(e.feature),
   );
