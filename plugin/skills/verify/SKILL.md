@@ -22,15 +22,11 @@ Target: $ARGUMENTS
    (`git log --name-only` for commits with `Refs:` to this feature) with impact.md; list
    `files_changed`, `deviations` with reasons, and `follow_ups`. File each follow-up with
    `/azimuth:bug` (debt or bug) and list its ID.
-5. Bring `.azimuth/project/architecture.md` in line with what was built (modules, boundaries,
-   data flow), leaving `reconciled_at` alone for now. `azimuth check <F-ID>`, then commit:
-   `docs(<F-ID>): close out` with `Refs: <F-ID>`.
-6. Set `reconciled_at` to the current `git rev-parse --short HEAD` (the close-out commit) and
-   commit it as `chore(azimuth): reconcile architecture.md` **without** a `Refs:` trailer. A
-   commit that refers to the feature counts as its newest one, which would leave the
-   architecture behind it again.
-7. `azimuth verify <F-ID>` once more: the done gate needs every task's latest run at HEAD, and
-   the two commits above moved HEAD.
-8. `azimuth move <F-ID> done`. If a check still fails, fix what it names.
-9. Hand off and close the session, commit the pending `.azimuth/` changes, and tell the user the
+5. Reconcile `.azimuth/project/architecture.md` with what was built (modules, boundaries, data
+   flow), then set `reconciled_at` to the current `git rev-parse --short HEAD`.
+6. `azimuth check <F-ID>`, then commit: `docs(<F-ID>): close out` with `Refs: <F-ID>`. Keep this
+   commit to files under `.azimuth/`: commits that only change Azimuth's records don't make the
+   verify runs stale or put the architecture behind, but a code change does.
+7. `azimuth move <F-ID> done`. If a check still fails, fix what it names.
+8. Hand off and close the session, commit the pending `.azimuth/` changes, and tell the user the
    feature is done and mention follow-ups.
