@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { statusBrief } from "../../src/core/brief";
-import { derive } from "../../src/core/derive";
+import { codeChangedSince, derive, isCodeCommit } from "../../src/core/derive";
 import { evaluateGate, nextGate, type GateContext } from "../../src/core/gates";
 import { buildInbox } from "../../src/core/inbox";
 import type { Model } from "../../src/core/model";
@@ -145,6 +145,44 @@ describe("derive", () => {
     const { info } = derive(model, facts);
     expect(info.get("F-001")?.modified_since_approval).toBe(true);
     expect(info.get("F-001")?.approval_changes).toHaveLength(1);
+  });
+});
+
+describe("code commits", () => {
+  const commit = (sha: string) => ({
+    sha,
+    at: "2026-10-17T10:00:00Z",
+    actor: "agent" as const,
+    session: null,
+    subject: sha,
+    refs: [],
+    files_changed: 1,
+  });
+  const facts = makeFacts({
+    git: {
+      available: true,
+      head: "ccccccc",
+      commits: [commit("ccccccc"), commit("bbbbbbb"), commit("aaaaaaa")],
+      files: new Map([
+        ["ccccccc", [".azimuth/features/F-001-x/as-built.md", ".azimuth/project/architecture.md"]],
+        ["bbbbbbb", ["src/app.ts", ".azimuth/features/F-001-x/log.md"]],
+        ["aaaaaaa", ["src/app.ts"]],
+      ]),
+    },
+  });
+
+  it("tells code commits from commits that only change .azimuth/", () => {
+    expect(isCodeCommit("ccccccc", facts)).toBe(false);
+    expect(isCodeCommit("bbbbbbb", facts)).toBe(true);
+    // Nothing known about its files: counted as code, so a gate never passes on a guess.
+    expect(isCodeCommit("ddddddd", facts)).toBe(true);
+  });
+
+  it("says whether code changed after a commit", () => {
+    expect(codeChangedSince("ccccccc", facts)).toBe(false);
+    expect(codeChangedSince("bbbbbbb", facts)).toBe(false);
+    expect(codeChangedSince("aaaaaaa", facts)).toBe(true);
+    expect(codeChangedSince("ddddddd", facts)).toBeNull();
   });
 });
 

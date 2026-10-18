@@ -68,6 +68,29 @@ function maxTime(values: (string | null | undefined)[]): string | null {
   return best;
 }
 
+/** Abbreviated SHAs can differ in length; one is a prefix of the other for the same commit. */
+const sameCommit = (a: string, b: string) => a.startsWith(b) || b.startsWith(a);
+
+/**
+ * Whether a commit changed anything outside `.azimuth/`, i.e. more than Azimuth's own records.
+ * A commit whose changed files aren't known counts as a code commit.
+ */
+export function isCodeCommit(sha: string, facts: Facts): boolean {
+  const files =
+    facts.git.files.get(sha) ?? [...facts.git.files].find(([s]) => sameCommit(s, sha))?.[1];
+  return !files || files.some((path) => !path.startsWith(".azimuth/"));
+}
+
+/**
+ * Whether any commit after `sha`, up to HEAD, is a code commit; null when `sha` isn't in the
+ * history the index read.
+ */
+export function codeChangedSince(sha: string, facts: Facts): boolean | null {
+  const at = facts.git.commits.findIndex((c) => sameCommit(c.sha, sha));
+  if (at === -1) return null;
+  return facts.git.commits.slice(0, at).some((c) => isCodeCommit(c.sha, facts));
+}
+
 /** Commits whose `Refs:` mention the feature or one of its tasks/stories/scenarios. */
 export function commitsFor(featureId: string, facts: Facts) {
   return facts.git.commits.filter((c) => c.refs.some((ref) => featureOf(ref) === featureId));
