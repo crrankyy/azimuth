@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { buildIndex } from "../../src/core/build-index";
 import { gitFacts, readBlobs, toUtc } from "../../src/core/git";
 import { globToRegExp } from "../../src/core/glob";
 import { loadProject } from "../../src/core/model";
@@ -173,5 +174,76 @@ describe("readBlobs and toUtc", () => {
 
   it("normalizes offsets to UTC", () => {
     expect(toUtc("2026-10-18T13:55:00+02:00")).toBe("2026-10-18T11:55:00Z");
+  });
+});
+
+describe("close-out in its natural order", () => {
+  // Verify, then commit the as-built and the reconciliation together with Refs: F-001.
+  const doneChecks = (closeOutAlsoChangesCode: boolean) => {
+    const tree = writeTree({
+      ".gitignore": ".azimuth/cache/\n",
+      ".azimuth/config.yaml": MINIMAL_CONFIG,
+      ...featureFiles({
+        id: "F-001",
+        status: "verifying",
+        tasks: [{ id: "T-001.1", status: "done", covers: ["S-001.1.1", "S-001.1.2"] }],
+      }),
+      ".azimuth/project/architecture.md": "---\nreconciled_at: null\n---\n",
+      "src/app.ts": "export const a = 0;\n",
+      "test/app.test.ts":
+        'it("S-001.1.1 works", () => {});\nit("S-001.1.2 fails cleanly", () => {});\n',
+    });
+    cleanup = tree.cleanup;
+    initRepo(tree.root);
+    commitAll(tree.root, "chore: start", "2026-10-01T10:00:00Z");
+    tree.write("src/app.ts", "export const a = 1;\n");
+    const built = commitAll(
+      tree.root,
+      "feat(F-001): build it\n\nRefs: T-001.1",
+      "2026-10-02T10:00:00Z",
+    );
+    tree.write(
+      ".azimuth/cache/runs/R-0001.json",
+      JSON.stringify({
+        id: "R-0001",
+        target: "T-001.1",
+        command: "pnpm test",
+        ok: true,
+        exit_code: 0,
+        duration_ms: 1,
+        at: "2026-10-02T10:05:00Z",
+        commit: built,
+        output_tail: "",
+        scenarios: [
+          { id: "S-001.1.1", status: "passing" },
+          { id: "S-001.1.2", status: "passing" },
+        ],
+        junit: null,
+      }),
+    );
+    tree.write(".azimuth/features/F-001-thing/as-built.md", "---\ncompleted_at: 2026-10-02\n---\n");
+    tree.write(".azimuth/project/architecture.md", `---\nreconciled_at: ${built}\n---\n`);
+    if (closeOutAlsoChangesCode) tree.write("src/app.ts", "export const a = 2;\n");
+    commitAll(tree.root, "docs(F-001): close out\n\nRefs: F-001", "2026-10-02T11:00:00Z");
+    const { index } = buildIndex(tree.root, { now: new Date("2026-10-02T12:00:00Z") });
+    return index.features[0]?.derived.next_gate?.checks.map((c) => [c.id, c.ok]);
+  };
+
+  it("S-002.3.1 passes every done check without verifying again", () => {
+    expect(doneChecks(false)).toEqual([
+      ["done.verify-passed", true],
+      ["done.scenarios-passing", true],
+      ["done.as-built", true],
+      ["done.architecture-reconciled", true],
+    ]);
+  });
+
+  it("S-002.3.2 fails the verify and architecture checks when the close-out changes code", () => {
+    expect(doneChecks(true)).toEqual([
+      ["done.verify-passed", false],
+      ["done.scenarios-passing", true],
+      ["done.as-built", true],
+      ["done.architecture-reconciled", false],
+    ]);
   });
 });
