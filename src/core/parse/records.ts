@@ -66,6 +66,7 @@ export function parseDecision(text: string, file: string): Parsed<Decision> {
     },
     decided_by: opt(ctx, "decided_by", r.nullable(r.oneOf(["you", "agent"] as const)), null),
     decided_at: opt(ctx, "decided_at", r.nullable(r.datetime()), null),
+    decision_note: opt(ctx, "decision_note", r.nullable(r.string()), null),
     review_ack_at: opt(ctx, "review_ack_at", r.nullable(r.datetime()), null),
     file,
   };
@@ -80,6 +81,7 @@ export function parseDecision(text: string, file: string): Parsed<Decision> {
     "links",
     "decided_by",
     "decided_at",
+    "decision_note",
     "review_ack_at",
   ]);
   return { entity: ctx.failed ? null : entity, problems: [...problems, ...finishSchema(ctx)] };

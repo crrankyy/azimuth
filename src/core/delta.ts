@@ -61,7 +61,7 @@ export function userEventsSince(model: Model, cursor: Cursor): UserEvent[] {
         at: d.decided_at as string,
         ref: d.id,
         feature: null,
-        text: `${d.status} ${d.id} (${d.title})`,
+        text: `${d.status} ${d.id} (${d.title})${d.decision_note ? `: ${d.decision_note}` : ""}`,
       });
     }
     if (after(d.review_ack_at)) {

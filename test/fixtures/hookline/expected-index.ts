@@ -1451,6 +1451,7 @@ export const expectedIndex = {
       },
       "decided_by": "you",
       "decided_at": "2026-09-02T10:00:00Z",
+      "decision_note": null,
       "review_ack_at": null,
       "file": ".azimuth/decisions/ADR-0001-sqlite-delivery-store.md"
     },
@@ -1473,6 +1474,7 @@ export const expectedIndex = {
       },
       "decided_by": "you",
       "decided_at": "2026-09-29T10:00:00Z",
+      "decision_note": null,
       "review_ack_at": null,
       "file": ".azimuth/decisions/ADR-0002-cron-retry-sweep.md"
     },
@@ -1498,6 +1500,7 @@ export const expectedIndex = {
       },
       "decided_by": "you",
       "decided_at": "2026-10-07T12:35:00Z",
+      "decision_note": null,
       "review_ack_at": null,
       "file": ".azimuth/decisions/ADR-0003-full-jitter-backoff.md"
     },
@@ -1521,6 +1524,7 @@ export const expectedIndex = {
       },
       "decided_by": null,
       "decided_at": null,
+      "decision_note": null,
       "review_ack_at": null,
       "file": ".azimuth/decisions/ADR-0004-lease-timeout.md"
     }

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { allocateId, sessionIdFor } from "../../src/core/allocate";
 import { buildIndex } from "../../src/core/build-index";
+import { userEventsSince } from "../../src/core/delta";
 import { AzimuthError } from "../../src/core/errors";
 import { updateFrontmatterItem } from "../../src/core/frontmatter";
 import { loadProject } from "../../src/core/model";
@@ -249,6 +250,17 @@ describe("decisions and questions", () => {
       status: "proposed",
       decided_by: null,
     });
+  });
+
+  it("keeps your note on a decision and tells the agent", () => {
+    const tree = repo({ ".azimuth/decisions/ADR-0001-a.md": adr("ADR-0001") });
+    move(tree.root, "ADR-0001", "rejected", { ...you, note: "Too slow.\nTry a lease." });
+    const model = loadProject(tree.root);
+    expect(model.decisions[0]?.decision_note).toBe("Too slow.\nTry a lease.");
+    const [event] = userEventsSince(model, { at: "2026-10-18T00:00:00Z", keys: [] });
+    expect(event?.text).toBe("rejected ADR-0001 (Decision ADR-0001): Too slow.\nTry a lease.");
+    move(tree.root, "ADR-0001", "proposed", you);
+    expect(loadProject(tree.root).decisions[0]?.decision_note).toBeNull();
   });
 
   it("supersedes a decision and links both sides", () => {

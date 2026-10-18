@@ -326,6 +326,8 @@ export interface Decision {
   body: { context: Markdown; options: Markdown; decision: Markdown; consequences: Markdown };
   decided_by: Actor | null;
   decided_at: ISODateTime | null;
+  /** Your note to the agent when you accepted or rejected it. */
+  decision_note: string | null;
   review_ack_at: ISODateTime | null;
   file: string;
 }

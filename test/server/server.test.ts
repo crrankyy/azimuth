@@ -169,6 +169,22 @@ describe("viewer server", () => {
     });
   });
 
+  it("records your note when you decide an ADR", async () => {
+    const res = await post({
+      action: "decide",
+      ref: "ADR-0004",
+      payload: { decision: "accepted", note: "30 s is fine for now." },
+      expect: "proposed",
+    });
+    const body = (await res.json()) as { index: Index };
+    expect(res.status).toBe(200);
+    expect(body.index.decisions.find((d) => d.id === "ADR-0004")).toMatchObject({
+      status: "accepted",
+      decided_by: "you",
+      decision_note: "30 s is fine for now.",
+    });
+  });
+
   it("explains refusals: gate, stale status and a busy lock", async () => {
     const gate = await post({ action: "approve", ref: "F-008" });
     const gateBody = (await gate.json()) as {

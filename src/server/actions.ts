@@ -71,7 +71,9 @@ export function runAction(root: string, req: ActionRequest): { result: Result } 
             },
           };
         }
-        return { result: moveDecision(root, req.ref, decision, opts) };
+        return {
+          result: moveDecision(root, req.ref, decision, { ...opts, note: text(p, "note") }),
+        };
       }
       case "acknowledge":
         return { result: acknowledge(root, req.ref, you) };

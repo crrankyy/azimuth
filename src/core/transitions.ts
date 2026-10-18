@@ -530,10 +530,16 @@ export function moveDecision(root: string, id: string, toRaw: string, opts: Move
       Object.assign(updates, {
         decided_by: opts.actor,
         decided_at: stamp(now),
+        decision_note: opts.note?.trim() || null,
         review_ack_at: null,
       });
     if (to === "proposed")
-      Object.assign(updates, { decided_by: null, decided_at: null, review_ack_at: null });
+      Object.assign(updates, {
+        decided_by: null,
+        decided_at: null,
+        decision_note: null,
+        review_ack_at: null,
+      });
     if (to === "superseded") {
       const by = opts.supersededBy;
       const replacement = model.decisions.find((x) => x.id === by);
