@@ -1,4 +1,4 @@
-import { codeChangedSince, commitsFor, type Derived } from "./derive";
+import { codeChangedSince, commitsFor, isCodeCommit, type Derived } from "./derive";
 import type { Facts } from "./facts";
 import type { FeatureEntity, Model } from "./model";
 import type { FeatureStatus, Gate, GateCheck, Problem } from "./types";
@@ -244,7 +244,9 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
   const info = ctx.derived.info.get(f.id);
   const cov = info?.coverage;
   const reconciled = ctx.model.knowledge.architecture.reconciled_at;
-  const lastCommit = commitsFor(f.id, ctx.facts)[0] ?? null;
+  // The close-out commit (as-built, reconciliation) only changes records, so it doesn't count.
+  const lastCommit =
+    commitsFor(f.id, ctx.facts).find((c) => isCodeCommit(c.sha, ctx.facts)) ?? null;
   const behind = reconciled ? ctx.facts.git.commitsAfter(reconciled) : null;
   const lastCommitBehind = lastCommit ? ctx.facts.git.commitsAfter(lastCommit.sha) : null;
   const archOk =

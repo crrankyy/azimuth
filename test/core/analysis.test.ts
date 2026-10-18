@@ -386,6 +386,53 @@ describe("gates", () => {
     });
   });
 
+  describe("the architecture against the feature's last code commit", () => {
+    const archCheck = (laterFiles: string[], laterRefs: string[]) => {
+      const model = load({
+        ...featureFiles({
+          id: "F-001",
+          status: "verifying",
+          tasks: [{ id: "T-001.1", status: "done", covers: ["S-001.1.1", "S-001.1.2"] }],
+        }),
+        ".azimuth/project/architecture.md": "---\nreconciled_at: aaaaaaa\n---\n",
+      });
+      const commit = (sha: string, refs: string[]) => ({
+        sha,
+        at: "2026-10-17T11:00:00Z",
+        actor: "agent" as const,
+        session: null,
+        subject: sha,
+        refs,
+        files_changed: 1,
+      });
+      const facts = makeFacts({
+        git: {
+          available: true,
+          head: "bbbbbbb",
+          commits: [commit("bbbbbbb", laterRefs), commit("aaaaaaa", ["T-001.1"])],
+          files: new Map([
+            ["bbbbbbb", laterFiles],
+            ["aaaaaaa", ["src/app.ts"]],
+          ]),
+          commitsAfter: (sha) => ({ bbbbbbb: 0, aaaaaaa: 1 })[sha] ?? null,
+        },
+      });
+      const gate = nextGate(analyze(model, facts), model.features[0]!);
+      return gate?.checks.find((c) => c.id === "done.architecture-reconciled");
+    };
+
+    it("S-002.2.1 ignores a close-out commit that only changes .azimuth/", () => {
+      expect(archCheck([".azimuth/features/F-001-x/as-built.md"], ["F-001"])?.ok).toBe(true);
+    });
+
+    it("S-002.2.2 counts a code commit to the feature after the reconciliation", () => {
+      expect(archCheck(["src/app.ts"], ["T-001.1"])).toMatchObject({
+        ok: false,
+        detail: "Reconciled at aaaaaaa, 1 commits behind",
+      });
+    });
+  });
+
   it("has no gate for retired features or backwards moves", () => {
     const model = load(featureFiles({ id: "F-001", status: "cancelled", ideaOnly: true }));
     const ctx = analyze(model, makeFacts());
