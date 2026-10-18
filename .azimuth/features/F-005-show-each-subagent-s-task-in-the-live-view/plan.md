@@ -14,35 +14,35 @@ tasks:
     after: [T-005.1]
     covers: [S-005.1.1, S-005.1.2, S-005.1.3, S-005.1.4, S-005.1.5, S-005.1.6]
     files: [src/hooks/handlers.ts, src/core/live.ts, test/hooks/hooks.test.ts]
-    verify: pnpm build && pnpm exec vitest run test/hooks/hooks.test.ts -t S-005.1
+    verify: pnpm build && pnpm exec vitest run test/hooks/hooks.test.ts -t S-005.1 --reporter=verbose
     note: null
   - id: T-005.3
     title: Live sessions match subagents to launches (red → green)
-    status: in-progress
+    status: done
     after: [T-005.2]
     covers: [S-005.2.1, S-005.2.2, S-005.2.3, S-005.2.4, S-005.2.5, S-005.2.6]
     files: [src/core/live.ts, test/core/live.test.ts]
-    verify: pnpm exec vitest run test/core/live.test.ts -t S-005.2
+    verify: pnpm exec vitest run test/core/live.test.ts -t S-005.2 --reporter=verbose
     note: null
   - id: T-005.4
     title: Lanes named after their assignment (red → green)
-    status: todo
+    status: done
     after: [T-005.1]
     covers: [S-005.3.1, S-005.3.2, S-005.3.3, S-005.3.4]
     files: [viewer/src/screens/activity/LiveStrip.tsx, viewer/src/screens/activity/activity.css, viewer/src/screens/activity/LiveStrip.test.tsx]
-    verify: pnpm exec vitest run viewer/src/screens/activity/LiveStrip.test.tsx
+    verify: pnpm exec vitest run viewer/src/screens/activity/LiveStrip.test.tsx --reporter=verbose
     note: null
   - id: T-005.5
     title: Wake-ups follow every feature in flight (red → green)
-    status: todo
+    status: done
     after: [T-005.2, T-005.3]
     covers: [S-005.4.1, S-005.4.2]
     files: [src/hooks/handlers.ts, test/hooks/hooks.test.ts]
-    verify: pnpm build && pnpm exec vitest run test/hooks/hooks.test.ts -t S-005.4
+    verify: pnpm build && pnpm exec vitest run test/hooks/hooks.test.ts -t S-005.4 --reporter=verbose
     note: null
   - id: T-005.6
     title: Docs and full verification
-    status: todo
+    status: done
     after: [T-005.4, T-005.5]
     covers: []
     files: [docs/claude-code.md, docs/viewer.md]
