@@ -320,7 +320,8 @@ function FeatureRow({
         <IdChip id={f.id} />
       </span>
       <span role="cell" className="ft-cell ft-title">
-        <a className="ft-title-link" href={href("features", f.id)}>
+        {/* The title is cut with an ellipsis in narrow windows; the tooltip shows all of it. */}
+        <a className="ft-title-link" href={href("features", f.id)} title={f.title}>
           {f.title}
         </a>
         {changed && <span className="ft-updated">updated</span>}
