@@ -31,8 +31,15 @@ export function IssueDetail({
       <div className="iss-detail-head">
         <span className="az-id iss-detail-id">{issue.id}</span>
         <span className="iss-found">
-          Found by {issue.found_by === "you" ? "you" : <IdChip id={issue.found_by} />} ·{" "}
-          {shortDate(issue.created)}
+          Found by{" "}
+          {issue.found_by === "you" ? (
+            "you"
+          ) : issue.found_by === "agent" ? (
+            "an agent"
+          ) : (
+            <IdChip id={issue.found_by} />
+          )}{" "}
+          · {shortDate(issue.created)}
           {issue.resolved_at ? ` · closed ${shortDate(issue.resolved_at)}` : ""}
         </span>
         <span className="spacer" />

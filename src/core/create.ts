@@ -38,7 +38,8 @@ function baseValues(ctx: CreateContext): Record<string, string> {
     now: toUtc(now.toISOString()),
     actor: ctx.actor,
     session: ctx.session ? ` · ${ctx.session}` : "",
-    raised_by: ctx.session ?? "you",
+    // An agent working outside an Azimuth session is still an agent, not the user.
+    raised_by: ctx.session ?? ctx.actor,
   };
 }
 

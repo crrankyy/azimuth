@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { allocateId, sessionIdFor } from "../../src/core/allocate";
+import { createIssue, createQuestion } from "../../src/core/create";
 import { buildIndex } from "../../src/core/build-index";
 import { userEventsSince } from "../../src/core/delta";
 import { AzimuthError } from "../../src/core/errors";
@@ -339,6 +340,24 @@ describe("decisions and questions", () => {
       answer: { option: "a", text: "A, clearly", answered_at: "2026-10-18T12:00:00Z" },
       resolution: { kind: "adr", ref: "ADR-0001" },
     });
+  });
+});
+
+describe("record authors", () => {
+  it("BUG-0027 records an agent outside a session as the agent, and you as you", () => {
+    const tree = repo({});
+    createQuestion(tree.root, { title: "Which?" }, { ...agent, session: null });
+    createIssue(tree.root, { type: "bug", title: "Agent bug" }, { ...agent, session: null });
+    createIssue(tree.root, { type: "bug", title: "Your bug" }, { ...you, session: null });
+    createIssue(
+      tree.root,
+      { type: "bug", title: "Session bug" },
+      { ...agent, session: "SES-20261018-1200" },
+    );
+    const model = loadProject(tree.root);
+    expect(model.problems).toEqual([]);
+    expect(model.questions[0]?.raised_by).toBe("agent");
+    expect(model.issues.map((i) => i.found_by)).toEqual(["agent", "you", "SES-20261018-1200"]);
   });
 });
 

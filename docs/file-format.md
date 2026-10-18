@@ -357,7 +357,7 @@ title: Re-sign replayed payloads with the current or the original secret?
 status: open # open | answered | obsolete
 feature: F-008 # the feature this blocks when blocking; null for project-level questions
 blocking: true
-raised_by: SES-20261018-0930 # session ID or "you"
+raised_by: SES-20261018-0930 # session ID, or "you" / "agent" outside a session
 raised_at: 2026-10-18T10:12:00Z
 links: [F-002] # related items, context only
 options:
@@ -386,7 +386,7 @@ likelihood: medium # risk only: low | medium | high
 impact: high # risk only: low | medium | high
 links: [ADR-0001]
 files: [src/store/db.ts]
-found_by: you # session ID or "you"
+found_by: you # session ID, or "you" / "agent" outside a session
 created: 2026-10-15
 resolved_at: null
 ```

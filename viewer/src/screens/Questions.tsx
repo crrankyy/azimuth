@@ -212,8 +212,12 @@ function QuestionDetail({ index, q, now }: { index: Index; q: Question; now: num
           </h2>
           <div className="q-meta">
             Raised by{" "}
-            {q.raised_by === "you" ? (
-              "you"
+            {q.raised_by === "you" || q.raised_by === "agent" ? (
+              q.raised_by === "you" ? (
+                "you"
+              ) : (
+                "an agent"
+              )
             ) : (
               <>
                 <a href={routeForId(q.raised_by)}>{q.raised_by}</a>

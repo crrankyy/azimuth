@@ -346,7 +346,7 @@ export interface Question {
   /** The feature this question was raised for; only that feature is blocked by it. */
   feature: Id | null;
   blocking: boolean;
-  raised_by: Id | "you";
+  raised_by: Id | "you" | "agent";
   raised_at: ISODateTime;
   links: Id[];
   context: Markdown;
@@ -366,7 +366,7 @@ export interface Issue {
   impact: Level | null;
   links: Id[];
   files: string[];
-  found_by: Id | "you";
+  found_by: Id | "you" | "agent";
   created: ISODate;
   resolved_at: ISODate | null;
   body: Markdown;

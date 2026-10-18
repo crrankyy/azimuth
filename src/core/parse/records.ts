@@ -20,10 +20,11 @@ import { readFrontmatter, type Parsed } from "./common";
 
 const ALL_KINDS = Object.keys(ID_PATTERNS) as IdKind[];
 const anyIds = () => r.ids(...ALL_KINDS);
-const sessionOrYou: Reader<string> = (v) =>
-  v === "you" || (typeof v === "string" && ID_PATTERNS.session.test(v))
+/** Who created a record: the session that did, or `you` / `agent` outside a session. */
+const author: Reader<string> = (v) =>
+  v === "you" || v === "agent" || (typeof v === "string" && ID_PATTERNS.session.test(v))
     ? { ok: true, value: v }
-    : { ok: false, expected: `a session ID or "you"` };
+    : { ok: false, expected: `a session ID, "you" or "agent"` };
 
 export type MilestoneRecord = Omit<Milestone, "features" | "progress">;
 
@@ -147,7 +148,7 @@ export function parseQuestion(text: string, file: string): Parsed<Question> {
     status: opt(ctx, "status", r.oneOf(QUESTION_STATUSES), "open"),
     feature: opt(ctx, "feature", r.nullable(r.id("feature")), null),
     blocking: opt(ctx, "blocking", r.bool(), false),
-    raised_by: need(ctx, "raised_by", sessionOrYou, "you"),
+    raised_by: need(ctx, "raised_by", author, "you"),
     raised_at: need(ctx, "raised_at", r.datetime(), ""),
     links: opt(ctx, "links", anyIds(), []),
     context: sectionBody(sections, "Context") || preamble,
@@ -195,7 +196,7 @@ export function parseIssue(text: string, file: string): Parsed<Issue> {
       : opt(ctx, "impact", r.nullable(r.oneOf(LEVELS)), null),
     links: opt(ctx, "links", anyIds(), []),
     files: opt(ctx, "files", r.strings(), []),
-    found_by: opt(ctx, "found_by", sessionOrYou, "you"),
+    found_by: opt(ctx, "found_by", author, "you"),
     created: need(ctx, "created", r.date(), ""),
     resolved_at: opt(ctx, "resolved_at", r.nullable(r.date()), null),
     body: stripTitle(fm.body),
