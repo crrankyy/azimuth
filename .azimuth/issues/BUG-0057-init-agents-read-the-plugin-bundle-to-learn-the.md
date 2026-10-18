@@ -2,7 +2,7 @@
 id: BUG-0057
 type: bug
 title: Init agents read the plugin bundle to learn the architecture rules
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [plugin/skills/init/SKILL.md, src/core/templates.ts]
 found_by: SES-20261018-1612
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 Run `/azimuth:init` in a new Rust crate.
@@ -25,3 +25,4 @@ Found in the Rust rehearsal on 2026-10-18 (~/projects/azimuth-rust-rehearsal).
 
 ## Status notes
 - 2026-10-18T17:36:30Z · agent · in-progress → open: Partly fixed in 5036d7d: layout and marker convention now right, but re-runs still read plugin/dist/cli.mjs in 4 and 11 tool calls. Next approach awaits the user's decision.
+- 2026-10-18T17:53:34Z · agent · in-progress → resolved: Fixed in eea3c8f: a fresh /azimuth:init used azimuth docs 7 times and read the bundle 0 times
