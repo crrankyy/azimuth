@@ -2,7 +2,7 @@
 id: F-005
 title: Show each subagent's task in the live view
 summary: When an orchestrator hands tasks to subagents, the viewer's live view names each subagent's task and feature and shows every feature the session has in flight, so you can follow parallel work across features.
-status: verifying
+status: done
 priority: P1
 size: M
 mode: brownfield
