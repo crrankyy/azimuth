@@ -152,7 +152,8 @@ export const next: Command = {
 
 export const trace: Command = {
   usage: "trace [F-ID] [--json]",
-  summary: "Scenario → test coverage",
+  summary:
+    'Scenario → test coverage (tests named "S-…", @pytest.mark.scenario or // scenario: S-…)',
   options: { json: { type: "boolean" } },
   run({ values, positionals }) {
     const rt = runtime(values);

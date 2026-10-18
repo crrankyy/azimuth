@@ -137,11 +137,11 @@ export function configYaml(d: Detected): string {
 project:
   name: ${inlineYaml(d.name)}
   description: ""
-  mode: ${d.mode} # greenfield | brownfield
+  mode: ${d.mode} # greenfield: a new project, the docs describe the plan | brownfield: existing code
 stack:
   languages: ${inlineYaml(d.languages)}
   package_manager: ${d.packageManager ?? "null"}
-  test_runner: ${d.testRunner ?? "null"}
+  test_runner: ${d.testRunner ?? "null"} # informational, e.g. vitest, pytest, cargo test
   display: ${inlineYaml(d.languages.map((l) => LANGUAGE_NAMES[l] ?? l))}
 commands:${commands ? `\n${commands}` : " {}"}
 tests:

@@ -81,7 +81,7 @@ schema: 1
 project:
   name: Hookline
   description: Self-hosted webhook delivery service.
-  mode: brownfield # greenfield | brownfield
+  mode: brownfield # greenfield: a new project, the docs describe the plan | brownfield: existing code
 stack:
   languages: [typescript]
   package_manager: pnpm
