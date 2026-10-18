@@ -1,4 +1,7 @@
+import { exitQuietlyOnClosedPipe } from "./io";
 import { main } from "./main";
+
+exitQuietlyOnClosedPipe(process.stdout);
 
 main(process.argv.slice(2)).then(
   (code) => {

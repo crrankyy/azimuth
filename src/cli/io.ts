@@ -22,6 +22,20 @@ export class UsageError extends Error {
   }
 }
 
+/**
+ * Stops quietly when the reader closes the pipe (`azimuth status | head`), as other CLIs do,
+ * instead of crashing with an EPIPE stack trace.
+ */
+export function exitQuietlyOnClosedPipe(
+  stream: Pick<NodeJS.EventEmitter, "on">,
+  exit: (code: number) => void = (code) => process.exit(code),
+): void {
+  stream.on("error", (error: NodeJS.ErrnoException) => {
+    if (error.code !== "EPIPE") throw error;
+    exit(0);
+  });
+}
+
 export function print(text = ""): void {
   process.stdout.write(`${text}\n`);
 }
