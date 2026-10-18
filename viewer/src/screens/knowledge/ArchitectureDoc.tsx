@@ -1,5 +1,6 @@
+import { inModule } from "../../../../src/core/glob";
 import { featureOf } from "../../../../src/core/ids";
-import type { Index, Module } from "../../../../src/core/types";
+import type { Index } from "../../../../src/core/types";
 import { IdChip } from "../../components/IdChip";
 import { ModuleMap } from "../../components/ModuleMap";
 import { FlagBadge } from "../../components/primitives";
@@ -13,20 +14,17 @@ function splitAfterFirstSection(body: string): [string, string] {
   return second === undefined ? [body, ""] : [body.slice(0, second), body.slice(second)];
 }
 
-const underModule = (path: string, modules: Module[]) =>
-  modules.some((m) => path === m.path || path.startsWith(`${m.path}/`));
-
 /**
  * Directories that features create or change outside every module path; the same rule as the
- * W-PATH check in src/core/validate.ts.
+ * W-PATH check in src/core/validate.ts, which also leaves out files at the repository root.
  */
 function unmappedDirs(index: Index): string[] {
-  const modules = index.knowledge.architecture.modules;
+  const modules = index.knowledge.architecture.modules.map((m) => m.path);
   if (modules.length === 0) return [];
   const dirs = index.features.flatMap((f) =>
     (f.detail?.impact ?? [])
-      .filter((e) => e.change !== "test" && !underModule(e.path, modules))
-      .map((e) => (e.path.includes("/") ? e.path.slice(0, e.path.lastIndexOf("/")) : e.path)),
+      .filter((e) => e.change !== "test" && e.path.includes("/") && !inModule(e.path, modules))
+      .map((e) => e.path.slice(0, e.path.lastIndexOf("/"))),
   );
   return [...new Set(dirs)].sort();
 }

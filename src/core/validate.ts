@@ -1,6 +1,7 @@
 import { codeCommitsAfter, type Derived } from "./derive";
 import { ACTIVE_STATUSES } from "./flows";
 import type { Facts } from "./facts";
+import { inModule } from "./glob";
 import { idKind } from "./ids";
 import { printedName } from "./junit";
 import type { FeatureEntity, Model } from "./model";
@@ -255,10 +256,6 @@ function featureProblems(
   return out;
 }
 
-function underModule(path: string, modules: string[]): boolean {
-  return modules.some((m) => path === m || path.startsWith(`${m}/`));
-}
-
 function pathProblems(model: Model, facts: Facts, f: FeatureEntity): Problem[] {
   const out: Problem[] = [];
   const file = f.files.impact ?? f.files.feature;
@@ -267,7 +264,7 @@ function pathProblems(model: Model, facts: Facts, f: FeatureEntity): Problem[] {
   for (const entry of f.impact) {
     // Files at the repository root (package.json, tsconfig.json…) configure the whole project.
     if (entry.change === "test" || !entry.path.includes("/")) continue;
-    if (modules.length > 0 && !underModule(entry.path, modules)) {
+    if (modules.length > 0 && !inModule(entry.path, modules)) {
       const dir = entry.path.includes("/")
         ? entry.path.slice(0, entry.path.lastIndexOf("/") + 1)
         : entry.path;

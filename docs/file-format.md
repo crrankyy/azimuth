@@ -134,6 +134,11 @@ modules:
     depends_on: [store, signing]
 ```
 
+A module's `path` covers the path itself, everything under it, and a file named after it with
+any extension, so `src/buffer` covers `src/buffer.rs`, `src/buffer.ts` and `src/buffer/gap.rs`.
+`depends_on` lists other modules by `name`. Files a feature creates or changes outside every
+module produce `W-PATH`, except files at the repository root and tests.
+
 ```yaml
 # glossary.md
 updated: 2026-09-02

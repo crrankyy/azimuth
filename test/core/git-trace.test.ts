@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
 import { gitFacts, readBlobs, toUtc } from "../../src/core/git";
-import { globToRegExp } from "../../src/core/glob";
+import { globToRegExp, inModule } from "../../src/core/glob";
 import { loadProject } from "../../src/core/model";
 import { scanTestFile, traceTests } from "../../src/core/trace";
 import { featureFiles } from "../helpers/project";
@@ -21,6 +21,21 @@ describe("globToRegExp", () => {
     ["*.ts", "a/b.ts", false],
   ])("%s matches %s → %s", (glob, path, expected) => {
     expect(globToRegExp(glob).test(path)).toBe(expected);
+  });
+});
+
+describe("inModule", () => {
+  it.each([
+    ["src/buffer", true],
+    ["src/buffer/gap.rs", true],
+    // BUG-0058: Rust's `src/buffer.rs`, like `src/buffer.ts` or `pkg/buffer.py`.
+    ["src/buffer.rs", true],
+    ["src/buffers.rs", false],
+    ["src/buffer.rs.orig", false],
+    ["src/bufferx/a.rs", false],
+    ["src/lib.rs", true],
+  ])("%s → %s", (path, expected) => {
+    expect(inModule(path, ["src/buffer", "src/lib.rs"])).toBe(expected);
   });
 });
 

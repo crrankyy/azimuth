@@ -35,3 +35,13 @@ export function globToRegExp(glob: string): RegExp {
 export function matchesAny(path: string, globs: RegExp[]): boolean {
   return globs.some((g) => g.test(path));
 }
+
+/**
+ * Whether a file belongs to one of the architecture's module paths: the path itself, anything
+ * under it, or a file named after it, so `src/buffer` covers `src/buffer.rs` as well as
+ * `src/buffer/gap.rs` (Rust's file modules, `src/buffer.ts`, `pkg/buffer.py`).
+ */
+export function inModule(path: string, modulePaths: string[]): boolean {
+  const stem = path.replace(/\.[^./]+$/, "");
+  return modulePaths.some((m) => path === m || path.startsWith(`${m}/`) || stem === m);
+}

@@ -480,6 +480,28 @@ describe("validate", () => {
     );
   });
 
+  it("BUG-0058 counts a file named after a module path as part of that module", () => {
+    const model = load({
+      ...featureFiles({
+        id: "F-001",
+        status: "draft",
+        impact: [
+          { path: "src/buffer.rs", change: "create" },
+          { path: "src/buffer/gap.rs", change: "create" },
+          { path: "src/lib.rs", change: "modify" },
+          { path: "src/render/html.rs", change: "create" },
+        ],
+      }),
+      ".azimuth/project/architecture.md":
+        "---\nmodules:\n  - name: root\n    path: src/lib.rs\n  - name: buffer\n    path: src/buffer\n---\n",
+    });
+    const facts = makeFacts({ exists: () => true });
+    const paths = validate(model, facts, derive(model, facts))
+      .filter((p) => p.code === "W-PATH")
+      .map((p) => p.message);
+    expect(paths).toEqual(["src/render/ is not under any module path in architecture.md."]);
+  });
+
   it("BUG-0020 doesn't ask root-level project files to sit under a module", () => {
     const model = load({
       ...featureFiles({
