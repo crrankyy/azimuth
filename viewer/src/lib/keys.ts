@@ -22,6 +22,9 @@ const isTyping = (target: EventTarget | null) => {
   );
 };
 
+/** Lists pause while a dialog, the palette or the problems panel has the keyboard. */
+const overlayOpen = () => Boolean(document.querySelector(".overlay, .problems"));
+
 /** Global shortcuts: ⌘K / Ctrl-K palette, `g`+letter navigation, `g p` problems. */
 export function useGlobalKeys(handlers: { palette: () => void; problems: () => void }): void {
   const pendingG = useRef(0);
@@ -70,6 +73,8 @@ export function useListKeys(opts: {
   onOpen?: (index: number) => void;
   onPrimary?: (index: number) => void;
   enabled?: boolean;
+  /** The list itself is in an overlay (the problems panel), so overlays don't pause it. */
+  insideOverlay?: boolean;
 }): void {
   const latest = useRef(opts);
   useEffect(() => {
@@ -84,7 +89,8 @@ export function useListKeys(opts: {
         e.ctrlKey ||
         e.altKey ||
         isTyping(e.target) ||
-        o.count === 0
+        o.count === 0 ||
+        (!o.insideOverlay && overlayOpen())
       )
         return;
       if (e.key === "j" || e.key === "ArrowDown") {
@@ -94,6 +100,8 @@ export function useListKeys(opts: {
         e.preventDefault();
         o.onSelect(Math.max(0, o.selected - 1));
       } else if (e.key === "Enter") {
+        // Buttons and links keep their own Enter.
+        if ((e.target as HTMLElement | null)?.closest?.("button, a")) return;
         o.onOpen?.(o.selected);
       } else if (e.key === "a") {
         o.onPrimary?.(o.selected);

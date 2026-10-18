@@ -1,0 +1,201 @@
+/* QuestionCard and AnswerComposer (Inbox inline and Questions detail). */
+
+.qcards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.qcards-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.qcard {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--hairline);
+  cursor: pointer;
+}
+.qcard:hover {
+  border-color: var(--hairline-strong);
+}
+.qcard.on {
+  border-color: var(--primary-focus);
+  background: var(--surface-2);
+}
+.qcard.readonly {
+  cursor: default;
+}
+.qcard.readonly:not(.on):hover {
+  border-color: var(--hairline);
+}
+.qcard:has(input:focus-visible) {
+  outline: 2px solid var(--primary-focus);
+  outline-offset: 2px;
+}
+.qcard input {
+  margin: 3px 0 0;
+  accent-color: var(--primary);
+}
+.qcard input:focus-visible {
+  outline: none;
+}
+.qcard-mark {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--hairline-tertiary);
+  border-radius: 50%;
+}
+.qcard-mark.on {
+  border: 4px solid var(--primary);
+}
+.qcard-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qcard-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.qcard-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.qcard-detail {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+.qcard-tag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 6px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.qcard-tag.rec {
+  padding: 0 8px;
+  border-color: var(--hairline-tertiary);
+  color: var(--ink);
+}
+.qcard-tag .needle {
+  fill: var(--primary);
+}
+
+/* Compact cards: the Inbox's three-across grid. */
+.qcard.compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+}
+.qcard.compact .qcard-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qcard.compact input,
+.qcard.compact .qcard-mark {
+  margin: 0;
+}
+/* Long labels take the full width and push the tag onto its own line. */
+.qcard.compact .qcard-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.qcard.compact .qcard-label {
+  font-size: 13px;
+}
+.qcard.compact .qcard-tag {
+  margin-left: auto;
+}
+.qcard.compact .qcard-detail {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-subtle);
+}
+
+/* Inbox: inline composer */
+.answer-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.answer-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.answer-inline-row .az-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+/* Questions: Options section and answer card. `display: contents` keeps the parent's gap. */
+.answer-composer {
+  display: contents;
+}
+.answer-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.answer-options-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.answer-options-head h2 {
+  margin: 0;
+}
+.answer-options-head .hint {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.answer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  box-shadow: var(--edge-highlight);
+}
+.answer-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+.answer-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.answer-note {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-tertiary);
+}

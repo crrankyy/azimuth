@@ -120,9 +120,11 @@ export function Dialog({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
-    box.current
-      ?.querySelector<HTMLElement>("textarea, input, button.lc-btn-primary, button")
-      ?.focus();
+    // Focus the first field, else the primary action, else any button (in that priority).
+    const target = ["textarea, input", "button.lc-btn-primary:not(:disabled)", "button"]
+      .map((selector) => box.current?.querySelector<HTMLElement>(selector))
+      .find(Boolean);
+    target?.focus();
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (

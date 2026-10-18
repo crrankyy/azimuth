@@ -29,7 +29,7 @@ export function ProblemsPanel({ onClose }: { onClose: () => void }) {
   const { toast } = useUi();
   const [selected, setSelected] = useState(0);
   const problems = index?.problems ?? [];
-  useListKeys({ count: problems.length, selected, onSelect: setSelected });
+  useListKeys({ count: problems.length, selected, onSelect: setSelected, insideOverlay: true });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);

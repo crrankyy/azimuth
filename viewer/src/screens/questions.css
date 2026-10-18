@@ -1,0 +1,285 @@
+/* Questions: grouped list, question detail and linked-items aside. */
+
+.crumb-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.questions {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - var(--nav-height));
+}
+
+/* List */
+.q-list {
+  width: 340px;
+  flex: none;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 16px;
+  border-right: 1px solid var(--hairline);
+}
+.q-list-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+.q-list-head h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.q-list-head .count {
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.q-list-empty {
+  margin: 0;
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.q-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.q-group > .az-eyebrow {
+  padding: 0 8px 4px;
+}
+.q-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+.q-item:hover {
+  background: var(--surface-1);
+}
+.q-item[aria-current="true"] {
+  background: var(--surface-2);
+  outline: 2px solid var(--primary-focus);
+  outline-offset: -2px;
+}
+.q-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.q-item-id {
+  font-family: var(--font-mono);
+  color: var(--ink-muted);
+}
+.q-item-tag {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-subtle);
+}
+.q-item-tag.danger {
+  color: var(--label-red);
+}
+.q-item-age {
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--ink-tertiary);
+}
+.q-item-title {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+.q-item.closed .q-item-id,
+.q-item.closed .q-item-title {
+  color: var(--ink-subtle);
+}
+.q-item[aria-current="true"] .q-item-id,
+.q-item[aria-current="true"] .q-item-title {
+  color: var(--ink);
+}
+
+/* Detail */
+.q-detail {
+  flex: 1 1 0;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  padding: 32px 40px 64px;
+}
+.q-main {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.q-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.q-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.q-chips .az-id {
+  padding: 0 8px;
+  color: var(--ink);
+}
+.q-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+}
+.q-meta {
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.q-meta a {
+  font-family: var(--font-mono);
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.q-meta a:hover {
+  color: var(--ink);
+}
+.q-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.q-section > h3 {
+  margin: 0;
+}
+.q-section .az-prose p:last-child {
+  margin-bottom: 0;
+}
+
+/* Answered state */
+.q-answered {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  box-shadow: var(--edge-highlight);
+}
+.q-answered-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.q-answered-when {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.q-answered-text {
+  font-size: 14px;
+}
+.q-answered-text p:last-child {
+  margin-bottom: 0;
+}
+.q-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* Aside */
+.q-aside {
+  width: 260px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.q-aside-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.raised-for {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  text-decoration: none;
+}
+.raised-for:hover,
+.context-link:hover {
+  border-color: var(--hairline-strong);
+}
+.raised-for .az-pill {
+  height: 20px;
+}
+.raised-for .title {
+  font-size: 13px;
+  color: var(--ink);
+}
+.raised-for .note {
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.raised-for .note.danger {
+  color: var(--label-red);
+}
+.context-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+.context-link .title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.q-handoff {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-subtle);
+}
+.q-handoff p {
+  margin: 0 0 6px;
+}
+.q-handoff ul,
+.q-handoff ol {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.q-handoff code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
