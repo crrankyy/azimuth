@@ -263,6 +263,25 @@ describe("decisions and questions", () => {
     expect(loadProject(tree.root).decisions[0]?.decision_note).toBeNull();
   });
 
+  it("BUG-0002 doesn't let an agent undo your rejection", () => {
+    const tree = repo({
+      ".azimuth/decisions/ADR-0001-a.md": adr("ADR-0001"),
+      ".azimuth/decisions/ADR-0002-b.md": adr("ADR-0002"),
+    });
+    move(tree.root, "ADR-0001", "rejected", { ...you, note: "Too slow." });
+    expect(errorOf(() => move(tree.root, "ADR-0001", "proposed", agent)).message).toContain(
+      "You rejected ADR-0001",
+    );
+    expect(loadProject(tree.root).decisions[0]).toMatchObject({
+      status: "rejected",
+      decided_by: "you",
+      decision_note: "Too slow.",
+    });
+    move(tree.root, "ADR-0002", "rejected", agent);
+    move(tree.root, "ADR-0002", "proposed", agent);
+    expect(loadProject(tree.root).decisions[1]?.status).toBe("proposed");
+  });
+
   it("supersedes a decision and links both sides", () => {
     const tree = repo({
       ".azimuth/decisions/ADR-0001-a.md": adr("ADR-0001").replace(

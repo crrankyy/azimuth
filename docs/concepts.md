@@ -56,8 +56,8 @@ re-approval (`azimuth reapprove`) before it can start.
 Other lifecycles: tasks `todo → in-progress → done` (plus `blocked`/`skipped` with a note; a task
 moves to in-progress or done only while its feature is in progress);
 questions `open → answered` (or `obsolete`); decisions `proposed → accepted | rejected`, accepted
-→ `superseded`, rejected → `proposed` (anyone) and accepted → `proposed` (you only, for a decision
-an agent accepted); milestones `planned → active → released`; issues `open → in-progress → resolved |
+→ `superseded`, rejected → `proposed` (you, or an agent for a decision an agent rejected) and
+accepted → `proposed` (you only, for a decision an agent accepted); milestones `planned → active → released`; issues `open → in-progress → resolved |
 wontfix`.
 
 ## Autonomy

@@ -485,6 +485,17 @@ export function moveDecision(root: string, id: string, toRaw: string, opts: Move
         "Only you can move an automatically accepted decision back to proposed.",
       );
     }
+    if (
+      d.status === "rejected" &&
+      to === "proposed" &&
+      opts.actor !== "you" &&
+      d.decided_by === "you"
+    ) {
+      throw new AzimuthError(
+        "policy",
+        `You rejected ${id}; only you can move it back to proposed. Propose a new decision instead.`,
+      );
+    }
     const updates: Record<string, unknown> = { status: to };
     const writes: Write[] = [];
     if (deciding)
