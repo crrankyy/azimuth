@@ -26,14 +26,14 @@ function RecommendedTag({ compact }: { compact: boolean }) {
 
 /**
  * One option of a question as a radio card. `compact` is the Inbox grid layout; the full layout
- * is the Questions detail. Clicking the checked card again clears the choice, so an answer can
- * be text only.
+ * is the Questions detail. Clicking a card always selects it (the recommended one starts
+ * selected, and clicking it must not undo that); the composer's "Clear choice" removes it.
  */
 export function QuestionCard({
   name,
   option,
   checked,
-  onToggle,
+  onSelect,
   compact = false,
   readOnly = false,
   badge,
@@ -41,7 +41,7 @@ export function QuestionCard({
   name: string;
   option: QuestionOption;
   checked: boolean;
-  onToggle?: (key: string | null) => void;
+  onSelect?: (key: string) => void;
   compact?: boolean;
   readOnly?: boolean;
   badge?: ReactNode;
@@ -59,8 +59,7 @@ export function QuestionCard({
       name={name}
       value={option.key}
       checked={checked}
-      onChange={() => onToggle?.(option.key)}
-      onClick={() => checked && onToggle?.(null)}
+      onChange={() => onSelect?.(option.key)}
     />
   );
   const tags = (
@@ -173,10 +172,16 @@ export function AnswerComposer({
       name={name}
       option={o}
       checked={option === o.key}
-      onToggle={setOption}
+      onSelect={setOption}
       compact={compact}
     />
   ));
+  // Lets an answer be text only once an option (perhaps the preselected one) is chosen.
+  const clearChoice = option !== null && (
+    <Button variant="tertiary" small onClick={() => setOption(null)}>
+      Clear choice
+    </Button>
+  );
   const sendButton = (
     <Button
       variant="primary"
@@ -203,6 +208,7 @@ export function AnswerComposer({
             {cards}
           </div>
         )}
+        {clearChoice && <div className="answer-clear">{clearChoice}</div>}
         <div className="answer-inline-row">
           <input
             className="az-input"
@@ -231,6 +237,8 @@ export function AnswerComposer({
           <div className="answer-options-head">
             <h2 className="az-eyebrow">Options</h2>
             <span className="hint">Pick one, add your own words, or both</span>
+            <span className="spacer" />
+            {clearChoice}
           </div>
           <div role="radiogroup" aria-label="Options" className="qcards">
             {cards}
