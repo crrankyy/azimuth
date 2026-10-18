@@ -62,7 +62,8 @@ export const DECISION_LOOK: Record<DecisionStatus, StatusLook> = {
 };
 
 export const MILESTONE_LOOK: Record<MilestoneStatus, StatusLook> = {
-  planned: { glyph: "s-idea", label: "Planned", segment: "c-idea" },
+  // No state class: the handoff draws a planned milestone as a plain neutral ring.
+  planned: { glyph: "", label: "Planned", segment: "c-idea" },
   active: { glyph: "s-active", label: "Active", segment: "c-active" },
   released: { glyph: "s-done", label: "Released", segment: "c-pass" },
 };
