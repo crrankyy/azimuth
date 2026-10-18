@@ -121,6 +121,14 @@ export function detectStack(root: string): Detected {
   return out;
 }
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  typescript: "TypeScript",
+  javascript: "JavaScript",
+  python: "Python",
+  rust: "Rust",
+  go: "Go",
+};
+
 export function configYaml(d: Detected): string {
   const commands = Object.entries(d.commands)
     .map(([k, v]) => `  ${k}: ${inlineYaml(v)}`)
@@ -134,7 +142,7 @@ stack:
   languages: ${inlineYaml(d.languages)}
   package_manager: ${d.packageManager ?? "null"}
   test_runner: ${d.testRunner ?? "null"}
-  display: ${inlineYaml(d.languages.map((l) => l[0]?.toUpperCase() + l.slice(1)))}
+  display: ${inlineYaml(d.languages.map((l) => LANGUAGE_NAMES[l] ?? l))}
 commands:${commands ? `\n${commands}` : " {}"}
 tests:
   globs: ${inlineYaml(d.testGlobs)}

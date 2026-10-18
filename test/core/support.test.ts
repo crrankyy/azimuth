@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { detectStack, upsertBlock } from "../../src/core/init";
+import { configYaml, detectStack, upsertBlock } from "../../src/core/init";
 import { parseJunit, scenariosFromOutput } from "../../src/core/junit";
 import { parseFrontmatter } from "../../src/core/frontmatter";
 import { AGENTS_BLOCK, CLAUDE_BLOCK } from "../../src/core/protocol";
@@ -68,6 +68,13 @@ describe("detectStack", () => {
       build: "cargo build",
     });
     expect(d.testGlobs).toContain("**/*_test.go");
+    expect(configYaml(d)).toContain("display: [Python, Rust, Go]");
+  });
+
+  it("names TypeScript the way it is written", () => {
+    const tree = writeTree({ "package.json": "{}", "tsconfig.json": "{}" });
+    cleanup = tree.cleanup;
+    expect(configYaml(detectStack(tree.root))).toContain("display: [TypeScript]");
   });
 
   it("treats an empty folder as greenfield", () => {
