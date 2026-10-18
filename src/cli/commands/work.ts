@@ -1,3 +1,5 @@
+import { autostartEnabled, recordSessionAfterInit } from "../../hooks/handlers";
+import { ensureViewer } from "../../server/autostart";
 import { initProject } from "../../core/init";
 import {
   claudeSessionFromEnv,
@@ -14,9 +16,13 @@ export const init: Command = {
   usage: "init [--refresh] [--root <dir>]",
   summary: "Set up .azimuth/ in this repository (or refresh the protocol and templates)",
   options: { refresh: { type: "boolean" }, json: { type: "boolean" } },
-  run({ values }) {
+  async run({ values }) {
     const root = (values.root as string | undefined) ?? process.cwd();
     const result = initProject(root, { refresh: Boolean(values.refresh) });
+    // Inside Claude Code the session's start hook ran before .azimuth/ existed: catch up. (A
+    // refresh runs in an existing project, whose start was already recorded.)
+    const inSession = !values.refresh && recordSessionAfterInit(root, process.env);
+    const url = inSession && autostartEnabled(root, process.env) ? await ensureViewer(root) : null;
     if (values.json) {
       printJson(result);
       return;
@@ -30,6 +36,7 @@ export const init: Command = {
         "Next: review .azimuth/config.yaml, then run /azimuth:init in Claude Code to describe the project.",
       );
     }
+    if (url) print(`Viewer: ${url}`);
   },
 };
 

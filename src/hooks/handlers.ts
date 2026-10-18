@@ -14,6 +14,7 @@ import {
 } from "../core/live";
 import { loadProject } from "../core/model";
 import { findProjectRoot, tidyPaths, type Places } from "../core/paths";
+import { claudeSessionFromEnv, type SessionEnv } from "../core/session";
 import { viewerUrl } from "../server/registry";
 
 /** What Claude Code sends a command hook on stdin (only the fields Azimuth reads). */
@@ -62,7 +63,7 @@ export interface HookContext {
 const OK: HookOutput = { exitCode: 0 };
 
 /** Whether hooks may start the viewer: on in the config, and not turned off for this environment. */
-function autostartEnabled(root: string, env: HookEnv): boolean {
+export function autostartEnabled(root: string, env: HookEnv): boolean {
   return (
     loadConfig(root).config.viewer.autostart &&
     env.AZIMUTH_NO_VIEWER !== "1" &&
@@ -173,6 +174,22 @@ function lastHandoff(root: string): string | null {
   const latest = sessions.sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at))[0];
   if (!latest) return null;
   return `Last handoff (${latest.id}${latest.skill ? `, ${latest.skill}` : ""}: ${latest.goal}):\n${latest.handoff}`;
+}
+
+/**
+ * For `azimuth init` run inside Claude Code: SessionStart ran before `.azimuth/` existed, so it
+ * recorded nothing. Records the session's start now (with Claude Code's process ID, which keeps
+ * the viewer up). Returns false outside a Claude Code session.
+ */
+export function recordSessionAfterInit(
+  root: string,
+  env: HookEnv & SessionEnv,
+  now = new Date(),
+): boolean {
+  const id = claudeSessionFromEnv(env);
+  if (!id) return false;
+  appendLive(root, id, { kind: "start", at: stamp(now), source: "init", ...claudePid(env) });
+  return true;
 }
 
 export async function sessionStart(input: HookInput, ctx: HookContext): Promise<HookOutput> {

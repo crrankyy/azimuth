@@ -8,6 +8,7 @@ import { buildIndex } from "../../src/core/build-index";
 import { readLiveRecords } from "../../src/core/live";
 import {
   describeTool,
+  recordSessionAfterInit,
   sessionStart,
   userPromptSubmit,
   type HookEnv,
@@ -327,5 +328,21 @@ describe("live step summaries", () => {
     expect(
       describeTool(root, "Edit", { file_path: "/home/dev/work/tally/src/a.ts" }, places).file,
     ).toBe("src/a.ts");
+  });
+});
+
+describe("a session that runs azimuth init", () => {
+  it("BUG-0022 is recorded once .azimuth/ exists, with Claude Code's process ID", () => {
+    const project = writeTree({ ".azimuth/config.yaml": MINIMAL_CONFIG });
+    try {
+      const env = { CLAUDE_CODE_SESSION_ID: "init-session", CLAUDE_PID: "4242" };
+      expect(recordSessionAfterInit(project.root, env)).toBe(true);
+      expect(readLiveRecords(project.root, "init-session")).toMatchObject([
+        { kind: "start", source: "init", pid: 4242 },
+      ]);
+      expect(recordSessionAfterInit(project.root, {})).toBe(false);
+    } finally {
+      project.cleanup();
+    }
   });
 });
