@@ -35,8 +35,9 @@ passes to hooks: `$AZIMUTH_NODE`, then the path it remembered last time
 ## What happens in a session
 
 1. **Session start.** The hook exports `AZIMUTH_ACTOR=agent` and the Claude session ID to the
-   session's environment, makes sure this project's viewer is running (unless `viewer.autostart`
-   is `false` or `AZIMUTH_NO_VIEWER=1` is set), and gives Claude the project status, the last
+   session's environment, records Claude Code's process ID (`CLAUDE_PID`) so the viewer stays up
+   while the session is open, makes sure this project's viewer is running (unless
+   `viewer.autostart` is `false` or `AZIMUTH_NO_VIEWER=1` is set), and gives Claude the project status, the last
    handoff and the viewer URL. After a compaction it gives a short re-grounding note instead (current session, feature and
    task).
 2. **Work.** Every tool call is appended to `.azimuth/cache/live/<session>.jsonl`; the viewer shows
@@ -45,7 +46,8 @@ passes to hooks: `$AZIMUTH_NODE`, then the path it remembered last time
 3. **You act in the viewer.** When you answer a question, request changes on or move the feature
    the agent is working on, the agent is told right after its next tool call. Everything else you
    did, including decisions on ADRs, and anything that happened while the agent was idle, is passed
-   to Claude with your next prompt.
+   to Claude with your next prompt. Each prompt also restarts the viewer if it stopped, without
+   waiting for it.
 4. **Turn end.** If the session left validation errors in `.azimuth/` files it edited, Claude is
    asked to fix them before stopping (once; never in a loop).
 5. **Session end.** The live log records the end.
@@ -76,14 +78,14 @@ ask for permission.
 Defined in `plugin/hooks/hooks.json`; each runs `plugin/bin/azimuth hook <event>`, which exits
 immediately (before starting Node) in repositories without `.azimuth/`.
 
-| Event                                | Mode                   | What it does                                                                 |
-| ------------------------------------ | ---------------------- | ---------------------------------------------------------------------------- |
-| SessionStart                         | sync                   | Environment exports, live log, viewer autostart, status and handoff context. |
-| PostToolUse (all tools)              | async, can wake Claude | Records the tool call; wakes Claude when you act on its feature.             |
-| PostToolUse (Edit, Write, MultiEdit) | sync                   | Validates edited `.azimuth/` files and reports errors to Claude.             |
-| UserPromptSubmit                     | sync                   | Adds what you did in the viewer since Claude's last turn.                    |
-| Stop                                 | sync                   | Asks Claude to fix errors it left in `.azimuth/` files (once).               |
-| SessionEnd                           | sync                   | Records the end of the session.                                              |
+| Event                                | Mode                   | What it does                                                                         |
+| ------------------------------------ | ---------------------- | ------------------------------------------------------------------------------------ |
+| SessionStart                         | sync                   | Environment exports, live log, viewer autostart, status and handoff context.         |
+| PostToolUse (all tools)              | async, can wake Claude | Records the tool call; wakes Claude when you act on its feature.                     |
+| PostToolUse (Edit, Write, MultiEdit) | sync                   | Validates edited `.azimuth/` files and reports errors to Claude.                     |
+| UserPromptSubmit                     | sync                   | Adds what you did in the viewer since Claude's last turn; restarts a stopped viewer. |
+| Stop                                 | sync                   | Asks Claude to fix errors it left in `.azimuth/` files (once).                       |
+| SessionEnd                           | sync                   | Records the end of the session.                                                      |
 
 A hook that fails never blocks Claude: the error is logged to `.azimuth/cache/hooks.log` and
 `azimuth doctor` reports it.

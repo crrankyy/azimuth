@@ -19,9 +19,11 @@ knowledge. It works offline (no web fonts, CDNs or network requests) and is dark
 | Live   | `azimuth view` (or automatically by the Claude Code plugin), served on `127.0.0.1` from port 4319 (`viewer.port`) or the next free port | Yes, as you                                           |
 | Export | `azimuth export -o file.html`: one self-contained HTML file with the index embedded                                                     | No; actions are shown disabled with the snapshot time |
 
-One viewer runs per project. `azimuth view` reuses it; `azimuth view --stop` stops it; it exits
-by itself after two idle hours (no open page, no requests, no active agent) or when `.azimuth/`
-disappears. A newer build replaces an older running viewer automatically.
+One viewer runs per project. `azimuth view` reuses it; `azimuth view --stop` stops it. It keeps
+running while any Claude Code session in the project is open (its Claude Code process runs and
+it hasn't ended), and otherwise exits by itself after two idle hours with no open page and no
+requests, or when `.azimuth/` disappears. If it stops during a session, your next prompt starts
+it again. A newer build replaces an older running viewer automatically.
 
 ## Staying current
 
