@@ -184,6 +184,56 @@ export function readLiveSessions(root: string, now = new Date()): LiveSession[] 
   return out.sort((a, b) => (a.last_seen_at < b.last_seen_at ? 1 : -1));
 }
 
+/**
+ * Whether one Claude Code session's live log describes a session that is still open: no end
+ * record since its latest start, and its Claude Code process still runs. Sessions without a
+ * recorded process ID count as open while they were active within the idle limit.
+ */
+export function sessionOpen(records: LiveRecord[], check: OpenCheck): boolean {
+  let pid: number | null = null;
+  let ended = false;
+  let lastSeen = -Infinity;
+  for (const r of records) {
+    if (r.kind === "cursor") continue;
+    lastSeen = Math.max(lastSeen, Date.parse(r.at));
+    if (r.kind === "start") ended = false;
+    if (r.kind === "end") ended = true;
+    if ((r.kind === "start" || r.kind === "prompt") && r.pid) pid = r.pid;
+  }
+  if (ended || lastSeen === -Infinity) return false;
+  const quiet = check.now.getTime() - lastSeen;
+  // Process IDs get reused, so one is only trusted while the log is fresh.
+  if (pid !== null) return quiet < KEEP_MS && check.alive(pid);
+  return quiet < check.idleMs;
+}
+
+/** Whether any Claude Code session of this project is open (logs written in the last day). */
+export function anySessionOpen(root: string, check: OpenCheck): boolean {
+  const dir = liveDir(root);
+  if (!existsSync(dir)) return false;
+  return readdirSync(dir).some((name) => {
+    if (!name.endsWith(".jsonl")) return false;
+    const path = join(dir, name);
+    try {
+      if (check.now.getTime() - statSync(path).mtimeMs > KEEP_MS) return false;
+      return sessionOpen(parseLiveLines(readTail(path)), check);
+    } catch {
+      // Removed between listing and reading.
+      return false;
+    }
+  });
+}
+
+/** Whether a process with this ID is running; one we may not signal (EPERM) still runs. */
+export function processAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
 /** Deletes live files untouched for more than a day. */
 export function pruneLive(root: string, now = new Date()): void {
   const dir = liveDir(root);
