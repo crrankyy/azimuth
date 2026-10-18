@@ -44,8 +44,15 @@ const STATUS_GROUPS: FeatureStatus[] = [
   "superseded",
 ];
 
-const COLUMNS = ["72px", "minmax(200px, 1fr)", "124px", "52px", "48px"];
-const TAIL = ["120px", "150px", "170px", "96px"];
+// Widths are CSS variables so features.css can tighten them below 1440px.
+const COLUMNS = [
+  "var(--ft-id)",
+  "minmax(var(--ft-title), 1fr)",
+  "var(--ft-status)",
+  "var(--ft-pri)",
+  "var(--ft-size)",
+];
+const TAIL = ["var(--ft-progress)", "var(--ft-coverage)", "var(--ft-flags)", "var(--ft-last)"];
 const HEADERS = ["ID", "Title", "Status", "Pri", "Size"];
 const TAIL_HEADERS = ["Progress", "Coverage", "Flags", "Last activity"];
 
@@ -126,7 +133,7 @@ export function FeatureTable({
   const found = selectedId ? ids.indexOf(selectedId) : -1;
   const selected = found >= 0 ? found : 0;
   const showMilestone = groupBy !== "milestone";
-  const columns = [...COLUMNS, ...(showMilestone ? ["72px"] : []), ...TAIL].join(" ");
+  const columns = [...COLUMNS, ...(showMilestone ? ["var(--ft-ms)"] : []), ...TAIL].join(" ");
   const headers = [...HEADERS, ...(showMilestone ? ["Milestone"] : []), ...TAIL_HEADERS];
 
   const select = (i: number) => {

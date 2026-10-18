@@ -110,14 +110,48 @@
 
 /* FeatureTable */
 .ft-table {
+  --ft-id: 72px;
+  --ft-title: 200px;
+  --ft-status: 124px;
+  --ft-pri: 52px;
+  --ft-size: 48px;
+  --ft-ms: 72px;
+  --ft-progress: 120px;
+  --ft-coverage: 150px;
+  --ft-flags: 170px;
+  --ft-last: 96px;
   overflow-x: auto;
   font-size: 13px;
   color: var(--ink-muted);
 }
+/* Below 1440px tighter columns keep every one in view at 1280 (960px with Milestone, in 983px). */
+@media (max-width: 1439px) {
+  .ft-table {
+    --ft-title: 160px;
+    --ft-status: 116px;
+    --ft-pri: 44px;
+    --ft-size: 40px;
+    --ft-ms: 64px;
+    --ft-progress: 104px;
+    --ft-coverage: 128px;
+    --ft-flags: 140px;
+    --ft-last: 92px;
+  }
+  .ft-table .ft-cell,
+  .ft-table .ft-head > span {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+/* The header and each group are as wide as the columns need and at least the table, so they
+   scroll together when the window is too narrow. */
+.ft-table > * {
+  width: fit-content;
+  min-width: 100%;
+}
 .ft-row {
   display: grid;
   align-items: center;
-  min-width: 1000px;
   min-height: 42px;
   border-bottom: 1px solid var(--hairline);
   cursor: pointer;
@@ -211,7 +245,6 @@
     calc(100% - 7px) 10px;
 }
 .ft-group {
-  min-width: 1000px;
   border-bottom: 1px solid var(--hairline-strong);
 }
 .ft-group-cell {
