@@ -25,9 +25,30 @@ const isTyping = (target: EventTarget | null) => {
 /** Lists pause while a dialog, the palette or the problems panel has the keyboard. */
 const overlayOpen = () => Boolean(document.querySelector(".overlay, .problems"));
 
+const GO_WINDOW_MS = 1_200;
+
+/** Remembers the key before the current one, so a `g`+letter shortcut is never also a list key. */
+export function keyTracker() {
+  let previous = { key: "", at: -Infinity };
+  let current = { key: "", at: -Infinity };
+  return {
+    record(key: string, at: number) {
+      previous = current;
+      current = { key, at };
+    },
+    /** True while handling the key that follows a `g`. */
+    afterG(at: number) {
+      return previous.key === "g" && at - previous.at < GO_WINDOW_MS;
+    },
+  };
+}
+
+// Recorded in the capture phase, before any handler runs, whatever order they were added in.
+const recent = keyTracker();
+const record = (e: KeyboardEvent) => recent.record(e.key, e.timeStamp);
+
 /** Global shortcuts: ⌘K / Ctrl-K palette, `g`+letter navigation, `g p` problems. */
 export function useGlobalKeys(handlers: { palette: () => void; problems: () => void }): void {
-  const pendingG = useRef(0);
   const latest = useRef(handlers);
   useEffect(() => {
     latest.current = handlers;
@@ -40,25 +61,24 @@ export function useGlobalKeys(handlers: { palette: () => void; problems: () => v
         return;
       }
       if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return;
-      if (e.key === "g") {
-        pendingG.current = Date.now();
+      if (!recent.afterG(e.timeStamp)) return;
+      if (e.key === "p") {
+        e.preventDefault();
+        latest.current.problems();
         return;
       }
-      if (Date.now() - pendingG.current < 1_200) {
-        pendingG.current = 0;
-        if (e.key === "p") {
-          latest.current.problems();
-          return;
-        }
-        const section = GOTO[e.key];
-        if (section) {
-          e.preventDefault();
-          navigate(href(section));
-        }
+      const section = GOTO[e.key];
+      if (section) {
+        e.preventDefault();
+        navigate(href(section));
       }
     };
+    window.addEventListener("keydown", record, true);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", record, true);
+      window.removeEventListener("keydown", onKey);
+    };
   }, []);
 }
 
@@ -89,6 +109,7 @@ export function useListKeys(opts: {
         e.ctrlKey ||
         e.altKey ||
         isTyping(e.target) ||
+        recent.afterG(e.timeStamp) ||
         o.count === 0 ||
         (!o.insideOverlay && overlayOpen())
       )
@@ -104,6 +125,8 @@ export function useListKeys(opts: {
         if ((e.target as HTMLElement | null)?.closest?.("button, a")) return;
         o.onOpen?.(o.selected);
       } else if (e.key === "a") {
+        // The action may focus a field (the inline answer); don't type the "a" into it.
+        e.preventDefault();
         o.onPrimary?.(o.selected);
       }
     };
