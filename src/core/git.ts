@@ -4,7 +4,7 @@ import { emptyGitFacts, type GitFacts } from "./facts";
 import { MENTION_PATTERN } from "./ids";
 import { specHash } from "./spec-hash";
 import type { ApprovalChange, Commit } from "./types";
-import { ACTIVE_STATUSES } from "./derive";
+import { ACTIVE_STATUSES } from "./flows";
 
 const SEP = "\x1f";
 const REC = "\x1e";

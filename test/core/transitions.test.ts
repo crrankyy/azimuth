@@ -5,10 +5,10 @@ import { allocateId, sessionIdFor } from "../../src/core/allocate";
 import { buildIndex } from "../../src/core/build-index";
 import { userEventsSince } from "../../src/core/delta";
 import { AzimuthError } from "../../src/core/errors";
+import { FEATURE_FLOW } from "../../src/core/flows";
 import { updateFrontmatterItem } from "../../src/core/frontmatter";
 import { loadProject } from "../../src/core/model";
 import {
-  FEATURE_FLOW,
   acknowledge,
   addLogEntry,
   answerQuestion,

@@ -1,4 +1,5 @@
 import type { Facts } from "./facts";
+import { ACTIVE_STATUSES } from "./flows";
 import { featureOf } from "./ids";
 import type { FeatureEntity, Model } from "./model";
 import { specHash } from "./spec-hash";
@@ -12,8 +13,6 @@ import type {
   VerifyRun,
 } from "./types";
 
-/** Statuses whose features are being specified or built. */
-export const ACTIVE_STATUSES: FeatureStatus[] = ["approved", "in-progress", "verifying"];
 /** Statuses that no longer count toward progress or reverse dependencies. */
 export const RETIRED_STATUSES: FeatureStatus[] = ["cancelled", "superseded"];
 

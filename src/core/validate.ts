@@ -1,4 +1,5 @@
-import { ACTIVE_STATUSES, type Derived } from "./derive";
+import type { Derived } from "./derive";
+import { ACTIVE_STATUSES } from "./flows";
 import type { Facts } from "./facts";
 import { idKind } from "./ids";
 import type { FeatureEntity, Model } from "./model";

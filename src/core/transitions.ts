@@ -5,6 +5,7 @@ import { AzimuthError } from "./errors";
 import { updateFrontmatter, updateFrontmatterItem } from "./frontmatter";
 import { evaluateGate, NEXT_STATUS, type GateContext } from "./gates";
 import { toUtc } from "./git";
+import { DECISION_FLOW, FEATURE_FLOW, ISSUE_FLOW, MILESTONE_FLOW, TASK_FLOW } from "./flows";
 import { featureOf, idKind } from "./ids";
 import { withLock, writeFileAtomic } from "./lock";
 import type { FeatureEntity } from "./model";
@@ -54,46 +55,6 @@ export interface Result {
   auto: boolean;
   message: string;
 }
-
-export const FEATURE_FLOW: Record<FeatureStatus, FeatureStatus[]> = {
-  idea: ["draft", "deferred", "cancelled"],
-  draft: ["approved", "deferred", "cancelled", "superseded"],
-  approved: ["in-progress", "draft", "deferred", "cancelled", "superseded"],
-  "in-progress": ["verifying", "draft", "deferred", "cancelled"],
-  verifying: ["done", "in-progress"],
-  deferred: ["idea", "draft"],
-  done: [],
-  cancelled: [],
-  superseded: [],
-};
-
-export const TASK_FLOW: Record<TaskStatus, TaskStatus[]> = {
-  todo: ["in-progress", "done", "blocked", "skipped"],
-  "in-progress": ["done", "blocked", "skipped", "todo"],
-  blocked: ["todo", "in-progress", "skipped"],
-  done: ["in-progress"],
-  skipped: ["todo"],
-};
-
-export const DECISION_FLOW: Record<DecisionStatus, DecisionStatus[]> = {
-  proposed: ["accepted", "rejected"],
-  accepted: ["superseded", "proposed"],
-  rejected: ["proposed"],
-  superseded: [],
-};
-
-export const MILESTONE_FLOW: Record<MilestoneStatus, MilestoneStatus[]> = {
-  planned: ["active"],
-  active: ["released", "planned"],
-  released: [],
-};
-
-export const ISSUE_FLOW: Record<IssueStatus, IssueStatus[]> = {
-  open: ["in-progress", "resolved", "wontfix"],
-  "in-progress": ["resolved", "wontfix", "open"],
-  resolved: ["open"],
-  wontfix: ["open"],
-};
 
 const stamp = (now: Date) => toUtc(now.toISOString());
 const today = (now: Date) => now.toISOString().slice(0, 10);
