@@ -13,7 +13,7 @@ import {
 import { join } from "node:path";
 import { featureOf, MENTION_PATTERN } from "./ids";
 import { sharedCacheDir } from "./lock";
-import type { LiveEvent, LiveSession } from "./types";
+import type { LiveAgent, LiveEvent, LiveSession } from "./types";
 
 /**
  * Live agent activity, recorded by the Claude Code hooks as one JSON line per event in
@@ -130,10 +130,59 @@ function workItem(event: LiveEvent): { feature: string | null; task: string | nu
   return { feature, task };
 }
 
+type Launch = Extract<LiveRecord, { kind: "launch" }>;
+
+/**
+ * Which launch each subagent came from. The Agent tool's response names the subagent exactly; a
+ * foreground subagent's response only comes when it finishes, so until then subagents are
+ * matched to the launches nobody claimed, in order.
+ */
+function launchesOf(records: LiveRecord[]): Map<string, Launch> {
+  const launches = new Map<string, Launch>();
+  const exact = new Map<string, string>();
+  const started: string[] = [];
+  for (const r of records) {
+    if (r.kind === "launch") launches.set(r.tool_use_id, r);
+    if (r.kind === "subagent" && !started.includes(r.agent_id)) started.push(r.agent_id);
+    if (r.kind === "tool" && r.spawned && r.tool_use_id) exact.set(r.spawned, r.tool_use_id);
+  }
+  const claimed = new Set(exact.values());
+  const unclaimed = [...launches.values()].filter((l) => !claimed.has(l.tool_use_id));
+  const out = new Map<string, Launch>();
+  for (const [agent, useId] of exact) {
+    const l = launches.get(useId);
+    if (l) out.set(agent, l);
+  }
+  for (const agent of started) {
+    if (exact.has(agent)) continue;
+    const l = unclaimed.shift();
+    if (l) out.set(agent, l);
+  }
+  return out;
+}
+
+function assignment(l: Launch | undefined): Pick<LiveAgent, "description" | "task" | "feature"> {
+  const task = l?.refs.find((id) => id.startsWith("T-")) ?? null;
+  const feature = task ? featureOf(task) : (l?.refs.find((id) => id.startsWith("F-")) ?? null);
+  return { description: l?.description ?? null, task, feature };
+}
+
 export function summarizeLive(claudeSession: string, records: LiveRecord[]): LiveSession | null {
   if (records.length === 0) return null;
   const tools: LiveEvent[] = [];
-  const agents = new Map<string, LiveSession["agents"][number]>();
+  const agents = new Map<string, LiveAgent>();
+  const seeAgent = (id: string, type: string | null | undefined, at: string) => {
+    const known = agents.get(id);
+    agents.set(id, {
+      agent_id: id,
+      agent_type: type ?? known?.agent_type ?? null,
+      last_seen_at: known && known.last_seen_at > at ? known.last_seen_at : at,
+      description: null,
+      task: null,
+      feature: null,
+      stopped_at: known?.stopped_at ?? null,
+    });
+  };
   let ses: string | null = null;
   let stoppedAt: string | null = null;
   let endedAt: string | null = null;
@@ -144,6 +193,12 @@ export function summarizeLive(claudeSession: string, records: LiveRecord[]): Liv
     if (r.kind === "stop") stoppedAt = r.at;
     if (r.kind === "end") endedAt = r.at;
     if (r.kind === "start") endedAt = null;
+    if (r.kind === "subagent") seeAgent(r.agent_id, r.agent_type, r.at);
+    if (r.kind === "subagent-stop") {
+      seeAgent(r.agent_id, null, r.at);
+      const agent = agents.get(r.agent_id);
+      if (agent) agent.stopped_at = r.at;
+    }
     if (r.kind === "tool") {
       const event: LiveEvent = {
         at: r.at,
@@ -153,18 +208,12 @@ export function summarizeLive(claudeSession: string, records: LiveRecord[]): Liv
         agent_id: r.agent_id ?? null,
       };
       tools.push(event);
-      if (r.agent_id)
-        agents.set(r.agent_id, {
-          agent_id: r.agent_id,
-          agent_type: r.agent_type ?? null,
-          last_seen_at: r.at,
-          description: null,
-          task: null,
-          feature: null,
-          stopped_at: null,
-        });
+      if (r.agent_id) seeAgent(r.agent_id, r.agent_type, r.at);
     }
   }
+  const launches = launchesOf(records);
+  for (const agent of agents.values())
+    Object.assign(agent, assignment(launches.get(agent.agent_id)));
   let feature: string | null = null;
   let task: string | null = null;
   for (const event of [...tools].reverse()) {
@@ -175,6 +224,13 @@ export function summarizeLive(claudeSession: string, records: LiveRecord[]): Liv
       break;
     }
   }
+  const mainFeature = [...tools]
+    .reverse()
+    .filter((e) => e.agent_id === null)
+    .map((e) => workItem(e).feature)
+    .find(Boolean);
+  const running = [...agents.values()].filter((a) => !a.stopped_at).map((a) => a.feature);
+  const features = [...new Set([mainFeature, ...running].filter((f): f is string => !!f))].sort();
   return {
     claude_session: claudeSession,
     ses,
@@ -186,7 +242,7 @@ export function summarizeLive(claudeSession: string, records: LiveRecord[]): Liv
     current: tools.at(-1) ?? null,
     feature,
     task,
-    features: [],
+    features,
     events: tools.slice(-MAX_EVENTS),
   };
 }

@@ -5,6 +5,7 @@ import {
   appendLive,
   processAlive,
   sessionOpen,
+  summarizeLive,
   type LiveRecord,
   type OpenCheck,
 } from "../../src/core/live";
@@ -80,5 +81,104 @@ describe("processAlive", () => {
     expect(processAlive(process.pid)).toBe(true);
     const exited = spawnSync("true").pid;
     expect(processAlive(exited)).toBe(false);
+  });
+});
+
+describe("F-005 subagent assignments", () => {
+  const at = (minute: number) => `2026-10-18T18:${String(minute).padStart(2, "0")}:00Z`;
+  const launch = (id: string, description: string, refs: string[], minute = 0): LiveRecord => ({
+    kind: "launch",
+    at: at(minute),
+    tool_use_id: id,
+    description,
+    refs,
+  });
+  const started = (id: string, minute = 1): LiveRecord => ({
+    kind: "subagent",
+    at: at(minute),
+    agent_id: id,
+    agent_type: "general-purpose",
+  });
+  const agentTool = (useId: string, spawned: string, minute = 2): LiveRecord => ({
+    kind: "tool",
+    at: at(minute),
+    tool: "Agent",
+    file: null,
+    summary: "Started an agent",
+    agent_id: null,
+    tool_use_id: useId,
+    spawned,
+  });
+  const agents = (records: LiveRecord[]) =>
+    Object.fromEntries(
+      (summarizeLive("s", records)?.agents ?? []).map((a) => [
+        a.agent_id,
+        { description: a.description, task: a.task, feature: a.feature },
+      ]),
+    );
+  const twoLaunches = [
+    launch("toolu_1", "Build T-002.2 heading recognizer", ["T-002.2"]),
+    launch("toolu_2", "Build T-003.1 code spans", ["T-003.1"]),
+    started("a1"),
+    started("a2"),
+  ];
+
+  it("S-005.2.1 matches a subagent exactly by the Agent tool's response", () => {
+    const records = [
+      launch("toolu_1", "Build T-002.2 heading recognizer", ["T-002.2"]),
+      started("a1"),
+      agentTool("toolu_1", "a1"),
+    ];
+    expect(agents(records)).toEqual({
+      a1: { description: "Build T-002.2 heading recognizer", task: "T-002.2", feature: "F-002" },
+    });
+  });
+
+  it("S-005.2.2 matches running subagents to launches in order", () => {
+    expect(agents(twoLaunches)).toMatchObject({
+      a1: { task: "T-002.2" },
+      a2: { task: "T-003.1" },
+    });
+  });
+
+  it("S-005.2.3 lets an exact match override the order", () => {
+    const records = [...twoLaunches, agentTool("toolu_1", "a2", 3), agentTool("toolu_2", "a1", 4)];
+    expect(agents(records)).toMatchObject({
+      a1: { task: "T-003.1" },
+      a2: { task: "T-002.2" },
+    });
+  });
+
+  it("S-005.2.4 keeps a subagent without a launch, unassigned", () => {
+    expect(agents([started("a9")])).toEqual({
+      a9: { description: null, task: null, feature: null },
+    });
+  });
+
+  const inFlight: LiveRecord[] = [
+    {
+      kind: "tool",
+      at: at(0),
+      tool: "Bash",
+      file: null,
+      summary: "azimuth move T-003.4 in-progress",
+      agent_id: null,
+    },
+    launch("toolu_1", "Build T-002.2 heading recognizer", ["T-002.2"], 1),
+    started("a1", 2),
+  ];
+
+  it("S-005.2.5 lists every feature in flight across the lanes", () => {
+    expect(summarizeLive("s", inFlight)?.features).toEqual(["F-002", "F-003"]);
+  });
+
+  it("S-005.2.6 drops a finished subagent's feature", () => {
+    const records: LiveRecord[] = [
+      ...inFlight,
+      { kind: "subagent-stop", at: "2026-10-18T18:05:00Z", agent_id: "a1" },
+    ];
+    const s = summarizeLive("s", records);
+    expect(s?.features).toEqual(["F-003"]);
+    expect(s?.agents.find((a) => a.agent_id === "a1")?.stopped_at).toBe("2026-10-18T18:05:00Z");
   });
 });
