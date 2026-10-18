@@ -161,12 +161,20 @@ export function describeTool(
 }
 
 /** What the agent has already been told through `scope`, starting from the session start. */
+/**
+ * Where the scope's "since last time" begins. For prompts that is the previous prompt (or its
+ * delta), even across a resume, /clear or compaction, so what you did while the session was
+ * closed still reaches it; the first prompt starts from the session's first start. The wake
+ * scope starts again at each start, since the next prompt reports anything older.
+ */
 function cursorOf(records: LiveRecord[], scope: "wake" | "prompt"): Cursor | null {
   for (const r of [...records].reverse()) {
     if (r.kind === "cursor" && r.scope === scope) return { at: r.at, keys: r.keys };
-    if (r.kind === "start") return { at: r.at, keys: [] };
+    if (scope === "prompt" && r.kind === "prompt") return { at: r.at, keys: [] };
+    if (scope === "wake" && r.kind === "start") return { at: r.at, keys: [] };
   }
-  return null;
+  const first = records.find((r) => r.kind === "start");
+  return scope === "prompt" && first ? { at: first.at, keys: [] } : null;
 }
 
 function lastHandoff(root: string): string | null {
@@ -304,7 +312,10 @@ export async function userPromptSubmit(input: HookInput, ctx: HookContext): Prom
   const events = userEventsSince(loadProject(root), cursor);
   if (events.length === 0) return OK;
   appendLive(root, id, { kind: "cursor", scope: "prompt", ...advance(cursor, events) });
-  return context("UserPromptSubmit", `Azimuth: since your last turn,\n${describeEvents(events)}`);
+  return context(
+    "UserPromptSubmit",
+    `Azimuth: the user did this in the Azimuth viewer or CLI since your last turn (these are their own decisions):\n${describeEvents(events)}`,
+  );
 }
 
 export function stop(input: HookInput, ctx: HookContext): HookOutput {

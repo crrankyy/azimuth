@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
-import { readLiveRecords } from "../../src/core/live";
+import { appendLive, readLiveRecords } from "../../src/core/live";
 import {
   describeTool,
   recordSessionAfterInit,
@@ -341,6 +341,46 @@ describe("a session that runs azimuth init", () => {
         { kind: "start", source: "init", pid: 4242 },
       ]);
       expect(recordSessionAfterInit(project.root, {})).toBe(false);
+    } finally {
+      project.cleanup();
+    }
+  });
+});
+
+describe("decisions you make between sessions", () => {
+  const answered =
+    "---\nid: Q-0001\ntitle: Which card network?\nstatus: answered\nfeature: F-001\nblocking: true\nraised_by: you\nraised_at: 2026-10-18T09:00:00Z\noptions:\n  - key: visa\n    label: Visa only\n    recommended: true\n  - key: all\n    label: All networks\nanswer: {option: visa, text: Start with Visa, answered_at: 2026-10-18T10:30:00Z}\n---\n";
+  const at = (time: string) => new Date(`2026-10-18T${time}Z`);
+
+  it("BUG-0012 reach a resumed session in its start context and at its first prompt", async () => {
+    const project = writeTree({
+      ".azimuth/config.yaml": MINIMAL_CONFIG,
+      ...featureFiles({ id: "F-001", status: "draft" }),
+      ".azimuth/questions/Q-0001.md": answered,
+    });
+    try {
+      const env = { CLAUDE_PROJECT_DIR: project.root, AZIMUTH_NO_VIEWER: "1" };
+      // The session ran 10:00–10:10; you answered at 10:30; it resumes at 11:00.
+      appendLive(project.root, "resumed", {
+        kind: "start",
+        at: "2026-10-18T10:00:00Z",
+        source: "startup",
+      });
+      appendLive(project.root, "resumed", { kind: "prompt", at: "2026-10-18T10:00:05Z" });
+      appendLive(project.root, "resumed", { kind: "end", at: "2026-10-18T10:10:00Z" });
+      const input = { session_id: "resumed", source: "resume", cwd: project.root };
+      const started = await sessionStart(input, {
+        env,
+        now: at("11:00:00"),
+        writeEnv: () => undefined,
+      });
+      expect(started.stdout).toContain("Q-0001");
+      expect(started.stdout).toContain("Visa only");
+      const prompt = await userPromptSubmit(input, { env, now: at("11:00:05") });
+      const text = (
+        JSON.parse(prompt.stdout ?? "{}") as { hookSpecificOutput?: { additionalContext?: string } }
+      ).hookSpecificOutput?.additionalContext;
+      expect(text).toContain("The user answered Q-0001 (Which card network?): Visa only");
     } finally {
       project.cleanup();
     }

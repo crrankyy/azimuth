@@ -37,7 +37,7 @@ passes to hooks: `$AZIMUTH_NODE`, then the path it remembered last time
 1. **Session start.** The hook exports `AZIMUTH_ACTOR=agent` and the Claude session ID to the
    session's environment, records Claude Code's process ID (`CLAUDE_PID`) so the viewer stays up
    while the session is open, makes sure this project's viewer is running (unless
-   `viewer.autostart` is `false` or `AZIMUTH_NO_VIEWER=1` is set), and gives Claude the project status, the last
+   `viewer.autostart` is `false` or `AZIMUTH_NO_VIEWER=1` is set), and gives Claude the project status (with your answers and change requests not yet applied), the last
    handoff and the viewer URL. After a compaction it gives a short re-grounding note instead (current session, feature and
    task).
 2. **Work.** Every tool call is appended to `.azimuth/cache/live/<session>.jsonl`; the viewer shows
@@ -45,8 +45,10 @@ passes to hooks: `$AZIMUTH_NODE`, then the path it remembered last time
    immediately, and an edit that leaves a file invalid is reported back to Claude.
 3. **You act in the viewer.** When you answer a question, request changes on or move the feature
    the agent is working on, the agent is told right after its next tool call. Everything else you
-   did, including decisions on ADRs, and anything that happened while the agent was idle, is passed
-   to Claude with your next prompt. Each prompt also restarts the viewer if it stopped, without
+   did, including decisions on ADRs, and anything that happened while the agent was idle or the
+   session was closed (it continues from your previous prompt when a session is resumed), is
+   passed to Claude with your next prompt, worded as your decisions. Answers not yet applied are
+   also listed in every session's start context. Each prompt also restarts the viewer if it stopped, without
    waiting for it.
 4. **Turn end.** If the session left validation errors in `.azimuth/` files it edited, Claude is
    asked to fix them before stopping (once; never in a loop).

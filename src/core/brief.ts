@@ -1,5 +1,5 @@
 import { idKind } from "./ids";
-import { nextForFeature, nextWork, urgentIssues } from "./next";
+import { answerText, nextForFeature, nextWork, pendingAnswers, urgentIssues } from "./next";
 import type { Feature, Index } from "./types";
 
 /** Compact, line-oriented summaries for agents (and hook context): cheap to read, no files. */
@@ -38,6 +38,17 @@ export function statusBrief(index: Index, viewerUrl: string | null = null): stri
         ),
       );
   }
+  // The user's decisions, stated here (hook context) so an agent can act on them as the user's.
+  const answers = pendingAnswers(index);
+  const reviews = index.features.flatMap((f) =>
+    pendingReviews(f).map((r) => `  ${f.id} change requested (${r.at}): ${r.body.split("\n")[0]}`),
+  );
+  if (answers.length || reviews.length) {
+    lines.push("", "Decided by the user in the viewer, not yet applied:");
+    for (const q of answers)
+      lines.push(`  ${q.id}${q.feature ? ` (${q.feature})` : ""} ${q.title}: ${answerText(q)}`);
+    lines.push(...reviews);
+  }
   const flight = index.features.filter((f) =>
     ["in-progress", "verifying", "approved"].includes(f.status),
   );
@@ -62,6 +73,13 @@ export function statusBrief(index: Index, viewerUrl: string | null = null): stri
   if (errors || warnings)
     lines.push("", `Problems: ${errors} errors, ${warnings} warnings (run \`azimuth check\`).`);
   return lines.join("\n");
+}
+
+/** Change requests from the user since the feature's latest status change. */
+function pendingReviews(f: Feature) {
+  const log = f.detail?.log ?? [];
+  const lastTransition = log.map((e) => e.type).lastIndexOf("transition");
+  return log.slice(lastTransition + 1).filter((e) => e.type === "review");
 }
 
 function featureBrief(index: Index, f: Feature): string {
@@ -100,11 +118,8 @@ function featureBrief(index: Index, f: Feature): string {
     );
   }
   const log = f.detail?.log ?? [];
-  const lastTransition = [...log].reverse().findIndex((e) => e.type === "transition");
-  const reviews = log
-    .slice(lastTransition === -1 ? 0 : log.length - lastTransition)
-    .filter((e) => e.type === "review");
-  for (const r of reviews) lines.push(`Change request from the user (${r.at}): ${r.body}`);
+  for (const r of pendingReviews(f))
+    lines.push(`Change request from the user (${r.at}): ${r.body}`);
   const recent = log.filter((e) => e.type !== "review").slice(-3);
   if (recent.length) {
     lines.push("Recent log:");

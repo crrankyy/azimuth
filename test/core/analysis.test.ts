@@ -645,6 +645,45 @@ describe("next and status brief", () => {
     });
   });
 
+  describe("answers waiting to be applied", () => {
+    const withAnswer = (status: Feature["status"]) => {
+      const index = structuredClone(expectedIndex) as Index;
+      const f = index.features.find((x) => x.id === "F-009") as Feature;
+      f.status = status;
+      f.derived.next_gate = {
+        to: "approved",
+        checks: [{ id: "approve.no-errors", rule: "No check errors in this feature", ok: true }],
+      };
+      index.questions = [
+        {
+          ...(index.questions[0] as Index["questions"][number]),
+          id: "Q-0042",
+          title: "Which limit?",
+          feature: "F-009",
+          status: "answered",
+          options: [{ key: "a", label: "Per endpoint", detail: "", recommended: true }],
+          answer: { option: "a", text: "Start low", answered_at: "2026-10-18T10:30:00Z" },
+          resolution: null,
+        },
+      ];
+      return { index, f };
+    };
+
+    it("BUG-0012 puts applying the user's answer before approval", () => {
+      const { index, f } = withAnswer("draft");
+      const next = nextForFeature(index, f);
+      expect(next.map((n) => n.ref)).toEqual(["Q-0042"]);
+      expect(next[0]?.action).toContain("azimuth resolve Q-0042");
+    });
+
+    it("BUG-0013 lists the user's decisions in the status brief", () => {
+      const { index } = withAnswer("draft");
+      expect(statusBrief(index)).toContain(
+        "Decided by the user in the viewer, not yet applied:\n  Q-0042 (F-009) Which limit?: Per endpoint — Start low",
+      );
+    });
+  });
+
   describe("an idea's next step", () => {
     const ideaWithDraftGate = (ok: boolean) => {
       const f = structuredClone(expectedIndex.features.find((x) => x.id === "F-010")) as Feature;

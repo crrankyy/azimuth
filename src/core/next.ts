@@ -1,4 +1,12 @@
-import { PRIORITIES, SEVERITIES, type Feature, type Index, type Issue, type Task } from "./types";
+import {
+  PRIORITIES,
+  SEVERITIES,
+  type Feature,
+  type Index,
+  type Issue,
+  type Question,
+  type Task,
+} from "./types";
 
 export interface NextItem {
   ref: string;
@@ -34,8 +42,35 @@ function failingChecks(f: Feature): string {
     .join("; ");
 }
 
-/** What to work on next for one feature. */
+/** Questions the user answered that no agent has applied yet (`azimuth resolve` not run). */
+export function pendingAnswers(index: Index): Question[] {
+  return index.questions.filter((q) => q.status === "answered" && !q.resolution);
+}
+
+/** The user's answer in words: the chosen option's label and their note. */
+export function answerText(q: Question): string {
+  const option = q.options.find((o) => o.key === q.answer?.option);
+  return [option?.label, q.answer?.text].filter(Boolean).join(" — ") || "(no answer text)";
+}
+
+/**
+ * What to work on next for one feature. The user's unapplied answers come first; a draft isn't
+ * offered for approval until they are applied, since its spec may have to change.
+ */
 export function nextForFeature(index: Index, f: Feature): NextItem[] {
+  const apply = pendingAnswers(index)
+    .filter((q) => q.feature === f.id)
+    .map((q) => ({
+      ref: q.id,
+      title: q.title,
+      action: `Apply the user's answer to ${f.id}, then azimuth resolve ${q.id} --assumption ${f.id} (or --adr ADR-…)`,
+      reason: `The user answered: ${answerText(q)}`,
+    }));
+  if (apply.length > 0 && f.status === "draft") return apply;
+  return [...apply, ...stepsForFeature(index, f)];
+}
+
+function stepsForFeature(index: Index, f: Feature): NextItem[] {
   const blockers = f.derived.blocked_by.map((b) => b.id).join(", ");
   switch (f.status) {
     case "idea": {

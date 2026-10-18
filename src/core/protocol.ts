@@ -18,6 +18,9 @@ Azimuth viewer. Follow this protocol whenever you work in this repository.
 - Only the user answers questions, releases milestones and overrides gates. You may approve
   specs and accept decisions only when the project's autonomy settings allow it; the CLI
   enforces this.
+- The user's answers and change requests from the viewer reach you in Azimuth's session-start
+  and prompt context ("Decided by the user…"). Apply each one, then record it
+  (\`azimuth resolve Q-…\`), before approving or building on the spec it affects.
 
 ## Sessions and progress
 
