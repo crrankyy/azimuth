@@ -19,7 +19,8 @@ Target: $ARGUMENTS
    spec changed since approval (`azimuth reapprove <F-ID>`).
 3. If the feature is `approved`, run `azimuth move <F-ID> in-progress`. A refusal names the gate
    check that failed (an unfinished dependency, a changed spec); resolve it or ask the user.
-4. Repeat until `azimuth next <F-ID>` has no ready task:
+4. Repeat until `azimuth next <F-ID>` has no ready task (when you hand tasks to subagents,
+   follow "Delegating to subagents" below):
    1. `azimuth move <T-ID> in-progress`.
    2. Write the tests for the scenarios the task covers. Each test name starts with its scenario
       ID (`it("S-005.1.2 …")`); where a name can't hold the ID, use the protocol's marker
@@ -37,3 +38,23 @@ Target: $ARGUMENTS
    - the work needs a decision record: use `/azimuth:adr`.
 6. When every task is done or skipped, `azimuth move <F-ID> verifying`.
 7. `azimuth session handoff "<next steps>"`, `azimuth session close`, and report progress.
+
+## Delegating to subagents
+
+Subagents run inside your Claude Code session, so Azimuth sees one session: theirs is yours.
+
+- **You run every `azimuth` command and every `git` commit; subagents never do.** A subagent's
+  `azimuth session start` would replace your session, and parallel commits in one working tree
+  pick up each other's files.
+- **Hand each subagent one ready task** from `azimuth next <F-ID>`, after
+  `azimuth move <T-ID> in-progress`. Give it the task's title, the scenarios it covers with their
+  GIVEN/WHEN/THEN, the contract and invariants it must keep, the files it may change (the task's
+  `files`), the test-naming rule from step 4.2 and the task's verify command. Ask it to write the
+  tests first, implement, run the verify command, and report the files it changed and the
+  command's result, without committing.
+- **Parallel only when independent:** run several subagents at once only for ready tasks whose
+  `files` don't overlap; otherwise one at a time. Wait for the whole batch to report before
+  verifying, since a half-finished change elsewhere can break the build.
+- **Then, one task at a time:** review the change, stage only that task's files, and do steps
+  4.4–4.6 yourself (commit with `Refs: <T-ID>`, `azimuth verify <T-ID>`,
+  `azimuth move <T-ID> done`, `azimuth log`).
