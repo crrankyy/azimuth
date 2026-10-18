@@ -110,9 +110,15 @@ export function readLiveRecords(root: string, claudeSession: string): LiveRecord
 
 /** Task and feature IDs a launch names: its description's, or its prompt's when it names none. */
 export function launchRefs(description: string, prompt: string): string[] {
-  void description;
-  void prompt;
-  return [];
+  const refs = (text: string) => [
+    ...new Set(
+      (text.match(MENTION_PATTERN) ?? []).filter(
+        (id) => id.startsWith("T-") || id.startsWith("F-"),
+      ),
+    ),
+  ];
+  const own = refs(description);
+  return own.length > 0 ? own : refs(prompt);
 }
 
 /** The work item an event points at: an ID in a command or a feature folder in a path. */

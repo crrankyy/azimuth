@@ -386,3 +386,92 @@ describe("decisions you make between sessions", () => {
     }
   });
 });
+
+describe("F-005 subagent records", () => {
+  const last = (session: string) => readLiveRecords(tree.root, session).at(-1);
+
+  it("S-005.1.1 records a launch with the task its description names", () => {
+    const r = hook("pre-tool-use", {
+      session_id: "f005-launch",
+      tool_name: "Agent",
+      tool_use_id: "toolu_1",
+      tool_input: {
+        description: "Build T-002.2 heading recognizer",
+        prompt: "Write the tests for S-002.1.1",
+      },
+    });
+    expect(r).toMatchObject({ code: 0, out: "" });
+    expect(last("f005-launch")).toMatchObject({
+      kind: "launch",
+      tool_use_id: "toolu_1",
+      description: "Build T-002.2 heading recognizer",
+      refs: ["T-002.2"],
+    });
+  });
+
+  it("S-005.1.2 takes the prompt's IDs when the description names none", () => {
+    hook("pre-tool-use", {
+      session_id: "f005-prompt",
+      tool_name: "Agent",
+      tool_use_id: "toolu_2",
+      tool_input: { description: "Heading recognizer", prompt: "Build T-002.2 for F-002" },
+    });
+    expect(last("f005-prompt")).toMatchObject({ kind: "launch", refs: ["T-002.2", "F-002"] });
+  });
+
+  it("S-005.1.3 records a starting subagent", () => {
+    hook("subagent-start", {
+      session_id: "f005-start",
+      agent_id: "a1",
+      agent_type: "general-purpose",
+    });
+    expect(last("f005-start")).toMatchObject({
+      kind: "subagent",
+      agent_id: "a1",
+      agent_type: "general-purpose",
+    });
+  });
+
+  it("S-005.1.4 records a finishing subagent", () => {
+    hook("subagent-stop", { session_id: "f005-stop", agent_id: "a1" });
+    expect(last("f005-stop")).toMatchObject({ kind: "subagent-stop", agent_id: "a1" });
+  });
+
+  it("S-005.1.5 keeps the subagent the Agent tool started on its tool record", () => {
+    hook("post-tool-use", {
+      session_id: "f005-spawned",
+      tool_name: "Agent",
+      tool_use_id: "toolu_1",
+      tool_input: { description: "Build T-002.2 heading recognizer" },
+      tool_response: { isAsync: true, status: "async_launched", agentId: "a1" },
+    });
+    expect(last("f005-spawned")).toMatchObject({
+      kind: "tool",
+      tool: "Agent",
+      tool_use_id: "toolu_1",
+      spawned: "a1",
+    });
+  });
+
+  it("S-005.1.6 records nothing for other tools or outside an Azimuth project", () => {
+    const bash = hook("pre-tool-use", {
+      session_id: "f005-none",
+      tool_name: "Bash",
+      tool_use_id: "toolu_3",
+      tool_input: { command: "ls" },
+    });
+    expect(bash).toMatchObject({ code: 0, out: "" });
+    expect(readLiveRecords(tree.root, "f005-none")).toEqual([]);
+    const outside = mkdtempSync(join(tmpdir(), "azimuth-outside-"));
+    const r = spawnSync(LAUNCHER, ["hook", "subagent-start"], {
+      cwd: outside,
+      env: { ...env(), CLAUDE_PROJECT_DIR: outside },
+      input: JSON.stringify({ session_id: "f005-none", agent_id: "a1" }),
+      encoding: "utf8",
+    });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe("");
+    expect(readLiveRecords(outside, "f005-none")).toEqual([]);
+    rmSync(outside, { recursive: true, force: true });
+  });
+});

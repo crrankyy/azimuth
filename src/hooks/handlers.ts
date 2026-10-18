@@ -7,6 +7,7 @@ import { advance, describeEvents, userEventsSince, type Cursor } from "../core/d
 import { toUtc } from "../core/git";
 import {
   appendLive,
+  launchRefs,
   pruneLive,
   readLiveRecords,
   summarizeLive,
@@ -106,6 +107,17 @@ function displayPath(root: string, file: string, places: Omit<Places, "root">): 
   return rel.startsWith("..") ? tidyPaths(file, { ...places, root }) : rel;
 }
 
+const clip = (s: string, n = 120) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+
+/** The Agent tool (called Task in older Claude Code versions). */
+const isAgentTool = (tool: string | undefined) => tool === "Agent" || tool === "Task";
+
+/** The subagent an Agent tool call started, from its response (`agentId`). */
+function spawnedAgent(response: unknown): string | null {
+  const id = (response as { agentId?: unknown } | null)?.agentId;
+  return typeof id === "string" && id ? id : null;
+}
+
 /** A short, secret-light description of a tool call for the live activity feed. */
 export function describeTool(
   root: string,
@@ -115,7 +127,6 @@ export function describeTool(
 ): { file: string | null; summary: string } {
   const pathOf = (input.file_path ?? input.notebook_path ?? input.path) as string | undefined;
   const file = typeof pathOf === "string" ? displayPath(root, pathOf, places) : null;
-  const clip = (s: string, n = 120) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
   switch (tool) {
     case "Bash":
       return {
@@ -267,6 +278,10 @@ export function postToolUse(input: HookInput, ctx: HookContext): HookOutput {
     summary,
     agent_id: input.agent_id ?? null,
     agent_type: input.agent_type ?? null,
+    ...(isAgentTool(input.tool_name) && {
+      tool_use_id: input.tool_use_id ?? null,
+      spawned: spawnedAgent(input.tool_response),
+    }),
   });
   // Wake the agent (asyncRewake) when you acted on what it is working on.
   const records = readLiveRecords(root, id);
@@ -355,22 +370,45 @@ export function sessionEnd(input: HookInput, ctx: HookContext): HookOutput {
 
 /** PreToolUse for the Agent tool: records what the subagent is being asked to do. */
 export function preToolUse(input: HookInput, ctx: HookContext): HookOutput {
-  void input;
-  void ctx;
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id || !input.tool_use_id || !isAgentTool(input.tool_name)) return OK;
+  const description = String(input.tool_input?.description ?? "").trim();
+  const prompt = String(input.tool_input?.prompt ?? "");
+  appendLive(root, id, {
+    kind: "launch",
+    at: stamp(ctx.now ?? new Date()),
+    tool_use_id: input.tool_use_id,
+    description: clip(description || prompt.trim().split("\n")[0] || ""),
+    refs: launchRefs(description, prompt),
+  });
   return OK;
 }
 
 /** SubagentStart: records the subagent so its lane appears before its first step. */
 export function subagentStart(input: HookInput, ctx: HookContext): HookOutput {
-  void input;
-  void ctx;
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id || !input.agent_id) return OK;
+  appendLive(root, id, {
+    kind: "subagent",
+    at: stamp(ctx.now ?? new Date()),
+    agent_id: input.agent_id,
+    agent_type: input.agent_type ?? null,
+  });
   return OK;
 }
 
 /** SubagentStop: records that the subagent finished. */
 export function subagentStop(input: HookInput, ctx: HookContext): HookOutput {
-  void input;
-  void ctx;
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id || !input.agent_id) return OK;
+  appendLive(root, id, {
+    kind: "subagent-stop",
+    at: stamp(ctx.now ?? new Date()),
+    agent_id: input.agent_id,
+  });
   return OK;
 }
 
