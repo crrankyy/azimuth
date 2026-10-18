@@ -21,3 +21,6 @@ Refused, the same way moving an accepted ADR back to proposed is: only you can u
 
 ## Actual
 Exit 0. The file now has `status: proposed`, `decided_by: null`, `decision_note: null`: your rejection and note are gone. `transitions.ts` only guards the accepted → proposed move.
+
+## Notes
+Reopened 2026-10-18 by regression QA: a rejected ADR with no `decided_by` (written by hand or migrated) could still be reopened by an agent, erasing its note.

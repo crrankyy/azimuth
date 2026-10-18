@@ -21,3 +21,6 @@ The selection stays on the same item (or moves to a neighbour only if that item 
 
 ## Actual
 The highlight moves to whatever item now has the same row number. Pressing `a` then acts on that item; acknowledge writes immediately, so you can acknowledge something you never looked at. The selection is a row index (`useState(0)` + `Math.min`).
+
+## Notes
+Reopened 2026-10-18 by regression QA: once the selected item itself leaves, its neighbour is highlighted but not followed, so the next live update moves the highlight again and `a` acts on another item.
