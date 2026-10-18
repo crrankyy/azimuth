@@ -11,12 +11,19 @@ const run = (id: string) => index.runs.find((r) => r.id === id) as VerifyRun;
 const NOW = Date.parse("2026-10-18T12:05:00Z");
 
 describe("hiddenNodes", () => {
-  it("BUG-0008 counts tasks cut off on either side of the visible canvas", () => {
-    // Columns at 0, 200, 400, 600 and 800; nodes are 150 wide, plus 6px of padding.
-    const xs = [0, 200, 400, 600, 800];
-    expect(hiddenNodes(xs, { left: 0, width: 600 })).toEqual({ left: 0, right: 2 });
-    expect(hiddenNodes(xs, { left: 300, width: 700 })).toEqual({ left: 2, right: 0 });
-    expect(hiddenNodes(xs, { left: 0, width: 1000 })).toEqual({ left: 0, right: 0 });
+  it("BUG-0008 counts tasks cut off on each side of the visible canvas", () => {
+    // Columns at 0, 200, 400, 600 and 800; nodes are 150×60, plus 6px of padding.
+    const row = [0, 200, 400, 600, 800].map((x) => ({ x, y: 0 }));
+    const view = (left: number, width: number) => ({ left, top: 0, width, height: 600 });
+    expect(hiddenNodes(row, view(0, 600))).toEqual({ left: 0, right: 2, up: 0, down: 0 });
+    expect(hiddenNodes(row, view(300, 700))).toEqual({ left: 2, right: 0, up: 0, down: 0 });
+    expect(hiddenNodes(row, view(0, 1000))).toEqual({ left: 0, right: 0, up: 0, down: 0 });
+    // Nine tasks in one column, 96px apart, in a 560px-high canvas.
+    const column = Array.from({ length: 9 }, (_, i) => ({ x: 0, y: i * 96 }));
+    expect(hiddenNodes(column, { left: 0, top: 0, width: 800, height: 560 })).toMatchObject({
+      up: 0,
+      down: 3,
+    });
   });
 });
 

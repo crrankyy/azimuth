@@ -44,25 +44,39 @@ function nodeBadge(task: Task): { text: string; danger: boolean; label?: string 
   return { text: TASK_LOOK[task.status].label.toLowerCase(), danger: false };
 }
 
-/** How many nodes lie wholly or partly outside the visible strip of the canvas, on each side. */
-export function hiddenNodes(
-  xs: number[],
-  view: { left: number; width: number },
-): { left: number; right: number } {
-  const right = view.left + view.width;
+interface View {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+type Side = "left" | "right" | "up" | "down";
+const SIDES: Side[] = ["left", "up", "down", "right"];
+
+/** How many nodes lie wholly or partly outside the visible part of the canvas, on each side. */
+export function hiddenNodes(nodes: { x: number; y: number }[], view: View): Record<Side, number> {
+  const count = (outside: (n: { x: number; y: number }) => boolean) => nodes.filter(outside).length;
   return {
-    left: xs.filter((x) => x + PAD < view.left).length,
-    right: xs.filter((x) => x + PAD + OPTS.nodeWidth > right).length,
+    left: count((n) => n.x + PAD < view.left),
+    right: count((n) => n.x + PAD + OPTS.nodeWidth > view.left + view.width),
+    up: count((n) => n.y + PAD < view.top),
+    down: count((n) => n.y + PAD + OPTS.nodeHeight > view.top + view.height),
   };
 }
 
-/** The canvas's visible strip, kept current as it scrolls or resizes. */
-function useView(ref: RefObject<HTMLDivElement | null>): { left: number; width: number } | null {
-  const [view, setView] = useState<{ left: number; width: number } | null>(null);
+/** The canvas's visible part, kept current as it scrolls or resizes. */
+function useView(ref: RefObject<HTMLDivElement | null>): View | null {
+  const [view, setView] = useState<View | null>(null);
   useEffect(() => {
     const box = ref.current;
     if (!box) return;
-    const update = () => setView({ left: box.scrollLeft, width: box.clientWidth });
+    const update = () =>
+      setView({
+        left: box.scrollLeft,
+        top: box.scrollTop,
+        width: box.clientWidth,
+        height: box.clientHeight,
+      });
     // ResizeObserver also reports the first size, so this needs no synchronous update.
     const observer = new ResizeObserver(update);
     observer.observe(box);
@@ -178,17 +192,18 @@ export function TaskDag({
   const scroller = useRef<HTMLDivElement>(null);
   const view = useView(scroller);
   // macOS hides scrollbars, so say when tasks are out of view instead of relying on one.
-  const hidden = view
-    ? hiddenNodes(
-        layout.nodes.map((n) => n.x),
-        view,
-      )
-    : { left: 0, right: 0 };
-  const scrollBy = (dir: 1 | -1) =>
-    scroller.current?.scrollBy({
-      left: dir * scroller.current.clientWidth * 0.8,
+  const hidden = view ? hiddenNodes(layout.nodes, view) : null;
+  const scrollTo = (side: Side) => {
+    const box = scroller.current;
+    if (!box) return;
+    const sign = side === "left" || side === "up" ? -1 : 1;
+    const across = side === "left" || side === "right";
+    box.scrollBy({
+      left: across ? sign * box.clientWidth * 0.8 : 0,
+      top: across ? 0 : sign * box.clientHeight * 0.8,
       behavior: "smooth",
     });
+  };
   const placed = layout.nodes.find((n) => n.id === selected);
   const selX = placed?.x;
   const selY = placed?.y;
@@ -208,15 +223,21 @@ export function TaskDag({
         <Eyebrow>Task graph</Eyebrow>
         <span className="td-meta">{plural(tasks.length, "task")} · edges from after</span>
         <span className="spacer" />
-        {hidden.left > 0 && (
-          <button type="button" className="td-more left" onClick={() => scrollBy(-1)}>
-            ← {plural(hidden.left, "more task")}
-          </button>
-        )}
-        {hidden.right > 0 && (
-          <button type="button" className="td-more right" onClick={() => scrollBy(1)}>
-            {plural(hidden.right, "more task")} →
-          </button>
+        {SIDES.map((side) =>
+          hidden && hidden[side] > 0 ? (
+            <button
+              key={side}
+              type="button"
+              className={`td-more ${side}`}
+              onClick={() => scrollTo(side)}
+            >
+              {side === "left" && "← "}
+              {side === "up" && "↑ "}
+              {plural(hidden[side], "more task")}
+              {side === "down" && " ↓"}
+              {side === "right" && " →"}
+            </button>
+          ) : null,
         )}
         {pathLength > 1 && (
           <span className="td-crit-key">
