@@ -2,7 +2,7 @@
 id: BUG-0008
 type: bug
 title: Task graph hides tasks past the column width with no scroll cue
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [viewer/src/components/taskdag.css, viewer/src/components/TaskDag.tsx]
 found_by: SES-20261018-0136
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. Open `#/features/F-006/plan` at 1440×900 (or F-005 at 1280).

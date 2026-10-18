@@ -2,7 +2,7 @@
 id: BUG-0010
 type: bug
 title: Live strip steps reach the viewer up to 10 seconds late
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/server/server.ts, src/server/watch.ts]
 found_by: SES-20261018-0136
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. Open the viewer on Activity.

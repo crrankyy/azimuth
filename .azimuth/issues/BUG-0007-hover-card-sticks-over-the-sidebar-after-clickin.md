@@ -2,7 +2,7 @@
 id: BUG-0007
 type: bug
 title: Hover card sticks over the sidebar after clicking an ID chip
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [viewer/src/components/IdChip.tsx]
 found_by: SES-20261018-0136
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. On `#/features/F-005/context`, hover the F-006 chip, then click it.

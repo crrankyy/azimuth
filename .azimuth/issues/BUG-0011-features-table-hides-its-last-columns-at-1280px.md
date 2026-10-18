@@ -2,7 +2,7 @@
 id: BUG-0011
 type: bug
 title: Features table hides its last columns at 1280px
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [viewer/src/screens/features/FeatureTable.tsx, viewer/src/screens/features/features.css]
 found_by: SES-20261018-0136
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. Open `#/features` at 1280×900.

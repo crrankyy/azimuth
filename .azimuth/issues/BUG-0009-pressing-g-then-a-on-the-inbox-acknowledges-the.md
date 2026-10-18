@@ -2,7 +2,7 @@
 id: BUG-0009
 type: bug
 title: Pressing g then a on the Inbox acknowledges the selected item
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [viewer/src/lib/keys.ts, viewer/src/screens/Inbox.tsx]
 found_by: SES-20261018-0136
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. Have a review-auto item in the Inbox (e.g. `accept_adrs: auto`, agent runs `azimuth move ADR-0004 accepted`).

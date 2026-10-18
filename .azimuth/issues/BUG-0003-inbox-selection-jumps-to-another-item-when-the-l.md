@@ -2,7 +2,7 @@
 id: BUG-0003
 type: bug
 title: Inbox selection jumps to another item when the list changes live
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [viewer/src/screens/Inbox.tsx]
 found_by: SES-20261018-0136
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. In the Inbox, press j until a row below other items is selected (e.g. a review-auto item at row 5).

@@ -2,7 +2,7 @@
 id: BUG-0006
 type: bug
 title: Feature dialogs apply an action to a status you never saw
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [viewer/src/screens/feature/ActionDialogs.tsx, viewer/src/screens/feature/Lifecycle.tsx]
 found_by: SES-20261018-0136
 created: 2026-10-18
-resolved_at: null
+resolved_at: 2026-10-18
 ---
 ## Repro
 1. Open `#/features/F-009` (approved), click Defer and type a reason.
