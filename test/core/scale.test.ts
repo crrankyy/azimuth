@@ -50,16 +50,11 @@ afterAll(() => tree.cleanup());
 describe("scale", () => {
   it("builds the index for 120 features within budget", () => {
     clearParseCache();
-    const cold = performance.now();
     const { index } = buildIndex(tree.root);
-    const coldMs = performance.now() - cold;
     const warm = performance.now();
     buildIndex(tree.root);
     const warmMs = performance.now() - warm;
     const bytes = Buffer.byteLength(JSON.stringify(index));
-    console.log(
-      `scale: cold ${coldMs.toFixed(0)} ms, warm ${warmMs.toFixed(0)} ms, ${(bytes / 1024).toFixed(0)} KB`,
-    );
     expect(index.features).toHaveLength(120);
     expect(warmMs).toBeLessThan(1_500);
     expect(bytes).toBeLessThan(2 * 1024 * 1024);
