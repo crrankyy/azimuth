@@ -11,3 +11,15 @@ draft → approved
 
 ## 2026-10-18T13:29:14Z · agent · transition · SES-20261018-1329
 approved → in-progress
+
+## 2026-10-18T13:29:29Z · agent · note · SES-20261018-1329 · auto
+Re-approved the changed spec.
+
+## 2026-10-18T13:30:26Z · agent · note · SES-20261018-1329
+T-003.1: in-progress → done
+
+## 2026-10-18T13:31:56Z · agent · note · SES-20261018-1329
+T-003.2: in-progress → done
+
+## 2026-10-18T13:31:57Z · agent · transition · SES-20261018-1329
+in-progress → verifying
