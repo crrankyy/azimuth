@@ -16,7 +16,7 @@ approved_at: 2026-10-18
 approved_by: agent
 approved_hash: sha256:338efde37ee2920d76817994649d7259c662003b18f3ce670a167a5eb2dae856
 approved_commit: 707b4ca
-review_ack_at: null
+review_ack_at: 2026-10-18T13:23:56Z
 ---
 # F-001: Keep the viewer running while a Claude Code session is open
 
