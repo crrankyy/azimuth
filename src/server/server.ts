@@ -93,10 +93,19 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
     else broadcast("live", { live: index.live, generated_at: index.generated_at });
   };
   let lastLivePush = 0;
+  let deferredLive: NodeJS.Timeout | null = null;
   const pushLive = () => {
-    const at = Date.now();
-    if (at - lastLivePush < 1_000) return;
-    lastLivePush = at;
+    const wait = lastLivePush + 1_000 - Date.now();
+    if (wait > 0) {
+      // At most one push a second, but the latest step still goes out when the second is up:
+      // the watcher has already moved past this change and won't report it again.
+      deferredLive ??= setTimeout(() => {
+        deferredLive = null;
+        onChange("live");
+      }, wait);
+      return;
+    }
+    lastLivePush = Date.now();
     index = { ...index, live: readLiveSessions(root, now()) };
     broadcast("live", { live: index.live, generated_at: index.generated_at });
   };
@@ -242,6 +251,7 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
     closing = true;
     clearInterval(heartbeat);
     clearInterval(idleCheck);
+    if (deferredLive) clearTimeout(deferredLive);
     watcher.close();
     for (const res of clients) res.end();
     clients.clear();

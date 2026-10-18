@@ -149,6 +149,28 @@ describe("viewer server", () => {
     sse.close();
   });
 
+  it("BUG-0010 delivers a live step that follows another within a second", async () => {
+    const sse = await subscribe(server.url);
+    await sse.waitFor("hello");
+    const step = (file: string) =>
+      appendLive(repo.root, "claude-2", {
+        kind: "tool",
+        at: "2026-10-18T12:00:00Z",
+        tool: "Edit",
+        file,
+        summary: `Edit ${file}`,
+      });
+    const mark = sse.events.length;
+    step("src/first.ts");
+    await sse.waitFor("live", mark);
+    const second = sse.events.length;
+    step("src/second.ts");
+    const live = (await sse.waitFor("live", second, 2_500)).data as Pick<Index, "live">;
+    expect(live.live.find((s) => s.claude_session === "claude-2")?.current?.summary).toBe(
+      "Edit src/second.ts",
+    );
+  });
+
   it("approves as you even when the environment says agent, editing only frontmatter", async () => {
     process.env.AZIMUTH_ACTOR = "agent";
     const file = join(repo.root, ".azimuth/features/F-009-endpoint-rate-limits/feature.md");
