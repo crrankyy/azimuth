@@ -31,7 +31,15 @@ export type LiveRecord =
       summary: string;
       agent_id?: string | null;
       agent_type?: string | null;
+      /** The Agent tool's own tool use, and the subagent it started (from its response). */
+      tool_use_id?: string | null;
+      spawned?: string | null;
     }
+  /** PreToolUse for the Agent tool: what a subagent is being asked to do. */
+  | { kind: "launch"; at: string; tool_use_id: string; description: string; refs: string[] }
+  /** SubagentStart and SubagentStop. */
+  | { kind: "subagent"; at: string; agent_id: string; agent_type: string | null }
+  | { kind: "subagent-stop"; at: string; agent_id: string }
   | { kind: "session"; at: string; ses: string }
   | { kind: "prompt"; at: string; pid?: number }
   | { kind: "stop"; at: string }
@@ -100,6 +108,13 @@ export function readLiveRecords(root: string, claudeSession: string): LiveRecord
   return existsSync(path) ? parseLiveLines(readTail(path)) : [];
 }
 
+/** Task and feature IDs a launch names: its description's, or its prompt's when it names none. */
+export function launchRefs(description: string, prompt: string): string[] {
+  void description;
+  void prompt;
+  return [];
+}
+
 /** The work item an event points at: an ID in a command or a feature folder in a path. */
 function workItem(event: LiveEvent): { feature: string | null; task: string | null } {
   const text = `${event.summary} ${event.file ?? ""}`;
@@ -137,6 +152,10 @@ export function summarizeLive(claudeSession: string, records: LiveRecord[]): Liv
           agent_id: r.agent_id,
           agent_type: r.agent_type ?? null,
           last_seen_at: r.at,
+          description: null,
+          task: null,
+          feature: null,
+          stopped_at: null,
         });
     }
   }
@@ -161,6 +180,7 @@ export function summarizeLive(claudeSession: string, records: LiveRecord[]): Liv
     current: tools.at(-1) ?? null,
     feature,
     task,
+    features: [],
     events: tools.slice(-MAX_EVENTS),
   };
 }

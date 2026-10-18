@@ -57,7 +57,8 @@ function logHookError(event: string, input: HookInput, error: unknown): void {
 }
 
 export const hook: Command = {
-  usage: "hook <session-start|post-tool-use|check-edit|user-prompt-submit|stop|session-end>",
+  usage:
+    "hook <session-start|pre-tool-use|post-tool-use|check-edit|user-prompt-submit|stop|subagent-start|subagent-stop|session-end>",
   summary: "(internal) Claude Code hook entry point; reads the hook JSON on stdin",
   async run({ positionals }) {
     const event = requirePositional(positionals, 0, "event");

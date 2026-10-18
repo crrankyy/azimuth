@@ -420,6 +420,18 @@ export interface LiveEvent {
   agent_id: string | null;
 }
 
+export interface LiveAgent {
+  agent_id: string;
+  agent_type: string | null;
+  last_seen_at: ISODateTime;
+  /** What the orchestrator asked for (the Agent tool's description), when known. */
+  description: string | null;
+  task: Id | null;
+  feature: Id | null;
+  /** Set once the subagent has finished. */
+  stopped_at: ISODateTime | null;
+}
+
 export interface LiveSession {
   claude_session: string;
   ses: Id | null;
@@ -428,10 +440,12 @@ export interface LiveSession {
   /** Last time Claude finished a turn (Stop hook); the session is idle while this is newest. */
   stopped_at: ISODateTime | null;
   ended_at: ISODateTime | null;
-  agents: { agent_id: string; agent_type: string | null; last_seen_at: ISODateTime }[];
+  agents: LiveAgent[];
   current: LiveEvent | null;
   feature: Id | null;
   task: Id | null;
+  /** Features the main agent or a running subagent is working on, sorted by ID. */
+  features: Id[];
   events: LiveEvent[];
 }
 

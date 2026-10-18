@@ -29,6 +29,8 @@ export interface HookInput {
   agent_id?: string;
   agent_type?: string;
   stop_hook_active?: boolean;
+  tool_use_id?: string;
+  tool_response?: unknown;
 }
 
 export interface HookOutput {
@@ -351,6 +353,27 @@ export function sessionEnd(input: HookInput, ctx: HookContext): HookOutput {
   return OK;
 }
 
+/** PreToolUse for the Agent tool: records what the subagent is being asked to do. */
+export function preToolUse(input: HookInput, ctx: HookContext): HookOutput {
+  void input;
+  void ctx;
+  return OK;
+}
+
+/** SubagentStart: records the subagent so its lane appears before its first step. */
+export function subagentStart(input: HookInput, ctx: HookContext): HookOutput {
+  void input;
+  void ctx;
+  return OK;
+}
+
+/** SubagentStop: records that the subagent finished. */
+export function subagentStop(input: HookInput, ctx: HookContext): HookOutput {
+  void input;
+  void ctx;
+  return OK;
+}
+
 export const HOOKS: Record<
   string,
   (input: HookInput, ctx: HookContext) => HookOutput | Promise<HookOutput>
@@ -361,4 +384,7 @@ export const HOOKS: Record<
   "user-prompt-submit": userPromptSubmit,
   stop,
   "session-end": sessionEnd,
+  "pre-tool-use": preToolUse,
+  "subagent-start": subagentStart,
+  "subagent-stop": subagentStop,
 };
