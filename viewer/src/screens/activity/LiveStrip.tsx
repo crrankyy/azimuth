@@ -77,7 +77,9 @@ function EventLine({ event }: { event: LiveEvent }) {
     <div className="live-now">
       <KindTag kind={event.tool} />
       <span className="live-summary">{event.summary}</span>
-      {event.file && <span className="az-mono live-file">{event.file}</span>}
+      {event.file && !event.summary.includes(event.file) && (
+        <span className="az-mono live-file">{event.file}</span>
+      )}
     </div>
   );
 }
