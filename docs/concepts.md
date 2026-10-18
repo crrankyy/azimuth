@@ -113,8 +113,10 @@ What needs you, grouped by urgency:
 - **Scenario → test:** test names start with the scenario ID (`it("S-005.1.2 …")`), or use
   `@pytest.mark.scenario("S-005.1.2")` or a `// scenario: S-005.1.2` comment. `azimuth trace`
   shows the matrix.
-- **Verify run → scenarios:** a run records each covered scenario as passing or failing; a JUnit
-  report written to `$AZIMUTH_JUNIT` makes that exact per test.
+- **Verify run → scenarios:** a run records each covered scenario as passing or failing, from
+  the scenario IDs and marked tests' function names its output shows (see
+  [`azimuth verify`](cli.md#verify)); a JUnit report written to `$AZIMUTH_JUNIT` makes that exact
+  per test.
 - **Task → commit:** commits carry a `Refs: T-005.2` trailer.
 - **Question → decision → feature:** a resolved question points at the ADR or feature that
   applied it.

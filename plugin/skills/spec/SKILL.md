@@ -60,7 +60,8 @@ Run `azimuth new spec <F-ID>` to scaffold missing files, then replace the placeh
    story slice that writes its tests first and then the implementation, then wiring and full
    verification. Each task lists `after`, `covers` (scenario IDs), `files` and a `verify`
    command that exits 0 on success; a task that covers scenarios verifies by running their
-   tests (a typecheck alone proves none of them). Don't split a slice into a "red tests" task:
+   tests with output that shows which tests ran (a typecheck alone proves none of them; use
+   `go test -v`, not `go test`). Don't split a slice into a "red tests" task:
    its verify could only pass by not running the tests. Every scenario must be covered by a task.
 
 ## 4. Check, draft, commit, approve

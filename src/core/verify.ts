@@ -67,14 +67,12 @@ export function runVerify(root: string, target: VerifyTarget, now = () => new Da
   const timedOut = result.error && (result.error as NodeJS.ErrnoException).code === "ETIMEDOUT";
   const exitCode = typeof result.status === "number" ? result.status : 1;
   const ok = exitCode === 0 && !timedOut;
-  const tests = traceTests(root, config.tests.globs);
-  const testFiles = new Map(
-    target.covers.map((id) => [id, (tests.get(id) ?? []).map((t) => t.file)]),
-  );
-  let scenarios = scenariosFromOutput(output, ok, target.covers, testFiles);
+  const traced = traceTests(root, config.tests.globs);
+  const tests = new Map(target.covers.map((id) => [id, traced.get(id) ?? []]));
+  let scenarios = scenariosFromOutput(output, ok, target.covers, tests);
   let junit: VerifyRun["junit"] = null;
   if (existsSync(junitPath)) {
-    const parsed = parseJunit(readFileSync(junitPath, "utf8"));
+    const parsed = parseJunit(readFileSync(junitPath, "utf8"), tests);
     scenarios = new Map([...scenarios, ...parsed.scenarios]);
     junit = parsed.summary;
   }

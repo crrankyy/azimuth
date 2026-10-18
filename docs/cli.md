@@ -78,11 +78,21 @@ Refused moves print the failing gate checks and exit 1.
 `azimuth verify [T-ID | F-ID]` runs verify commands from the project root with `/bin/sh` (default:
 every task of in-progress and verifying features), records each run in
 `.azimuth/cache/runs/R-NNNN.json` with the output tail, and exits 1 if any failed. A command can
-write a JUnit report to the path in `$AZIMUTH_JUNIT` for exact per-scenario results; otherwise a
-passing run passes a covered scenario only when its output names the scenario or a test file that
-references it (so a typecheck passes nothing), and a failing run fails covered scenarios unless
-the output shows them passing. Test runners that print neither (`go test` without `-v`) need a
-JUnit report. `$AZIMUTH_TASK` holds the task ID.
+write a JUnit report to the path in `$AZIMUTH_JUNIT` for exact per-scenario results. Otherwise
+verify reads the output. A passing run passes a covered scenario only when the output shows one of
+its tests ran (so a typecheck passes nothing):
+
+- the scenario ID appears, as in Vitest or Jest test titles;
+- the function name of a test marked with `// scenario:` or `@pytest.mark.scenario` appears on a
+  passing line: `test buffer::tests::inserts_text_at_cursor ... ok` (cargo),
+  `--- PASS: TestCountsFiles` (`go test -v`), `… PASSED` (`pytest -v`);
+- or the name of a test file that references it appears, except for Rust files: cargo lists every
+  test binary even when its filter ran none of their tests, and never lists module files.
+
+A failing run fails covered scenarios unless the output shows them passing the same way. Function
+names are matched without their module path, so give marked tests unique names. Test runners that
+print none of these (`go test` without `-v`) need a JUnit report, whose test cases are matched by
+scenario ID or function name too. `$AZIMUTH_TASK` holds the task ID.
 
 ## Sessions
 

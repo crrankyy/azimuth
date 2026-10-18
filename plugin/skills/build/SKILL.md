@@ -22,7 +22,9 @@ Target: $ARGUMENTS
 4. Repeat until `azimuth next <F-ID>` has no ready task:
    1. `azimuth move <T-ID> in-progress`.
    2. Write the tests for the scenarios the task covers. Each test name starts with its scenario
-      ID (`it("S-005.1.2 …")`). Run them and confirm they fail for the right reason.
+      ID (`it("S-005.1.2 …")`); where a name can't hold the ID, use the protocol's marker
+      (`// scenario: S-005.1.2` above a Rust or Go test) and a test name unique in the project.
+      Run them and confirm they fail for the right reason.
    3. Implement until the task's verify command passes. Respect the contract and invariants.
    4. Commit: `feat(<F-ID>): <what>` with `Refs: <T-ID>`.
    5. `azimuth verify <T-ID>` to record the run, then `azimuth move <T-ID> done`.
