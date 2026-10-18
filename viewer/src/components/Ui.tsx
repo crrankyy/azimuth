@@ -71,6 +71,27 @@ export function useUi(): UiState {
   return ctx;
 }
 
+const DONE: Record<string, string> = {
+  approve: "Approved",
+  reapprove: "Re-approved",
+  "request-changes": "Requested changes on",
+  answer: "Answered",
+  acknowledge: "Acknowledged",
+};
+
+/** "Approved F-009", as the handoff titles toasts; moves and edits keep the server's message. */
+function doneTitle(
+  action: string,
+  ref: string,
+  payload: Record<string, unknown> | undefined,
+  message: string | undefined,
+): string {
+  if (action === "decide")
+    return `${payload?.decision === "accepted" ? "Accepted" : "Rejected"} ${ref}`;
+  const verb = DONE[action];
+  return verb ? `${verb} ${ref}` : (message ?? `${ref} updated`);
+}
+
 /**
  * Runs a viewer action. Success shows a toast naming the files written; gate failures are
  * returned for the caller's dialog to show; other failures toast their message.
@@ -88,7 +109,7 @@ export function useAction(): (
       const result = await act(action, ref, payload, expect);
       if (result.ok) {
         toast({
-          title: result.message ?? `${ref} updated`,
+          title: doneTitle(action, ref, payload, result.message),
           detail: result.changed?.length ? `Updated ${result.changed.join(", ")}` : undefined,
         });
       } else if (result.error !== "gate") {
