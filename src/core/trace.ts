@@ -5,11 +5,16 @@ import type { TestRef } from "./facts";
 import { globToRegExp, matchesAny } from "./glob";
 
 const SCENARIO = String.raw`S-\d{3}\.\d+\.\d+`;
-/** `it("S-005.1.2 …")`, `test('S-…')`, `describe(\`S-…\`)` and their `.only`/`.skip` forms. */
+/**
+ * `it("S-005.1.2 …")`, `test('S-…')`, `describe(\`S-…\`)` and their `.only`/`.skip` forms. A
+ * title runs to the next unescaped quote of the kind that opened it, so `it("… doesn't …")` and
+ * `it('… "quoted" …')` keep their whole name.
+ */
 const JS_TITLE = new RegExp(
-  String.raw`\b(?:it|test|describe)(?:\.\w+)*\(\s*(["'\`])((${SCENARIO})\b[^"'\`]*)\1`,
+  String.raw`\b(?:it|test|describe)(?:\.\w+)*\(\s*(["'\`])((${SCENARIO})\b(?:\\.|(?!\1)[^\\\n])*)\1`,
   "g",
 );
+const unescapeTitle = (title: string) => title.replace(/\\(.)/g, "$1");
 /** `@pytest.mark.scenario("S-…")`. */
 const PY_MARK = new RegExp(String.raw`@pytest\.mark\.scenario\(\s*["'](${SCENARIO})["']\s*\)`, "g");
 /** `// scenario: S-…` or `# scenario: S-…` above a test. */
@@ -51,7 +56,7 @@ export function scanTestFile(text: string, file: string): Map<string, TestRef[]>
   const lines = text.split("\n");
 
   for (const m of text.matchAll(JS_TITLE)) {
-    add(m[3] as string, { file, name: (m[2] as string).trim(), confidence: "marker" });
+    add(m[3] as string, { file, name: unescapeTitle(m[2] as string).trim(), confidence: "marker" });
     covered.add(lineAt(text, m.index ?? 0));
   }
   for (const pattern of [PY_MARK, COMMENT]) {

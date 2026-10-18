@@ -49,6 +49,34 @@ describe("scanTestFile", () => {
     });
   });
 
+  describe("test names with quote characters", () => {
+    const refsOf = (line: string, id: string) => scanTestFile(line, "a.test.ts").get(id);
+
+    it("S-003.1.1 keeps an apostrophe in a double-quoted title", () => {
+      expect(refsOf(`it("S-900.1.2 doesn't count", () => {});`, "S-900.1.2")).toEqual([
+        { file: "a.test.ts", name: "S-900.1.2 doesn't count", confidence: "marker" },
+      ]);
+    });
+
+    it("S-003.1.2 keeps double quotes in a single-quoted title", () => {
+      expect(refsOf(`it('S-900.1.3 says "hi"', () => {});`, "S-900.1.3")).toEqual([
+        { file: "a.test.ts", name: 'S-900.1.3 says "hi"', confidence: "marker" },
+      ]);
+    });
+
+    it("S-003.1.3 reads an escaped quote of the same kind", () => {
+      expect(refsOf(`it('S-900.1.4 isn\\'t lost', () => {});`, "S-900.1.4")).toEqual([
+        { file: "a.test.ts", name: "S-900.1.4 isn't lost", confidence: "marker" },
+      ]);
+    });
+
+    it("S-003.1.4 still treats an ID in a plain string as a mention", () => {
+      expect(refsOf(`const note = "S-900.1.5 doesn't apply";`, "S-900.1.5")).toMatchObject([
+        { confidence: "fallback" },
+      ]);
+    });
+  });
+
   it("only scans files matching the globs", () => {
     const tree = writeTree({
       "src/a.test.ts": 'it("S-001.1.1 works", () => {});',
