@@ -79,16 +79,12 @@ function decorate(text: string, opts: MarkdownOptions, k: () => string): ReactNo
 export function inline(text: string, opts: MarkdownOptions = {}): ReactNode[] {
   const k = counter("i");
   const out: ReactNode[] = [];
+  // `_em_` only at word boundaries, so snake_case names like attempt_count stay literal.
   const pattern =
-    /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*\s][^*]*\*|_[^_\s][^_]*_)|(\[[^\]]+\]\([^)\s]+\))/;
-  let rest = text;
-  while (rest) {
-    const m = pattern.exec(rest);
-    if (!m) {
-      out.push(...decorate(rest, opts, k));
-      break;
-    }
-    if (m.index > 0) out.push(...decorate(rest.slice(0, m.index), opts, k));
+    /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*\s][^*]*\*|(?<!\w)_[^_\s][^_]*_(?!\w))|(\[[^\]]+\]\([^)\s]+\))/g;
+  let last = 0;
+  for (const m of text.matchAll(pattern)) {
+    if (m.index > last) out.push(...decorate(text.slice(last, m.index), opts, k));
     const token = m[0];
     if (m[1]) out.push(<code key={k()}>{token.slice(1, -1)}</code>);
     else if (m[2]) out.push(<strong key={k()}>{inline(token.slice(2, -2), opts)}</strong>);
@@ -110,8 +106,9 @@ export function inline(text: string, opts: MarkdownOptions = {}): ReactNode[] {
         ),
       );
     }
-    rest = rest.slice(m.index + token.length);
+    last = m.index + token.length;
   }
+  if (last < text.length) out.push(...decorate(text.slice(last), opts, k));
   return out;
 }
 
