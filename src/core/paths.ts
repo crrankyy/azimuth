@@ -27,3 +27,27 @@ export function relPath(root: string, abs: string): string {
 export function cacheDir(root: string): string {
   return azPath(root, "cache");
 }
+
+/** This machine's folders that shouldn't show up in displayed or shared text. */
+export interface Places {
+  root: string;
+  home: string;
+  /** The Azimuth plugin folder, when known. */
+  plugin?: string | null;
+}
+
+/**
+ * Rewrites this machine's folders in text: paths in the project become relative, the plugin
+ * folder becomes `<plugin>` and the home folder `~`.
+ */
+export function tidyPaths(text: string, places: Places): string {
+  const swap = (s: string, from: string | null | undefined, to: string) =>
+    from
+      ? s
+          .split(`${from}/`)
+          .join(to ? `${to}/` : "")
+          .split(from)
+          .join(to || ".")
+      : s;
+  return swap(swap(swap(text, places.plugin, "<plugin>"), places.root, ""), places.home, "~");
+}

@@ -1,3 +1,4 @@
+import { homedir } from "node:os";
 import { isAbsolute, relative } from "node:path";
 import { analyzeProject, buildIndex } from "../core/build-index";
 import { statusBrief } from "../core/brief";
@@ -12,7 +13,7 @@ import {
   type LiveRecord,
 } from "../core/live";
 import { loadProject } from "../core/model";
-import { findProjectRoot } from "../core/paths";
+import { findProjectRoot, tidyPaths, type Places } from "../core/paths";
 import { viewerUrl } from "../server/registry";
 
 /** What Claude Code sends a command hook on stdin (only the fields Azimuth reads). */
@@ -52,6 +53,8 @@ export interface HookContext {
    * long to wait for a newly started one; 0 returns at once.
    */
   ensureViewer?: (root: string, waitMs?: number) => Promise<string | null>;
+  /** The plugin's own folder, hidden from live step summaries. */
+  pluginDir?: string;
   /** Writes the session's environment exports (defaults to appending to CLAUDE_ENV_FILE). */
   writeEnv?: (lines: string[]) => void;
 }
@@ -94,24 +97,34 @@ function block(reason: string): HookOutput {
 const relTo = (root: string, file: string) =>
   isAbsolute(file) ? relative(root, file).split("\\").join("/") : file;
 
+/** A path for display: relative inside the project, tidied (`~`, `<plugin>`) outside it. */
+function displayPath(root: string, file: string, places: Omit<Places, "root">): string {
+  const rel = relTo(root, file);
+  return rel.startsWith("..") ? tidyPaths(file, { ...places, root }) : rel;
+}
+
 /** A short, secret-light description of a tool call for the live activity feed. */
 export function describeTool(
   root: string,
   tool: string,
   input: Record<string, unknown> = {},
+  places: Omit<Places, "root"> = { home: homedir() },
 ): { file: string | null; summary: string } {
   const pathOf = (input.file_path ?? input.notebook_path ?? input.path) as string | undefined;
-  const file = typeof pathOf === "string" ? relTo(root, pathOf) : null;
+  const file = typeof pathOf === "string" ? displayPath(root, pathOf, places) : null;
   const clip = (s: string, n = 120) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
   switch (tool) {
     case "Bash":
       return {
         file: null,
         summary: clip(
-          String(input.command ?? "")
-            .split("\n")[0]
-            ?.replace(/\s+/g, " ")
-            .trim() ?? "",
+          tidyPaths(
+            String(input.command ?? "")
+              .split("\n")[0]
+              ?.replace(/\s+/g, " ")
+              .trim() ?? "",
+            { ...places, root },
+          ),
         ),
       };
     case "Edit":
@@ -215,7 +228,10 @@ export function postToolUse(input: HookInput, ctx: HookContext): HookOutput {
   const id = input.session_id;
   if (!root || !id || !input.tool_name) return OK;
   const now = ctx.now ?? new Date();
-  const { file, summary } = describeTool(root, input.tool_name, input.tool_input);
+  const { file, summary } = describeTool(root, input.tool_name, input.tool_input, {
+    home: homedir(),
+    plugin: ctx.pluginDir ?? null,
+  });
   appendLive(root, id, {
     kind: "tool",
     at: stamp(now),

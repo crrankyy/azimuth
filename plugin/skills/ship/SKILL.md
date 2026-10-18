@@ -12,7 +12,8 @@ allowed-tools:
 
 Request: $ARGUMENTS
 
-Run the stages in order, following each skill's instructions in full:
+Run the stages in order by invoking each stage's skill (for example `/azimuth:spec F-NNN`) and
+following its instructions in full; don't read the skills' files from the plugin folder:
 
 1. **Capture** (`/azimuth:idea`) unless the argument is already an F-ID.
 2. **Spec** (`/azimuth:spec`): write, check, draft, commit and approve. If the CLI refuses

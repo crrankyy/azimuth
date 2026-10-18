@@ -73,6 +73,7 @@ export const hook: Command = {
       const out = await handler(input, {
         env: process.env,
         ensureViewer: (root, waitMs) => ensureViewer(root, waitMs),
+        pluginDir: pluginDir(),
         writeEnv: (lines) => writeEnvFile(process.env.CLAUDE_ENV_FILE, lines),
       });
       if (out.stdout) process.stdout.write(out.stdout);

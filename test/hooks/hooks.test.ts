@@ -6,7 +6,12 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
 import { readLiveRecords } from "../../src/core/live";
-import { sessionStart, userPromptSubmit, type HookEnv } from "../../src/hooks/handlers";
+import {
+  describeTool,
+  sessionStart,
+  userPromptSubmit,
+  type HookEnv,
+} from "../../src/hooks/handlers";
 import { featureFiles } from "../helpers/project";
 import { commitAll, gitEnv, initRepo } from "../helpers/git";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
@@ -296,5 +301,31 @@ describe("viewer restart at each prompt", () => {
   it("S-001.3.2 leaves the viewer alone when autostart is off", async () => {
     expect(await waits(`${MINIMAL_CONFIG}viewer:\n  autostart: false\n`)).toEqual([]);
     expect(await waits(MINIMAL_CONFIG, { AZIMUTH_NO_VIEWER: "1" })).toEqual([]);
+  });
+});
+
+describe("live step summaries", () => {
+  const places = { home: "/home/dev", plugin: "/home/dev/clones/azimuth/plugin" };
+  const root = "/home/dev/work/tally";
+
+  it("BUG-0023 shows paths relative to the project and hides this machine's folders", () => {
+    expect(
+      describeTool(
+        root,
+        "Bash",
+        {
+          command:
+            "cat /home/dev/clones/azimuth/plugin/skills/spec/SKILL.md /home/dev/work/tally/src/a.ts",
+        },
+        places,
+      ).summary,
+    ).toBe("cat <plugin>/skills/spec/SKILL.md src/a.ts");
+    expect(describeTool(root, "Read", { file_path: "/home/dev/notes.md" }, places)).toEqual({
+      file: "~/notes.md",
+      summary: "Read ~/notes.md",
+    });
+    expect(
+      describeTool(root, "Edit", { file_path: "/home/dev/work/tally/src/a.ts" }, places).file,
+    ).toBe("src/a.ts");
   });
 });
