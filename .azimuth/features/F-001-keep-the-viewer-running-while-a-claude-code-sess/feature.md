@@ -2,7 +2,7 @@
 id: F-001
 title: Keep the viewer running while a Claude Code session is open
 summary: The viewer stays up for as long as any Claude Code session in the project is open, and comes back on the next prompt if it stopped, so its URL always works while you work.
-status: verifying
+status: done
 priority: P2
 size: M
 mode: brownfield
