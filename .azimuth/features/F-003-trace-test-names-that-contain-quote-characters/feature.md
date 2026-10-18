@@ -2,7 +2,7 @@
 id: F-003
 title: Trace test names that contain quote characters
 summary: A scenario marker in a test name such as it("S-900.1.2 doesn't …") is traced as a marker, not a mention, so coverage confidence is right for ordinary English test names.
-status: verifying
+status: done
 priority: P2
 size: S
 mode: brownfield
