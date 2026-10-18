@@ -93,7 +93,7 @@ commands: # shown in the viewer; tasks carry their own verify commands
   test: pnpm vitest run
   lint: pnpm eslint .
 tests:
-  globs: ["src/**/*.test.ts", "test/**/*.test.ts"]
+  globs: ["src/**/*.test.ts", "test/**/*.test.ts", "!test/fixtures/**"] # ! excludes
 git:
   log_depth: 500 # commits read for the index
   agent_pattern: Claude # Co-Authored-By text that marks a commit as agent-made

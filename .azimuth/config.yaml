@@ -15,7 +15,7 @@ commands:
   lint: pnpm lint
   format: pnpm format
 tests:
-  globs: ["test/*.test.ts", "test/*/*.test.ts", "viewer/src/**/*.test.{ts,tsx}"] # test/fixtures/ holds sample projects, not our tests
+  globs: ["test/**/*.test.ts", "viewer/src/**/*.test.{ts,tsx}", "!test/fixtures/**"] # fixtures are sample projects
 git:
   log_depth: 500
   agent_pattern: Claude # Co-Authored-By text that marks a commit as agent-made

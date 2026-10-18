@@ -57,6 +57,16 @@ describe("scanTestFile", () => {
     const refs = traceTests(tree.root, ["src/**/*.test.ts"]);
     expect([...refs.keys()]).toEqual(["S-001.1.1"]);
   });
+
+  it("leaves out files matching a ! glob", () => {
+    const tree = writeTree({
+      "test/a.test.ts": 'it("S-001.1.1 works", () => {});',
+      "test/fixtures/sample/b.test.ts": 'it("S-009.1.1 belongs to the sample", () => {});',
+    });
+    cleanup = tree.cleanup;
+    const refs = traceTests(tree.root, ["**/*.test.ts", "!test/fixtures/**"]);
+    expect([...refs.keys()]).toEqual(["S-001.1.1"]);
+  });
 });
 
 describe("gitFacts", () => {

@@ -104,12 +104,16 @@ interface CachedScan {
 }
 const scanCache = new Map<string, CachedScan>();
 
-/** Scenario ID → tests referencing it, across every file matching `globs`. */
+/**
+ * Scenario ID → tests referencing it, across every file matching `globs`. A glob starting with `!`
+ * excludes files, e.g. sample projects kept as test fixtures.
+ */
 export function traceTests(root: string, globs: string[]): Map<string, TestRef[]> {
-  const patterns = globs.map(globToRegExp);
+  const include = globs.filter((g) => !g.startsWith("!")).map(globToRegExp);
+  const exclude = globs.filter((g) => g.startsWith("!")).map((g) => globToRegExp(g.slice(1)));
   const out = new Map<string, TestRef[]>();
   for (const file of listFiles(root)) {
-    if (!matchesAny(file, patterns)) continue;
+    if (!matchesAny(file, include) || matchesAny(file, exclude)) continue;
     const abs = join(root, file);
     let refs: Map<string, TestRef[]>;
     try {
