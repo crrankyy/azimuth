@@ -1,8 +1,8 @@
 ---
 id: F-003
 title: Trace test names that contain quote characters
-summary: A scenario marker in a test name such as it("S-001.1.2 doesn't …") is traced as a marker, not a mention, so coverage confidence is right for ordinary English test names.
-status: approved
+summary: A scenario marker in a test name such as it("S-900.1.2 doesn't …") is traced as a marker, not a mention, so coverage confidence is right for ordinary English test names.
+status: in-progress
 priority: P2
 size: S
 mode: brownfield
@@ -22,7 +22,7 @@ review_ack_at: 2026-10-18T13:24:02Z
 
 ## Objective
 A scenario marker in a test name that contains another quote character, such as
-`it("S-001.1.2 doesn't count", …)`, is traced as a marker with its full name instead of a
+`it("S-900.1.2 doesn't count", …)`, is traced as a marker with its full name instead of a
 low-confidence mention, so ordinary English test names get the right coverage confidence.
 
 ## Out of scope

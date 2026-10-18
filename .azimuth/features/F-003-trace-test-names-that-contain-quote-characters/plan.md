@@ -2,7 +2,7 @@
 tasks:
   - id: T-003.1
     title: Titles with quote characters (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-003.1.1, S-003.1.2, S-003.1.3, S-003.1.4]
     files: [src/core/trace.ts, test/core/git-trace.test.ts]
