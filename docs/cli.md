@@ -79,8 +79,10 @@ Refused moves print the failing gate checks and exit 1.
 every task of in-progress and verifying features), records each run in
 `.azimuth/cache/runs/R-NNNN.json` with the output tail, and exits 1 if any failed. A command can
 write a JUnit report to the path in `$AZIMUTH_JUNIT` for exact per-scenario results; otherwise a
-passing run passes the task's covered scenarios and a failing one fails them unless the output
-shows them passing. `$AZIMUTH_TASK` holds the task ID.
+passing run passes a covered scenario only when its output names the scenario or a test file that
+references it (so a typecheck passes nothing), and a failing run fails covered scenarios unless
+the output shows them passing. Test runners that print neither (`go test` without `-v`) need a
+JUnit report. `$AZIMUTH_TASK` holds the task ID.
 
 ## Sessions
 

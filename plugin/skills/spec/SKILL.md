@@ -56,10 +56,12 @@ Run `azimuth new spec <F-ID>` to scaffold missing files, then replace the placeh
    THEN names the exact value, state, error variant or status code, never "is handled".
 4. **contract.md**: data structures, public signatures, errors and (if stateful) a
    `stateDiagram-v2` block, in the target language, without function bodies.
-5. **plan.md**: a task graph in test-first order: types and scaffolding, then for each story
-   slice red tests then implementation, then wiring and full verification. Each task lists
-   `after`, `covers` (scenario IDs), `files` and a `verify` command that exits 0 on success.
-   Every scenario must be covered by a task.
+5. **plan.md**: a task graph in test-first order: types and scaffolding, then one task per
+   story slice that writes its tests first and then the implementation, then wiring and full
+   verification. Each task lists `after`, `covers` (scenario IDs), `files` and a `verify`
+   command that exits 0 on success; a task that covers scenarios verifies by running their
+   tests (a typecheck alone proves none of them). Don't split a slice into a "red tests" task:
+   its verify could only pass by not running the tests. Every scenario must be covered by a task.
 
 ## 4. Check, draft, commit, approve
 

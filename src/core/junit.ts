@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import type { CoverageStatus, VerifyRun } from "./types";
 
 const SCENARIO = /S-\d{3}\.\d+\.\d+/g;
@@ -51,17 +52,25 @@ const PASS = /\b(PASS|passed|ok)\b|✓|✔/;
 
 /**
  * Scenario results inferred from plain test output when no JUnit report exists: a passing run
- * passes every covered scenario; a failing run fails covered scenarios unless the output shows
- * them passing.
+ * passes the covered scenarios its output shows it ran (by scenario ID or test file name); a
+ * failing run fails covered scenarios unless the output shows them passing.
  */
 export function scenariosFromOutput(
   output: string,
   ok: boolean,
   covers: string[],
+  testFiles: Map<string, string[]> = new Map(),
 ): Map<string, CoverageStatus> {
   const result = new Map<string, CoverageStatus>();
   if (ok) {
-    for (const id of covers) result.set(id, "passing");
+    // A zero exit code alone proves nothing (a typecheck covers no scenario), so a scenario
+    // passes only when the output names it or a test file that references it.
+    for (const id of covers) {
+      const files = testFiles.get(id) ?? [];
+      if (output.includes(id) || files.some((f) => output.includes(basename(f)))) {
+        result.set(id, "passing");
+      }
+    }
     return result;
   }
   const seen = new Map<string, CoverageStatus>();

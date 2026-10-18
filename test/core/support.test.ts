@@ -30,10 +30,26 @@ describe("parseJunit", () => {
 });
 
 describe("scenariosFromOutput", () => {
-  it("passes every covered scenario on success", () => {
-    expect(Object.fromEntries(scenariosFromOutput("all good", true, ["S-001.1.1"]))).toEqual({
-      "S-001.1.1": "passing",
+  it("BUG-0016 passes a covered scenario only when the output shows its test ran", () => {
+    const tests = new Map([
+      ["S-900.1.1", ["src/count.test.ts"]],
+      ["S-900.1.2", ["src/count.test.ts"]],
+      ["S-900.1.3", ["src/format.test.ts"]],
+    ]);
+    const covers = ["S-900.1.1", "S-900.1.2", "S-900.1.3", "S-900.1.4"];
+    // vitest's default reporter names test files, not tests.
+    const output = " ✓ src/count.test.ts (12 tests) 4ms\n ✓ S-900.1.4 named directly\n";
+    expect(Object.fromEntries(scenariosFromOutput(output, true, covers, tests))).toEqual({
+      "S-900.1.1": "passing",
+      "S-900.1.2": "passing",
+      "S-900.1.4": "passing",
     });
+  });
+
+  it("BUG-0016 records nothing for a passing command that ran no tests", () => {
+    const tests = new Map([["S-900.1.1", ["src/count.test.ts"]]]);
+    const output = "$ tsc --noEmit\n";
+    expect(scenariosFromOutput(output, true, ["S-900.1.1"], tests).size).toBe(0);
   });
 
   it("uses failing and passing lines on failure, failing the rest", () => {
