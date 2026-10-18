@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
 import { readLiveRecords } from "../../src/core/live";
-import { sessionStart } from "../../src/hooks/handlers";
+import { sessionStart, userPromptSubmit, type HookEnv } from "../../src/hooks/handlers";
 import { featureFiles } from "../helpers/project";
 import { commitAll, gitEnv, initRepo } from "../helpers/git";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
@@ -227,5 +227,43 @@ describe("viewer autostart at session start", () => {
   it("starts the viewer by default and not when viewer.autostart is false", async () => {
     expect(await start(MINIMAL_CONFIG)).toBe(1);
     expect(await start(`${MINIMAL_CONFIG}viewer:\n  autostart: false\n`)).toBe(0);
+  });
+});
+
+describe("Claude Code's process ID", () => {
+  const records = async (hook: "start" | "prompt", env: HookEnv) => {
+    const project = writeTree({ ".azimuth/config.yaml": MINIMAL_CONFIG });
+    try {
+      const input = { session_id: "pid-check", source: "startup", cwd: project.root };
+      const ctx = {
+        env: { CLAUDE_PROJECT_DIR: project.root, AZIMUTH_NO_VIEWER: "1", ...env },
+        writeEnv: () => undefined,
+      };
+      if (hook === "start") await sessionStart(input, ctx);
+      else await userPromptSubmit(input, ctx);
+      return readLiveRecords(project.root, "pid-check");
+    } finally {
+      project.cleanup();
+    }
+  };
+
+  it("S-001.2.1 is recorded when the session starts", async () => {
+    const [start] = await records("start", { CLAUDE_PID: "4242" });
+    expect(start).toMatchObject({ kind: "start", pid: 4242 });
+  });
+
+  it("S-001.2.2 is recorded with each prompt", async () => {
+    const prompt = (await records("prompt", { CLAUDE_PID: "4242" })).find(
+      (r) => r.kind === "prompt",
+    );
+    expect(prompt).toMatchObject({ pid: 4242 });
+  });
+
+  it("S-001.2.3 is left out when there is no usable one", async () => {
+    for (const env of [{}, { CLAUDE_PID: "abc" }]) {
+      const [start] = await records("start", env);
+      expect(start).toMatchObject({ kind: "start" });
+      expect(start).not.toHaveProperty("pid");
+    }
   });
 });

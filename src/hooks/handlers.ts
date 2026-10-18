@@ -57,6 +57,12 @@ export interface HookContext {
 }
 
 const OK: HookOutput = { exitCode: 0 };
+
+/** Claude Code's process ID from CLAUDE_PID, when it is one; the viewer stays up while it runs. */
+function claudePid(env: HookEnv): { pid?: number } {
+  const pid = Number(env.CLAUDE_PID);
+  return Number.isInteger(pid) && pid > 0 ? { pid } : {};
+}
 const stamp = (now: Date) => toUtc(now.toISOString());
 
 function projectRoot(input: HookInput, env: HookEnv): string | null {
@@ -157,7 +163,12 @@ export async function sessionStart(input: HookInput, ctx: HookContext): Promise<
     `export AZIMUTH_CLAUDE_SESSION=${JSON.stringify(id)}`,
   ]);
   pruneLive(root, now);
-  appendLive(root, id, { kind: "start", at: stamp(now), source: input.source });
+  appendLive(root, id, {
+    kind: "start",
+    at: stamp(now),
+    source: input.source,
+    ...claudePid(ctx.env),
+  });
   const autostart =
     loadConfig(root).config.viewer.autostart &&
     ctx.env.AZIMUTH_NO_VIEWER !== "1" &&
@@ -246,7 +257,7 @@ export function userPromptSubmit(input: HookInput, ctx: HookContext): HookOutput
   if (!root || !id) return OK;
   const now = ctx.now ?? new Date();
   const cursor = cursorOf(readLiveRecords(root, id), "prompt");
-  appendLive(root, id, { kind: "prompt", at: stamp(now) });
+  appendLive(root, id, { kind: "prompt", at: stamp(now), ...claudePid(ctx.env) });
   if (!cursor) return OK;
   const events = userEventsSince(loadProject(root), cursor);
   if (events.length === 0) return OK;
