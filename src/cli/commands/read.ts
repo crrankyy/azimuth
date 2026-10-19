@@ -29,22 +29,35 @@ function relatedTo(p: Problem, ids: string[]): boolean {
   );
 }
 
+/** One line counting warnings by code, most frequent first (ties by code). */
+function warningSummary(warnings: Problem[]): string {
+  const counts = new Map<string, number>();
+  for (const w of warnings) counts.set(w.code, (counts.get(w.code) ?? 0) + 1);
+  const byCount = [...counts].sort(([a, m], [b, n]) => n - m || a.localeCompare(b));
+  const parts = byCount.map(([code, n]) => `${n} ${code}`).join(", ");
+  return `${warnings.length} warnings: ${parts} (--warnings lists them)`;
+}
+
 export const check: Command = {
-  usage: "check [ID…] [--json]",
+  usage: "check [ID…] [--warnings] [--json]",
   summary: "Validate .azimuth/ and report problems (exit 1 on errors)",
-  options: { json: { type: "boolean" } },
+  options: { json: { type: "boolean" }, warnings: { type: "boolean" } },
   run({ values, positionals }) {
     const rt = runtime(values);
     const { problems } = buildIndex(rt.root, { mode: "live" });
     const shown = positionals.length ? problems.filter((p) => relatedTo(p, positionals)) : problems;
-    const errors = shown.filter((p) => p.severity === "error").length;
+    const errors = shown.filter((p) => p.severity === "error");
+    const warnings = shown.filter((p) => p.severity === "warning");
     if (rt.json) printJson(shown);
     else if (shown.length === 0) print(color.green("No problems."));
     else {
-      for (const p of shown) print(problemLine(p));
-      print(`\n${errors} errors, ${shown.length - errors} warnings`);
+      // Hundreds of warnings on every run bury the errors, so they are counted unless asked for.
+      const listAll = Boolean(values.warnings) || positionals.length > 0;
+      for (const p of listAll ? shown : errors) print(problemLine(p));
+      if (!listAll && warnings.length > 0) print(warningSummary(warnings));
+      print(`\n${errors.length} errors, ${warnings.length} warnings`);
     }
-    return errors > 0 ? 1 : 0;
+    return errors.length > 0 ? 1 : 0;
   },
 };
 
@@ -154,10 +167,10 @@ export const next: Command = {
 };
 
 export const trace: Command = {
-  usage: "trace [F-ID] [--json]",
+  usage: "trace [F-ID] [--all] [--json]",
   summary:
     'Scenario → test coverage (tests named "S-…", @pytest.mark.scenario or // scenario: S-…)',
-  options: { json: { type: "boolean" } },
+  options: { json: { type: "boolean" }, all: { type: "boolean" } },
   run({ values, positionals }) {
     const rt = runtime(values);
     const { index } = buildIndex(rt.root, { mode: "live" });
@@ -184,13 +197,21 @@ export const trace: Command = {
       "not-run": color.dim("not-run"),
       untested: color.yellow("untested"),
     };
+    // A comment citing a scenario ID reads like a miss next to real tests, so it is hidden.
+    const showAll = Boolean(values.all);
+    let hidden = 0;
     for (const r of rows) {
       print(`${r.scenario} ${mark[r.status]} ${r.title}`);
-      for (const t of r.tests)
-        print(
-          color.dim(`    ${t.file}: ${t.name}${t.confidence === "fallback" ? " (mention)" : ""}`),
-        );
+      for (const t of r.tests) {
+        const mention = t.confidence === "fallback";
+        if (mention && !showAll) {
+          hidden++;
+          continue;
+        }
+        print(color.dim(`    ${t.file}: ${t.name}${mention ? " (mention)" : ""}`));
+      }
     }
+    if (hidden > 0) print(`${hidden} mention-only references hidden (--all shows them)`);
   },
 };
 
