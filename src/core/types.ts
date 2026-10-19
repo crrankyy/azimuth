@@ -322,6 +322,8 @@ export interface FeatureDetail {
   tasks: Task[];
   log: LogEntry[];
   as_built: AsBuilt | null;
+  /** notes.md without its first "# " title line, trimmed; null without the file or content. */
+  notes: Markdown | null;
 }
 
 export interface Decision {

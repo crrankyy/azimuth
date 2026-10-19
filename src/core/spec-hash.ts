@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { normalizePlaceholders } from "./placeholders";
 
 export interface SpecParts {
   /** feature.md without its frontmatter. */
@@ -20,9 +21,14 @@ function normalize(text: string): string {
     .replace(/\n+$/, "");
 }
 
-/** The approval hash of a feature's spec (see docs/file-format.md, "Spec hash"). */
+/**
+ * The approval hash of a feature's spec (see docs/file-format.md, "Spec hash"). Settled values in
+ * stories.md hash as the open placeholder they replaced, so settling never makes the approval
+ * stale; placeholders exist only in stories.md, so the other parts are hashed as written.
+ */
 export function specHash(parts: SpecParts): string {
-  const joined = [parts.featureBody, parts.impact, parts.stories, parts.contract]
+  const stories = normalizePlaceholders(parts.stories);
+  const joined = [parts.featureBody, parts.impact, stories, parts.contract]
     .map(normalize)
     .join(SEPARATOR);
   return "sha256:" + createHash("sha256").update(joined, "utf8").digest("hex");

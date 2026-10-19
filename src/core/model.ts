@@ -54,6 +54,7 @@ export interface FeatureFiles {
   plan: string | null;
   log: string | null;
   asBuilt: string | null;
+  notes: string | null;
 }
 
 export interface FeatureEntity extends FeatureHeader {
@@ -67,6 +68,8 @@ export interface FeatureEntity extends FeatureHeader {
   tasks: TaskRaw[];
   log: LogEntryRaw[];
   asBuilt: AsBuilt | null;
+  /** Same value as FeatureDetail.notes. Not part of `spec`, so never hashed. */
+  notes: string | null;
   /** Spec content for hashing; null until impact, stories and contract all exist. */
   spec: SpecParts | null;
 }
@@ -292,6 +295,7 @@ function readFeatureFiles(
     plan: path("plan.md"),
     log: path("log.md"),
     asBuilt: path("as-built.md"),
+    notes: path("notes.md"),
   };
   const id = header.id;
   const read = <T>(
@@ -306,6 +310,7 @@ function readFeatureFiles(
   const plan = read(files.plan, `plan:${id}`, (t, f) => parsePlan(t, f, id));
   const log = read(files.log, "log", parseLog);
   const asBuilt = read(files.asBuilt, "as-built", (t, f) => parseAsBuilt(t, f, id));
+  const notes = read(files.notes, "notes", notesBody);
   for (const result of [impact, stories, contract, plan, log, asBuilt]) {
     if (result) problems.push(...result.problems);
   }
@@ -335,8 +340,17 @@ function readFeatureFiles(
     tasks: plan?.tasks ?? [],
     log: log?.entries ?? [],
     asBuilt: asBuilt?.asBuilt ?? null,
+    notes: notes ?? null,
     spec,
   };
+}
+
+/** notes.md without its first "# " title line, trimmed; null when nothing else is left. */
+function notesBody(text: string): string | null {
+  const lines = text.replace(/\r\n?/g, "\n").split("\n");
+  const title = lines.findIndex((line) => line.startsWith("# "));
+  if (title !== -1) lines.splice(title, 1);
+  return lines.join("\n").trim() || null;
 }
 
 function readRuns(root: string, problems: Problem[]): VerifyRun[] {

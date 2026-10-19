@@ -926,7 +926,8 @@ export const expectedIndex = {
             "auto": false
           }
         ],
-        "as_built": null
+        "as_built": null,
+        "notes": null
       }
     },
     {
@@ -1062,6 +1063,11 @@ export const expectedIndex = {
               "rule": "Every scenario has a passing test",
               "ok": true,
               "detail": "5 of 5"
+            },
+            {
+              "id": "done.placeholders-settled",
+              "rule": "Every placeholder value settled",
+              "ok": true
             },
             {
               "id": "done.as-built",

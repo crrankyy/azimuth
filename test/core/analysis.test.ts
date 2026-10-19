@@ -412,6 +412,7 @@ describe("gates", () => {
     expect(gate?.checks.map((c) => [c.id, c.ok, c.detail])).toEqual([
       ["done.verify-passed", false, "T-001.1 failed at bbbbbbb"],
       ["done.scenarios-passing", false, "0 of 2"],
+      ["done.placeholders-settled", true, undefined],
       ["done.as-built", false, undefined],
       ["done.architecture-reconciled", false, "Reconciled at aaaaaaa, 1 commits behind"],
     ]);

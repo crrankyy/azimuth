@@ -11,6 +11,7 @@ import { featureOf, idKind } from "./ids";
 import { withLock, writeFileAtomic } from "./lock";
 import type { FeatureEntity } from "./model";
 import { formatLogHeader } from "./parse/log";
+import { unreviewedSettles } from "./placeholders";
 import { specHash } from "./spec-hash";
 import {
   FEATURE_STATUSES,
@@ -794,7 +795,10 @@ export function moveIssue(root: string, id: string, toRaw: string, opts: MoveOpt
   });
 }
 
-/** Records that you reviewed an automatic approval, acceptance or answer. */
+/**
+ * Records that you reviewed an automatic approval, acceptance or answer, or the values an agent
+ * settled in a feature since your last review.
+ */
 export function acknowledge(root: string, id: string, opts: Who): Result {
   if (opts.actor !== "you")
     throw new AzimuthError("policy", "Only the user acknowledges automatic decisions.");
@@ -806,7 +810,7 @@ export function acknowledge(root: string, id: string, opts: Who): Result {
     const question = model.questions.find((q) => q.id === id);
     const file = feature?.files.feature ?? decision?.file ?? question?.file;
     const auto = feature
-      ? feature.approved_by === "agent"
+      ? feature.approved_by === "agent" || unreviewedSettles(feature).length > 0
       : decision
         ? decision.decided_by === "agent"
         : question?.answer?.by === "agent";

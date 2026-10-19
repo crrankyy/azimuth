@@ -1,6 +1,7 @@
 import type { Derived } from "./derive";
 import { gatePasses, type GateContext, nextGate } from "./gates";
 import type { FeatureEntity } from "./model";
+import { unreviewedSettles } from "./placeholders";
 import { INBOX_KINDS, type InboxItem, type Urgency } from "./types";
 
 const URGENCY_ORDER: Urgency[] = ["high", "normal", "low"];
@@ -119,18 +120,27 @@ export function buildInbox(ctx: GateContext, derived: Derived): InboxItem[] {
         urgency: "low",
       });
     }
-    if (
-      f.approved_by === "agent" &&
-      !f.review_ack_at &&
-      ["approved", "in-progress", "verifying", "done"].includes(f.status)
-    ) {
+    const approved = ["approved", "in-progress", "verifying", "done"].includes(f.status);
+    const settles = approved && f.approved_by ? unreviewedSettles(f) : [];
+    const settled = settles.map((x) => `${x.scenario}: ${x.value}`).join("; ");
+    if (f.approved_by === "agent" && !f.review_ack_at && approved) {
+      const values = settles.length > 0 ? ` Settled by an agent: ${settled}.` : "";
       items.push({
         kind: "review-auto",
         ref: f.id,
         title: `${f.title} was approved automatically`,
-        detail:
-          "An agent approved this spec when every check passed. Acknowledge it or send it back to draft.",
+        detail: `An agent approved this spec when every check passed. Acknowledge it or send it back to draft.${values}`,
         since: lastTransitionInto(f, "approved") ?? `${f.approved_at ?? f.updated}T00:00:00Z`,
+        urgency: "low",
+      });
+    } else if (settles[0]) {
+      // Values a test settled change what the spec promises, whoever approved it.
+      items.push({
+        kind: "review-auto",
+        ref: f.id,
+        title: `${f.title}: ${plural(settles.length, "value")} settled by an agent`,
+        detail: `Settled ${settled}. Acknowledge ${settles.length === 1 ? "it" : "them"} or send the spec back to draft.`,
+        since: settles[0].at,
         urgency: "low",
       });
     }

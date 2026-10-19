@@ -2,6 +2,7 @@ import { commitsFor, isCodeCommit, sameCommit, staleCause, type Derived } from "
 import type { Facts } from "./facts";
 import type { FeatureEntity, Model } from "./model";
 import type { TaskRaw } from "./parse/feature";
+import { openPlaceholderScenarios } from "./placeholders";
 import { inScope, runScope } from "./run-scope";
 import type { FeatureStatus, Gate, GateCheck, Problem } from "./types";
 
@@ -276,6 +277,7 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
     commitsFor(f.id, ctx.facts).find((c) => isCodeCommit(c.sha, ctx.facts)) ?? null;
   const behind = reconciled ? ctx.facts.git.commitsAfter(reconciled) : null;
   const lastCommitBehind = lastCommit ? ctx.facts.git.commitsAfter(lastCommit.sha) : null;
+  const open = openPlaceholderScenarios(f.spec?.stories ?? "");
   const archOk =
     reconciled !== null &&
     (lastCommit === null ||
@@ -293,6 +295,12 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
       ok: cov !== undefined && cov.total > 0 && cov.passing === cov.total,
       detail: `${cov?.passing ?? 0} of ${cov?.total ?? 0}`,
     },
+    check(
+      "done.placeholders-settled",
+      "Every placeholder value settled",
+      open.length === 0,
+      open.join(", "),
+    ),
     check("done.as-built", "as-built.md written", f.files.asBuilt !== null),
     check(
       "done.architecture-reconciled",

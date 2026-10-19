@@ -60,7 +60,10 @@ export function userEventsSince(model: Model, cursor: Cursor): UserEvent[] {
         at: f.review_ack_at as string,
         ref: f.id,
         feature: f.id,
-        text: `acknowledged the automatic approval of ${f.id}`,
+        text:
+          f.approved_by === "you"
+            ? `acknowledged the values settled in ${f.id}`
+            : `acknowledged the automatic approval of ${f.id}`,
       });
     }
   }

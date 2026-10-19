@@ -69,6 +69,7 @@ function featureDetail(f: FeatureEntity, derived: Derived, facts: Facts): Featur
     }),
     log: f.log.map(({ line: _line, ...entry }) => entry),
     as_built: f.asBuilt,
+    notes: f.notes,
   };
 }
 

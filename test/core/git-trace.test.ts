@@ -301,6 +301,7 @@ describe("close-out in its natural order", () => {
     expect(doneChecks(false)).toEqual([
       ["done.verify-passed", true],
       ["done.scenarios-passing", true],
+      ["done.placeholders-settled", true],
       ["done.as-built", true],
       ["done.architecture-reconciled", true],
     ]);
@@ -310,6 +311,7 @@ describe("close-out in its natural order", () => {
     expect(doneChecks(true)).toEqual([
       ["done.verify-passed", false],
       ["done.scenarios-passing", true],
+      ["done.placeholders-settled", true],
       ["done.as-built", true],
       ["done.architecture-reconciled", false],
     ]);
