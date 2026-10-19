@@ -23,6 +23,10 @@ export interface Config {
     output_tail_lines: number;
     /** Globs (globToRegExp) of repo-relative files every verify run depends on. */
     shared_paths: string[];
+    /** Run once per `azimuth verify` call before the targets; null (or blank) = no prebuild. */
+    prebuild: string | null;
+    /** Timeout of the prebuild alone. */
+    build_timeout_seconds: number;
   };
   viewer: { port: number; autostart: boolean; editor_url: string | null };
 }
@@ -50,6 +54,8 @@ export const DEFAULT_CONFIG: Config = {
       "pyproject.toml",
       "uv.lock",
     ],
+    prebuild: null,
+    build_timeout_seconds: 1800,
   },
   viewer: { port: 4319, autostart: true, editor_url: null },
 };
@@ -79,7 +85,13 @@ const SHAPE: Record<string, Record<string, Reader<unknown>> | Reader<unknown>> =
     strict: r.bool(),
   },
   stale_after_days: r.int(1),
-  verify: { timeout_seconds: r.int(1), output_tail_lines: r.int(1), shared_paths: r.strings() },
+  verify: {
+    timeout_seconds: r.int(1),
+    output_tail_lines: r.int(1),
+    shared_paths: r.strings(),
+    prebuild: r.nullable(r.string()),
+    build_timeout_seconds: r.int(1),
+  },
   viewer: { port: r.int(1), autostart: r.bool(), editor_url: r.nullable(r.string()) },
 };
 

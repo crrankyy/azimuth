@@ -1,4 +1,4 @@
-import { ID_PATTERNS } from "../ids";
+import { ID_PATTERNS, isId } from "../ids";
 import type { CoverageStatus, Problem, VerifyRun } from "../types";
 import { problem } from "./common";
 
@@ -45,6 +45,11 @@ export function parseRun(
       output_tail: typeof data.output_tail === "string" ? data.output_tail : "",
       scenarios,
       junit: junit && typeof junit === "object" ? junit : null,
+      // Runs written before these fields existed (or with invalid values) leave them out.
+      ...(typeof data.waited_ms === "number" && data.waited_ms >= 0
+        ? { waited_ms: data.waited_ms }
+        : {}),
+      ...(data.ses === null || isId(data.ses, "session") ? { ses: data.ses } : {}),
     },
     problems: [],
   };

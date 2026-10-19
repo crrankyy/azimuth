@@ -410,6 +410,10 @@ export interface VerifyRun {
   output_tail: string;
   scenarios: { id: Id; status: CoverageStatus }[];
   junit: { tests: number; failures: number; errors: number; skipped: number } | null;
+  /** How long the call waited for another verify's lock before it started; 0 when it didn't. */
+  waited_ms?: number;
+  /** The Azimuth session current when the run was made; null outside a session. */
+  ses?: Id | null;
 }
 
 export interface LiveEvent {
