@@ -11,11 +11,14 @@ import {
   statSync,
   unlinkSync,
 } from "node:fs";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { toUtc } from "./git";
-import { featureOf, MENTION_PATTERN } from "./ids";
+import { featureOf, ID_PATTERNS, MENTION_PATTERN } from "./ids";
+import { deriveActivity, latestGoal, toLiveEvent } from "./live-agents";
 import { sharedCacheDir, writeFileAtomic } from "./lock";
-import type { Id, ISODateTime, LiveAgent, LiveEvent, LiveSession } from "./types";
+import { parseSession } from "./parse/records";
+import { azPath } from "./paths";
+import type { Id, ISODateTime, LiveActivity, LiveAgent, LiveEvent, LiveSession } from "./types";
 
 /**
  * Live agent activity, recorded by the Claude Code hooks as one JSON line per event in
@@ -36,17 +39,34 @@ export type LiveRecord =
       /** The Agent tool's own tool use, and the subagent it started (from its response). */
       tool_use_id?: string | null;
       spawned?: string | null;
+      /** Edit, MultiEdit, Write: editSize, when known. */
+      added?: number;
+      removed?: number;
+      /** PostToolUseFailure. */
+      failed?: boolean;
+      error?: string;
     }
   /** PreToolUse for the Agent tool: what a subagent is being asked to do. */
   | { kind: "launch"; at: string; tool_use_id: string; description: string; refs: string[] }
   /** SubagentStart and SubagentStop. */
   | { kind: "subagent"; at: string; agent_id: string; agent_type: string | null }
-  | { kind: "subagent-stop"; at: string; agent_id: string }
+  | { kind: "subagent-stop"; at: string; agent_id: string; transcript_path?: string | null }
   | { kind: "session"; at: string; ses: string }
   | { kind: "prompt"; at: string; pid?: number }
   | { kind: "stop"; at: string }
   | { kind: "end"; at: string; reason?: string }
-  | { kind: "cursor"; at: string; scope: "wake" | "prompt"; keys: string[] };
+  | { kind: "cursor"; at: string; scope: "wake" | "prompt"; keys: string[] }
+  /** PermissionRequest, and Notification of type permission_prompt. */
+  | {
+      kind: "wait";
+      at: string;
+      source: "permission" | "notification";
+      reason: string;
+      tool: string | null;
+      target: string | null;
+      /** Null: the main agent (permission) or an unknown agent (notification). */
+      agent_id: string | null;
+    };
 
 /**
  * The sidecar of one Claude Code session's live log: `<liveDir>/<claude-session>.meta.json`,
@@ -77,7 +97,12 @@ export interface OpenCheck {
 const TAIL_BYTES = 64 * 1024;
 const META_SUFFIX = ".meta.json";
 const MAX_EVENTS = 20;
-const KEEP_MS = 24 * 3_600_000;
+/** Live logs (and sidecars) are kept three days, for the Activity timeline. */
+const KEEP_MS = 72 * 3_600_000;
+/** How long a recorded process ID is trusted, and how far back open sessions are looked for. */
+const OPEN_MS = 24 * 3_600_000;
+/** A subagent ID that may name a transcript file. */
+export const AGENT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 export function liveDir(root: string): string {
   return join(sharedCacheDir(root), "live");
@@ -239,16 +264,20 @@ function assignment(l: Launch | undefined): Pick<LiveAgent, "description" | "tas
 /**
  * As before, except that `ses` and `started_at` come from the sidecar when it has them, and from
  * the records (the last `session` record, the first record) otherwise. Callers that know the
- * sidecar pass it: readLiveSessions, and the SessionStart and PostToolUse hooks.
+ * sidecar pass it: readLiveSessions, and the SessionStart and PostToolUse hooks. Events carry
+ * added/removed/error; each agent (also those seen only in a wait record) and `main` carry
+ * deriveActivity's activity at `now`; `status` and `waiting` are the session's; `goal`, `skill`
+ * null and `transcript` false (readLiveSessions fills them).
  */
 export function summarizeLive(
   claudeSession: string,
   records: LiveRecord[],
   meta?: LiveMeta | null,
+  now = new Date(),
 ): LiveSession | null {
   if (records.length === 0) return null;
   const tools: LiveEvent[] = [];
-  const agents = new Map<string, LiveAgent>();
+  const agents = new Map<string, Omit<LiveAgent, keyof LiveActivity>>();
   const seeAgent = (id: string, type: string | null | undefined, at: string) => {
     const known = agents.get(id);
     agents.set(id, {
@@ -277,15 +306,9 @@ export function summarizeLive(
       const agent = agents.get(r.agent_id);
       if (agent) agent.stopped_at = r.at;
     }
+    if (r.kind === "wait" && r.agent_id) seeAgent(r.agent_id, null, r.at);
     if (r.kind === "tool") {
-      const event: LiveEvent = {
-        at: r.at,
-        tool: r.tool,
-        file: r.file,
-        summary: r.summary,
-        agent_id: r.agent_id ?? null,
-      };
-      tools.push(event);
+      tools.push(toLiveEvent(r));
       if (r.agent_id) seeAgent(r.agent_id, r.agent_type, r.at);
     }
   }
@@ -309,23 +332,88 @@ export function summarizeLive(
     .find(Boolean);
   const running = [...agents.values()].filter((a) => !a.stopped_at).map((a) => a.feature);
   const features = [...new Set([mainFeature, ...running].filter((f): f is string => !!f))].sort();
+  const startedAt = meta?.started_at ?? records[0]?.at ?? lastSeen;
+  const activity = deriveActivity(records, now, startedAt);
   return {
     claude_session: claudeSession,
     ses: meta?.ses ?? ses,
-    started_at: meta?.started_at ?? records[0]?.at ?? lastSeen,
+    started_at: startedAt,
     last_seen_at: lastSeen,
     stopped_at: stoppedAt,
     ended_at: endedAt,
-    agents: [...agents.values()],
+    // deriveActivity sees the same agents (subagent, subagent-stop, tool and wait records).
+    agents: [...agents.values()].flatMap((agent) => {
+      const own = activity.agents.get(agent.agent_id);
+      return own ? [{ ...agent, ...own }] : [];
+    }),
     current: tools.at(-1) ?? null,
     feature,
     task,
     features,
     events: tools.slice(-MAX_EVENTS),
+    main: activity.main,
+    status: activity.status,
+    waiting: activity.waiting,
+    goal: null,
+    skill: null,
   };
 }
 
-/** Sessions seen in the last 24 hours, most recently active first. */
+/**
+ * The transcript recorded for an agent: the main agent (`agentId` null) → meta.transcript_path;
+ * a subagent → its latest subagent-stop's transcript_path, else
+ * `<dirname(main)>/<basename(main, ".jsonl")>/subagents/agent-<id>.jsonl` when the main path ends
+ * in ".jsonl". Null when nothing is recorded or `agentId` isn't [A-Za-z0-9_-]{1,64}. No I/O.
+ */
+export function transcriptPathOf(
+  meta: LiveMeta | null,
+  records: LiveRecord[],
+  agentId: string | null,
+): string | null {
+  const main = meta?.transcript_path ?? null;
+  if (agentId === null) return main;
+  if (!AGENT_ID.test(agentId)) return null;
+  const recorded = records
+    .flatMap((r) =>
+      r.kind === "subagent-stop" && r.agent_id === agentId ? [r.transcript_path] : [],
+    )
+    .findLast(Boolean);
+  if (recorded) return recorded;
+  if (!main?.endsWith(".jsonl")) return null;
+  return join(dirname(main), basename(main, ".jsonl"), "subagents", `agent-${agentId}.jsonl`);
+}
+
+/** The Azimuth session's latest goal and skill, read straight from its file. */
+function goalOf(root: string, ses: string | null): { goal: string | null; skill: string | null } {
+  const none = { goal: null, skill: null };
+  if (!ses || !ID_PATTERNS.session.test(ses)) return none;
+  const path = azPath(root, "sessions", `${ses}.md`);
+  if (!existsSync(path)) return none;
+  const session = parseSession(readFileSync(path, "utf8"), `.azimuth/sessions/${ses}.md`).entity;
+  return session ? latestGoal(session) : none;
+}
+
+/** Sets each agent's `transcript` flag: a recorded (or derived) path whose file exists. */
+function withTranscripts(
+  session: LiveSession,
+  meta: LiveMeta | null,
+  records: LiveRecord[],
+): LiveSession {
+  const has = (agentId: string | null) => {
+    const path = transcriptPathOf(meta, records, agentId);
+    return path !== null && existsSync(path);
+  };
+  return {
+    ...session,
+    main: { ...session.main, transcript: has(null) },
+    agents: session.agents.map((a) => ({ ...a, transcript: has(a.agent_id) })),
+  };
+}
+
+/**
+ * Sessions whose log was touched in the last 72 hours, most recently active first, summarized at
+ * `now` with their sidecar, their Azimuth session's goal and skill, and transcript flags.
+ */
 export function readLiveSessions(root: string, now = new Date()): LiveSession[] {
   const dir = liveDir(root);
   if (!existsSync(dir)) return [];
@@ -336,12 +424,11 @@ export function readLiveSessions(root: string, now = new Date()): LiveSession[] 
     try {
       if (now.getTime() - statSync(path).mtimeMs > KEEP_MS) continue;
       const claude = name.slice(0, -6);
-      const session = summarizeLive(
-        claude,
-        parseLiveLines(readTail(path)),
-        readLiveMeta(root, claude),
-      );
-      if (session) out.push(session);
+      const records = parseLiveLines(readTail(path));
+      const meta = readLiveMeta(root, claude);
+      const session = summarizeLive(claude, records, meta, now);
+      if (session)
+        out.push({ ...withTranscripts(session, meta, records), ...goalOf(root, session.ses) });
     } catch {
       // Removed between listing and reading.
     }
@@ -390,7 +477,7 @@ export function sessionOpen(records: LiveRecord[], check: OpenCheck): boolean {
   if (ended || lastSeen === -Infinity) return false;
   const quiet = check.now.getTime() - lastSeen;
   // Process IDs get reused, so one is only trusted while the log is fresh.
-  if (pid !== null) return quiet < KEEP_MS && check.alive(pid);
+  if (pid !== null) return quiet < OPEN_MS && check.alive(pid);
   return quiet < check.idleMs;
 }
 
@@ -402,7 +489,7 @@ export function anySessionOpen(root: string, check: OpenCheck): boolean {
     if (!name.endsWith(".jsonl")) return false;
     const path = join(dir, name);
     try {
-      if (check.now.getTime() - statSync(path).mtimeMs > KEEP_MS) return false;
+      if (check.now.getTime() - statSync(path).mtimeMs > OPEN_MS) return false;
       return sessionOpen(parseLiveLines(readTail(path)), check);
     } catch {
       // Removed between listing and reading.
@@ -421,7 +508,7 @@ export function processAlive(pid: number): boolean {
   }
 }
 
-/** Deletes live files untouched for more than a day. */
+/** Deletes live files untouched for more than 72 hours. */
 export function pruneLive(root: string, now = new Date()): void {
   const dir = liveDir(root);
   if (!existsSync(dir)) return;

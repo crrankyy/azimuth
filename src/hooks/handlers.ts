@@ -25,6 +25,7 @@ import {
   sessionOfClaude,
   type SessionEnv,
 } from "../core/session";
+import { clip, displayPath, editSize, toolTarget } from "../core/tools";
 import { viewerUrl } from "../server/registry";
 
 /** What Claude Code sends a command hook on stdin (only the fields Azimuth reads). */
@@ -43,6 +44,14 @@ export interface HookInput {
   tool_response?: unknown;
   /** Claude Code's transcript path, sent with every hook event. */
   transcript_path?: string;
+  /** SubagentStop: the subagent's own transcript. */
+  agent_transcript_path?: string;
+  /** Notification. */
+  notification_type?: string;
+  message?: string;
+  title?: string;
+  /** PostToolUseFailure. */
+  error?: string;
 }
 
 export interface HookOutput {
@@ -111,14 +120,6 @@ function block(reason: string): HookOutput {
 
 const relTo = (root: string, file: string) =>
   isAbsolute(file) ? relative(root, file).split("\\").join("/") : file;
-
-/** A path for display: relative inside the project, tidied (`~`, `<plugin>`) outside it. */
-function displayPath(root: string, file: string, places: Omit<Places, "root">): string {
-  const rel = relTo(root, file);
-  return rel.startsWith("..") ? tidyPaths(file, { ...places, root }) : rel;
-}
-
-const clip = (s: string, n = 120) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 /** The Agent tool (called Task in older Claude Code versions). */
 const isAgentTool = (tool: string | undefined) => tool === "Agent" || tool === "Task";
@@ -273,15 +274,19 @@ export async function sessionStart(input: HookInput, ctx: HookContext): Promise<
   return context("SessionStart", parts.filter((p) => p !== null).join("\n"));
 }
 
+/** Where this machine's folders are, for display paths in live records. */
+const placesOf = (ctx: HookContext): Omit<Places, "root"> => ({
+  home: homedir(),
+  plugin: ctx.pluginDir ?? null,
+});
+
 export function postToolUse(input: HookInput, ctx: HookContext): HookOutput {
   const root = projectRoot(input, ctx.env);
   const id = input.session_id;
   if (!root || !id || !input.tool_name) return OK;
   const now = ctx.now ?? new Date();
-  const { file, summary } = describeTool(root, input.tool_name, input.tool_input, {
-    home: homedir(),
-    plugin: ctx.pluginDir ?? null,
-  });
+  const { file, summary } = describeTool(root, input.tool_name, input.tool_input, placesOf(ctx));
+  const size = editSize(input.tool_name, input.tool_input, input.tool_response);
   appendLive(root, id, {
     kind: "tool",
     at: stamp(now),
@@ -294,6 +299,7 @@ export function postToolUse(input: HookInput, ctx: HookContext): HookOutput {
       tool_use_id: input.tool_use_id ?? null,
       spawned: spawnedAgent(input.tool_response),
     }),
+    ...size,
   });
   // Wake the agent (asyncRewake) when you acted on what it is working on.
   const records = readLiveRecords(root, id);
@@ -430,7 +436,7 @@ export function subagentStart(input: HookInput, ctx: HookContext): HookOutput {
   return OK;
 }
 
-/** SubagentStop: records that the subagent finished. */
+/** SubagentStop: records that the subagent finished, and where its transcript is. */
 export function subagentStop(input: HookInput, ctx: HookContext): HookOutput {
   const root = projectRoot(input, ctx.env);
   const id = input.session_id;
@@ -439,6 +445,70 @@ export function subagentStop(input: HookInput, ctx: HookContext): HookOutput {
     kind: "subagent-stop",
     at: stamp(ctx.now ?? new Date()),
     agent_id: input.agent_id,
+    transcript_path: input.agent_transcript_path ?? null,
+  });
+  return OK;
+}
+
+/**
+ * PermissionRequest: records that an agent waits on you, reason "Permission prompt: <tool_name>[
+ * <target>]". It only observes: no output, so Claude Code asks you as it would without it.
+ */
+export function permissionRequest(input: HookInput, ctx: HookContext): HookOutput {
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id) return OK;
+  const tool = input.tool_name ?? null;
+  const target = tool ? toolTarget(root, tool, input.tool_input, placesOf(ctx)) : "";
+  appendLive(root, id, {
+    kind: "wait",
+    at: stamp(ctx.now ?? new Date()),
+    source: "permission",
+    reason: tool
+      ? `Permission prompt: ${[tool, target].filter(Boolean).join(" ")}`
+      : "Permission prompt",
+    tool,
+    target: target || null,
+    agent_id: input.agent_id ?? null,
+  });
+  return OK;
+}
+
+/** Notification: records a wait for "permission_prompt" only (an idle agent is known from Stop). */
+export function notification(input: HookInput, ctx: HookContext): HookOutput {
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id || input.notification_type !== "permission_prompt") return OK;
+  const message = input.message?.trim();
+  appendLive(root, id, {
+    kind: "wait",
+    at: stamp(ctx.now ?? new Date()),
+    source: "notification",
+    reason: message ? `Permission prompt: ${message}` : "Permission prompt",
+    tool: null,
+    target: null,
+    // Not documented to carry agent_id for a subagent; null leaves the agent unknown.
+    agent_id: input.agent_id ?? null,
+  });
+  return OK;
+}
+
+/** PostToolUseFailure: a tool record marked failed, with the error's first line. */
+export function postToolUseFailure(input: HookInput, ctx: HookContext): HookOutput {
+  const root = projectRoot(input, ctx.env);
+  const id = input.session_id;
+  if (!root || !id || !input.tool_name) return OK;
+  const { file, summary } = describeTool(root, input.tool_name, input.tool_input, placesOf(ctx));
+  appendLive(root, id, {
+    kind: "tool",
+    at: stamp(ctx.now ?? new Date()),
+    tool: input.tool_name,
+    file,
+    summary,
+    agent_id: input.agent_id ?? null,
+    agent_type: input.agent_type ?? null,
+    failed: true,
+    error: clip((input.error ?? "").split("\n")[0]?.trim() || "Failed"),
   });
   return OK;
 }
@@ -456,4 +526,7 @@ export const HOOKS: Record<
   "pre-tool-use": preToolUse,
   "subagent-start": subagentStart,
   "subagent-stop": subagentStop,
+  "permission-request": permissionRequest,
+  notification,
+  "post-tool-use-failure": postToolUseFailure,
 };

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { Index, LiveAgent, LiveSession } from "../../../../src/core/types";
+import type { Index, LiveActivity, LiveAgent, LiveSession } from "../../../../src/core/types";
 import { expectedIndex } from "../../../../test/fixtures/hookline/expected-index";
 import { IndexContext } from "../../data/IndexProvider";
 import { LiveStrip } from "./LiveStrip";
@@ -21,7 +21,19 @@ function withIndex(children: ReactNode) {
   return <IndexContext.Provider value={value}>{children}</IndexContext.Provider>;
 }
 
+const activity: LiveActivity = {
+  status: "running",
+  waiting: null,
+  current: null,
+  started_at: "2026-10-18T18:00:00Z",
+  ended_at: null,
+  edits: [],
+  waits: [],
+  transcript: false,
+};
+
 const agent = (over: Partial<LiveAgent>): LiveAgent => ({
+  ...activity,
   agent_id: "a1",
   agent_type: "general-purpose",
   last_seen_at: "2026-10-18T18:05:50Z",
@@ -45,6 +57,11 @@ const session = (over: Partial<LiveSession>): LiveSession => ({
   task: null,
   features: [],
   events: [],
+  main: activity,
+  status: "running",
+  waiting: null,
+  goal: null,
+  skill: null,
   ...over,
 });
 

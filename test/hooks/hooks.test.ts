@@ -660,3 +660,169 @@ describe("F-011 the sidecar and the Azimuth session at Claude Code's start and e
     expect(text.split("\n")).toContain("- You are in Azimuth session SES-20261020-0900.");
   });
 });
+
+describe("F-014 waits, failures, edit sizes and subagent transcripts", () => {
+  const last = (session: string) => readLiveRecords(tree.root, session).at(-1);
+
+  it("S-014.1.1 records a permission request of the main agent", () => {
+    const r = hook("permission-request", {
+      session_id: "f014-perm",
+      tool_name: "Bash",
+      tool_input: { command: "pnpm vitest run\npnpm lint" },
+    });
+    expect(r).toMatchObject({ code: 0, out: "" });
+    expect(last("f014-perm")).toMatchObject({
+      kind: "wait",
+      source: "permission",
+      reason: "Permission prompt: Bash pnpm vitest run",
+      tool: "Bash",
+      target: "pnpm vitest run",
+      agent_id: null,
+    });
+  });
+
+  it("S-014.1.2 names the subagent whose permission request it is", () => {
+    hook("permission-request", {
+      session_id: "f014-perm-agent",
+      tool_name: "Edit",
+      tool_input: { file_path: join(tree.root, "src/app.ts") },
+      agent_id: "a1",
+    });
+    expect(last("f014-perm-agent")).toMatchObject({
+      kind: "wait",
+      source: "permission",
+      reason: "Permission prompt: Edit src/app.ts",
+      tool: "Edit",
+      target: "src/app.ts",
+      agent_id: "a1",
+    });
+  });
+
+  it("S-014.1.3 records a permission-prompt notification", () => {
+    const r = hook("notification", {
+      session_id: "f014-note",
+      notification_type: "permission_prompt",
+      message: "Claude needs your permission to use WebFetch",
+    });
+    expect(r).toMatchObject({ code: 0, out: "" });
+    expect(last("f014-note")).toMatchObject({
+      kind: "wait",
+      source: "notification",
+      reason: "Permission prompt: Claude needs your permission to use WebFetch",
+      tool: null,
+      target: null,
+      agent_id: null,
+    });
+  });
+
+  it("S-014.1.4 records nothing for other notifications", () => {
+    const r = hook("notification", {
+      session_id: "f014-idle",
+      notification_type: "idle_prompt",
+      message: "Claude is waiting for your input",
+    });
+    expect(r).toMatchObject({ code: 0, out: "" });
+    expect(readLiveRecords(tree.root, "f014-idle")).toEqual([]);
+  });
+
+  it("S-014.1.5 registers the new hooks in the plugin", () => {
+    const path = fileURLToPath(new URL("../../plugin/hooks/hooks.json", import.meta.url));
+    type Entry = { matcher?: string; hooks: Record<string, unknown>[] };
+    const { hooks } = JSON.parse(readFileSync(path, "utf8")) as { hooks: Record<string, Entry[]> };
+    expect(hooks.PermissionRequest?.[0]?.hooks[0]).toEqual({
+      type: "command",
+      command: '"${CLAUDE_PLUGIN_ROOT}/bin/azimuth" hook permission-request',
+      timeout: 5,
+    });
+    const notification = hooks.Notification?.[0];
+    expect(notification).not.toHaveProperty("matcher");
+    expect(notification?.hooks).toHaveLength(1);
+    expect(String(notification?.hooks[0]?.command)).toMatch(/hook notification$/);
+    expect(notification?.hooks[0]?.async).toBe(true);
+    const failure = hooks.PostToolUseFailure?.[0];
+    expect(failure?.matcher).toBe("*");
+    expect(failure?.hooks).toHaveLength(1);
+    expect(String(failure?.hooks[0]?.command)).toMatch(/hook post-tool-use-failure$/);
+    expect(failure?.hooks[0]?.async).toBe(true);
+  });
+
+  it("S-014.2.1 records a failed tool with the first line of its error", () => {
+    const r = hook("post-tool-use-failure", {
+      session_id: "f014-fail",
+      tool_name: "Bash",
+      tool_input: { command: "pnpm build" },
+      error: "Exit code 1\nsrc/a.ts(3,1): error TS2304",
+      agent_id: "a1",
+    });
+    expect(r).toMatchObject({ code: 0, out: "" });
+    expect(last("f014-fail")).toMatchObject({
+      kind: "tool",
+      tool: "Bash",
+      file: null,
+      summary: "pnpm build",
+      agent_id: "a1",
+      failed: true,
+      error: "Exit code 1",
+    });
+  });
+
+  it("S-014.2.2 records the lines an edit added and removed", () => {
+    hook("post-tool-use", {
+      session_id: "f014-edit",
+      tool_name: "Edit",
+      tool_input: { file_path: join(tree.root, "src/app.ts"), old_string: "b", new_string: "c\nd" },
+      tool_response: {
+        structuredPatch: [
+          {
+            oldStart: 1,
+            oldLines: 3,
+            newStart: 1,
+            newLines: 4,
+            lines: [" a", "-b", "+c", "+d", " e"],
+          },
+        ],
+      },
+    });
+    expect(last("f014-edit")).toMatchObject({
+      kind: "tool",
+      tool: "Edit",
+      file: "src/app.ts",
+      added: 2,
+      removed: 1,
+    });
+  });
+
+  it("S-014.2.3 records no size for other tools", () => {
+    hook("post-tool-use", {
+      session_id: "f014-read",
+      tool_name: "Read",
+      tool_input: { file_path: join(tree.root, "src/app.ts") },
+    });
+    const record = last("f014-read");
+    expect(record?.kind).toBe("tool");
+    expect(record).not.toHaveProperty("added");
+    expect(record).not.toHaveProperty("removed");
+  });
+
+  it("S-014.2.4 keeps a finishing subagent's transcript path", () => {
+    hook("subagent-stop", {
+      session_id: "f014-sub",
+      agent_id: "a1",
+      agent_transcript_path: "/home/dev/.claude/projects/-work-demo/c1/subagents/agent-a1.jsonl",
+    });
+    expect(last("f014-sub")).toMatchObject({
+      kind: "subagent-stop",
+      agent_id: "a1",
+      transcript_path: "/home/dev/.claude/projects/-work-demo/c1/subagents/agent-a1.jsonl",
+    });
+  });
+
+  it("S-014.2.5 records a subagent stop without a transcript path", () => {
+    hook("subagent-stop", { session_id: "f014-sub-none", agent_id: "a2" });
+    expect(last("f014-sub-none")).toMatchObject({
+      kind: "subagent-stop",
+      agent_id: "a2",
+      transcript_path: null,
+    });
+  });
+});

@@ -443,15 +443,64 @@ export interface VerifyRun {
   ses?: Id | null;
 }
 
+export type AgentStatus = "running" | "waiting" | "done";
+
+/** What an agent waits on you for, and since when. */
+export interface LiveWait {
+  /** "Permission prompt: Bash pnpm vitest run" | "Permission prompt: <notification message>" | "Waiting for your next prompt" */
+  reason: string;
+  since: ISODateTime;
+}
+
+/** A stretch of time an agent waited on you; `to` is null while it lasts. */
+export interface LiveWaitSpan {
+  from: ISODateTime;
+  to: ISODateTime | null;
+  reason: string;
+}
+
+/** One successful Edit, MultiEdit, Write or NotebookEdit. */
+export interface LiveEdit {
+  file: string;
+  at: ISODateTime;
+  /** Null when the hook couldn't count (NotebookEdit, logs written before F-014). */
+  added: number | null;
+  removed: number | null;
+}
+
 export interface LiveEvent {
   at: ISODateTime;
   tool: string;
   file: string | null;
   summary: string;
   agent_id: string | null;
+  /** Lines an Edit, MultiEdit or Write added and removed; null otherwise. */
+  added: number | null;
+  removed: number | null;
+  /** First line of the error of a failed tool (PostToolUseFailure); null otherwise. */
+  error: string | null;
 }
 
-export interface LiveAgent {
+/** What one agent is doing: a session's main agent (LiveSession.main) or a subagent. */
+export interface LiveActivity {
+  status: AgentStatus;
+  /** Set exactly when status is "waiting". */
+  waiting: LiveWait | null;
+  /** This agent's latest tool event. */
+  current: LiveEvent | null;
+  /** Main agent: the session's started_at. Subagent: its `subagent` record, else its first record. */
+  started_at: ISODateTime;
+  /** Set exactly when status is "done": the end, the subagent's stop, or its last record. */
+  ended_at: ISODateTime | null;
+  /** Its last MAX_EDITS edits, oldest first. */
+  edits: LiveEdit[];
+  /** Its last MAX_WAITS wait spans, oldest first (permission waits; idle spans for the main agent). */
+  waits: LiveWaitSpan[];
+  /** Whether a transcript path is recorded (or derived) and the file exists. */
+  transcript: boolean;
+}
+
+export interface LiveAgent extends LiveActivity {
   agent_id: string;
   agent_type: string | null;
   last_seen_at: ISODateTime;
@@ -472,12 +521,90 @@ export interface LiveSession {
   stopped_at: ISODateTime | null;
   ended_at: ISODateTime | null;
   agents: LiveAgent[];
+  /** The latest tool event of any agent. */
   current: LiveEvent | null;
   feature: Id | null;
   task: Id | null;
   /** Features the main agent or a running subagent is working on, sorted by ID. */
   features: Id[];
   events: LiveEvent[];
+  /** The main agent's own activity. */
+  main: LiveActivity;
+  /** The session as a whole: waiting on you, else running, else idle-waiting, else done. */
+  status: AgentStatus;
+  /** The earliest open permission wait of any agent, else the main agent's idle wait; null unless status is "waiting". */
+  waiting: LiveWait | null;
+  /** The Azimuth session's latest goal and skill (latestGoal); null without a session file. */
+  goal: string | null;
+  skill: string | null;
+}
+
+// Transcript API (GET /api/transcript), here so the viewer can import the types.
+export type TranscriptStatus = "running" | "ok" | "error";
+
+export interface TranscriptText {
+  lines: string[];
+  /** More lines existed than the cap. */
+  truncated: boolean;
+}
+
+export interface TranscriptDiff extends TranscriptText {
+  /** "+" and "-" lines over the whole patch, before the cap. */
+  added: number;
+  removed: number;
+}
+
+export type TranscriptEntry =
+  | { kind: "message"; role: "user" | "assistant"; text: string; at: string | null }
+  | {
+      kind: "tool";
+      tool_use_id: string;
+      name: string;
+      /** toolTarget of the call. */
+      target: string;
+      /** The call's `description` input (Bash), else null. */
+      summary: string | null;
+      status: TranscriptStatus;
+      /** Edit, MultiEdit, Write: from the result's structuredPatch (a created file: its content as "+" lines). */
+      diff: TranscriptDiff | null;
+      /** Bash: stdout then stderr (tail); a failed tool: its result text (tail); otherwise null. */
+      output: TranscriptText | null;
+      at: string | null;
+    }
+  | {
+      /** An Agent (or Task) call: a subagent card. */
+      kind: "spawn";
+      tool_use_id: string;
+      description: string;
+      /** The call's `subagent_type`. */
+      agent_type: string | null;
+      /** The result's `toolUseResult.agentId`, when known. */
+      agent_id: string | null;
+      status: TranscriptStatus;
+      /** The subagent's returned text (head). */
+      output: TranscriptText | null;
+      at: string | null;
+    }
+  | {
+      /** A tool result whose call isn't in this page (the viewer updates the earlier entry). */
+      kind: "result";
+      tool_use_id: string;
+      status: "ok" | "error";
+      diff: TranscriptDiff | null;
+      output: TranscriptText | null;
+      agent_id: string | null;
+      at: string | null;
+    };
+
+export interface TranscriptPage {
+  ok: true;
+  claude_session: string;
+  agent: string | null;
+  entries: TranscriptEntry[];
+  /** Byte offset to pass as `after` for the next page. */
+  next: number;
+  /** Content between the start (byte 0, or `after`) and the first line read was not returned. */
+  skipped: boolean;
 }
 
 export interface InboxItem {

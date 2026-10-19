@@ -1,0 +1,4 @@
+{"type":"user","uuid":"s01","parentUuid":null,"timestamp":"2026-10-20T10:00:31.000Z","sessionId":"c1","isSidechain":true,"agentId":"a1","message":{"role":"user","content":"Find every caller of decide()"}}
+{"type":"assistant","uuid":"s02","parentUuid":"s01","timestamp":"2026-10-20T10:00:40.000Z","sessionId":"c1","isSidechain":true,"agentId":"a1","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_grep","name":"Grep","input":{"pattern":"decide\\("}}]}}
+{"type":"user","uuid":"s03","parentUuid":"s02","timestamp":"2026-10-20T10:00:41.000Z","sessionId":"c1","isSidechain":true,"agentId":"a1","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_grep","content":"src/b.ts"}]}}
+{"type":"assistant","uuid":"s04","parentUuid":"s03","timestamp":"2026-10-20T10:01:20.000Z","sessionId":"c1","isSidechain":true,"agentId":"a1","message":{"role":"assistant","content":[{"type":"text","text":"Found 1 caller: src/b.ts"}]}}

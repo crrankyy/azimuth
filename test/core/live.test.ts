@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -9,11 +9,14 @@ import {
   liveFile,
   liveMetaFile,
   processAlive,
+  pruneLive,
   readLiveMeta,
+  readLiveRecords,
   readLiveSessions,
   sessionOpen,
   sessionsLastSeen,
   summarizeLive,
+  transcriptPathOf,
   updateLiveMeta,
   type LiveRecord,
   type OpenCheck,
@@ -276,5 +279,179 @@ describe("F-011 the live sidecar", () => {
     expect(sessionsLastSeen(root)).toEqual(
       new Map([["SES-20261020-0900", "2026-10-20T11:30:00Z"]]),
     );
+  });
+});
+
+describe("F-014 live sessions in the index", () => {
+  const project = () => {
+    const tree = writeTree({ ".azimuth/config.yaml": MINIMAL_CONFIG });
+    cleanup = tree.cleanup;
+    return tree;
+  };
+  const T = (hms: string) => `2026-10-20T${hms}Z`;
+  const at = (hms: string) => new Date(T(hms));
+  const touchLive = (root: string, claude: string, when: Date) =>
+    utimesSync(liveFile(root, claude), when, when);
+  const sessionFile = (id: string, skill: string, goal: string, goals = "") =>
+    [
+      "---",
+      `id: ${id}`,
+      "agent: claude-code",
+      `skill: ${skill}`,
+      `started_at: ${id.slice(4, 8)}-${id.slice(8, 10)}-${id.slice(10, 12)}T${id.slice(13, 15)}:${id.slice(15, 17)}:00Z`,
+      "ended_at: null",
+      `goal: ${goal}`,
+      "touched: []",
+      "commits: []",
+      "raised: []",
+      "---",
+      "## Summary",
+      "",
+      "## Handoff",
+      "",
+      ...(goals ? ["## Goals", goals, ""] : []),
+    ].join("\n");
+  const live = (root: string, claude: string, records: LiveRecord[], last: Date) => {
+    for (const r of records) appendLive(root, claude, r);
+    touchLive(root, claude, last);
+  };
+  const find = (sessions: ReturnType<typeof readLiveSessions>, claude: string) =>
+    sessions.find((s) => s.claude_session === claude);
+
+  it("S-014.7.1 carries a live session's activity and latest goal", () => {
+    const tree = project();
+    tree.write(
+      ".azimuth/sessions/SES-20261020-1000.md",
+      sessionFile("SES-20261020-1000", "spec", "Spec F-014", "- 10:30 · build · Build F-014"),
+    );
+    live(
+      tree.root,
+      "c1",
+      [
+        { kind: "start", at: T("10:00:00") },
+        { kind: "session", at: T("10:00:05"), ses: "SES-20261020-1000" },
+        { kind: "subagent", at: T("10:31:00"), agent_id: "a1", agent_type: "general-purpose" },
+        {
+          kind: "tool",
+          at: T("10:32:00"),
+          tool: "Read",
+          file: "a.ts",
+          summary: "Read a.ts",
+          agent_id: "a1",
+        },
+      ],
+      at("10:32:00"),
+    );
+    const c1 = find(readLiveSessions(tree.root, at("10:33:00")), "c1");
+    expect(c1).toMatchObject({
+      goal: "Build F-014",
+      skill: "build",
+      status: "running",
+      main: { status: "running" },
+    });
+    expect(c1?.agents.find((a) => a.agent_id === "a1")).toMatchObject({
+      status: "running",
+      started_at: T("10:31:00"),
+    });
+  });
+
+  it("S-014.7.2 falls back to the session's own goal, or to nothing", () => {
+    const tree = project();
+    tree.write(
+      ".azimuth/sessions/SES-20261020-0900.md",
+      sessionFile("SES-20261020-0900", "build", "Build F-011"),
+    );
+    live(
+      tree.root,
+      "c2",
+      [{ kind: "session", at: T("09:00:05"), ses: "SES-20261020-0900" }],
+      at("09:00:05"),
+    );
+    live(
+      tree.root,
+      "c3",
+      [{ kind: "session", at: T("09:00:05"), ses: "SES-20261019-0800" }],
+      at("09:00:05"),
+    );
+    const sessions = readLiveSessions(tree.root, at("09:10:00"));
+    expect(find(sessions, "c2")).toMatchObject({ goal: "Build F-011", skill: "build" });
+    expect(find(sessions, "c3")).toMatchObject({ goal: null, skill: null });
+  });
+
+  it("S-014.7.3 keeps live logs for three days", () => {
+    const tree = project();
+    const now = new Date();
+    const hoursAgo = (h: number) => new Date(now.getTime() - h * HOUR);
+    live(tree.root, "old", [{ kind: "start", at: hoursAgo(73).toISOString() }], hoursAgo(73));
+    live(tree.root, "recent", [{ kind: "start", at: hoursAgo(48).toISOString() }], hoursAgo(48));
+    expect(readLiveSessions(tree.root).map((s) => s.claude_session)).toEqual(["recent"]);
+    pruneLive(tree.root);
+    expect(existsSync(liveFile(tree.root, "old"))).toBe(false);
+    expect(existsSync(liveFile(tree.root, "recent"))).toBe(true);
+  });
+
+  /** c1's sidecar names a main transcript; a1 has a subagent file next to it, a2 none. */
+  const withTranscripts = () => {
+    const tree = project();
+    const main = join(tree.root, "projects/-demo/c1.jsonl");
+    tree.write("projects/-demo/c1.jsonl", "{}\n");
+    tree.write("projects/-demo/c1/subagents/agent-a1.jsonl", "{}\n");
+    live(
+      tree.root,
+      "c1",
+      [
+        { kind: "start", at: T("10:00:00") },
+        { kind: "subagent", at: T("10:01:00"), agent_id: "a1", agent_type: null },
+        { kind: "subagent", at: T("10:02:00"), agent_id: "a2", agent_type: null },
+      ],
+      at("10:02:00"),
+    );
+    updateLiveMeta(tree.root, "c1", { transcript_path: main });
+    return { tree, main };
+  };
+
+  it("S-014.7.4 flags transcripts whose file exists", () => {
+    const { tree } = withTranscripts();
+    const c1 = find(readLiveSessions(tree.root, at("10:03:00")), "c1");
+    expect(c1?.main.transcript).toBe(true);
+    const flags = Object.fromEntries(c1?.agents.map((a) => [a.agent_id, a.transcript]) ?? []);
+    expect(flags).toEqual({ a1: true, a2: false });
+  });
+
+  it("S-014.7.5 lets a subagent's recorded transcript path win", () => {
+    const { tree, main } = withTranscripts();
+    const other = join(tree.root, "other/agent-a2.jsonl");
+    appendLive(tree.root, "c1", {
+      kind: "subagent-stop",
+      at: T("10:04:00"),
+      agent_id: "a2",
+      transcript_path: other,
+    });
+    const meta = readLiveMeta(tree.root, "c1");
+    const records = readLiveRecords(tree.root, "c1");
+    expect(transcriptPathOf(meta, records, "a2")).toBe(other);
+    expect(transcriptPathOf(meta, records, "a1")).toBe(
+      join(tree.root, "projects/-demo/c1/subagents/agent-a1.jsonl"),
+    );
+    expect(transcriptPathOf(meta, records, null)).toBe(main);
+  });
+
+  it("S-014.7.6 gives a session without a sidecar no transcript", () => {
+    const tree = project();
+    const records: LiveRecord[] = [
+      { kind: "start", at: T("10:00:00") },
+      { kind: "subagent", at: T("10:01:00"), agent_id: "a1", agent_type: null },
+    ];
+    live(tree.root, "c4", records, at("10:01:00"));
+    const c4 = find(readLiveSessions(tree.root, at("10:02:00")), "c4");
+    expect(c4?.main.transcript).toBe(false);
+    expect(c4?.agents[0]?.transcript).toBe(false);
+    expect(transcriptPathOf(null, records, "a1")).toBeNull();
+  });
+
+  it("S-014.7.7 gives an agent ID that isn't a plain name no path", () => {
+    const { tree } = withTranscripts();
+    const meta = readLiveMeta(tree.root, "c1");
+    expect(transcriptPathOf(meta, readLiveRecords(tree.root, "c1"), "../a1")).toBeNull();
   });
 });

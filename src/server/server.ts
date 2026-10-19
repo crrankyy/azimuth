@@ -1,13 +1,14 @@
 import { randomBytes } from "node:crypto";
 import { existsSync, realpathSync, unlinkSync, writeFileSync, mkdirSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { buildIndex } from "../core/build-index";
 import { AzimuthError } from "../core/errors";
 import { sharedCacheDir } from "../core/lock";
 import { anySessionOpen, liveDir, processAlive, readLiveSessions } from "../core/live";
 import { azPath } from "../core/paths";
-import type { Index } from "../core/types";
+import type { Index, LiveSession } from "../core/types";
 import { VERSION } from "../core/version";
 import { runAction, type ActionRequest } from "./actions";
 import { buildId } from "./autostart";
@@ -15,6 +16,7 @@ import { approvalDiff } from "./diff";
 import { embeddedJson, inlineViewer } from "./export";
 import { hostAllowed, originAllowed, readBody, sendJson } from "./http";
 import { readViewerRecord, viewerRecordPath, type ViewerRecord } from "./registry";
+import { defaultTranscriptRoots, serveTranscript } from "./transcript";
 import { watchProject, type ChangeKind } from "./watch";
 import { spawnSync } from "node:child_process";
 
@@ -33,6 +35,10 @@ export interface ServerOptions {
   /** Record the server in the shared cache so CLIs and hooks can find it. */
   register?: boolean;
   now?: () => Date;
+  /** Folders transcripts may be served from (default: defaultTranscriptRoots(process.env, homedir())). */
+  transcriptRoots?: string[];
+  /** How often live statuses are re-derived while a client is connected (default 60_000). */
+  statusRefreshMs?: number;
 }
 
 export interface RunningServer {
@@ -46,6 +52,18 @@ export interface RunningServer {
 }
 
 const LIVE_ACTIVE_MS = 2 * 60_000;
+
+/** Every session's, main agent's and subagent's status, to tell whether a push would change any. */
+function statusKey(live: LiveSession[]): string {
+  return JSON.stringify(
+    live.map((s) => [
+      s.claude_session,
+      s.status,
+      s.main.status,
+      s.agents.map((a) => [a.agent_id, a.status]),
+    ]),
+  );
+}
 
 function gitDir(root: string): string | null {
   const r = spawnSync("git", ["rev-parse", "--path-format=absolute", "--git-dir"], {
@@ -90,6 +108,7 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
   const instance = randomBytes(8).toString("hex");
   const build = buildId();
   const token = randomBytes(24).toString("hex");
+  const transcriptRoots = opts.transcriptRoots ?? defaultTranscriptRoots(process.env, homedir());
   const server = { instance, version: VERSION };
   let index: Index = buildIndex(root, { now: now(), server }).index;
   let lastRequestAt = Date.now();
@@ -183,6 +202,21 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
       if (!feature) return sendJson(res, 404, { ok: false, error: "not-found" });
       return sendJson(res, 200, { ok: true, files: approvalDiff(root, feature) });
     }
+    // Transcripts never reach the index or exports: only the live page, with its token.
+    const transcriptMatch = /^\/api\/transcript\/([A-Za-z0-9_.-]{1,128})$/.exec(url.pathname);
+    if (req.method === "GET" && transcriptMatch) {
+      if (req.headers["x-azimuth-token"] !== token)
+        return sendJson(res, 403, { ok: false, error: "token" });
+      const outcome = serveTranscript({
+        root,
+        claudeSession: transcriptMatch[1] ?? "",
+        agent: url.searchParams.get("agent"),
+        after: url.searchParams.get("after"),
+        roots: transcriptRoots,
+        home: homedir(),
+      });
+      return sendJson(res, outcome.status, outcome.body);
+    }
     if (req.method === "POST" && url.pathname === "/api/actions") {
       if (!originAllowed(req, port)) return sendJson(res, 403, { ok: false, error: "origin" });
       if (req.headers["x-azimuth-token"] !== token)
@@ -247,6 +281,21 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
   }, 10_000);
   heartbeat.unref();
 
+  // Statuses also change with time alone (a quiet session turns done after 30 minutes), so they
+  // are re-derived while a page is open and pushed when one differs from what it last got.
+  const statusRefresh = setInterval(() => {
+    if (clients.size === 0) return;
+    try {
+      const live = readLiveSessions(root, now());
+      if (statusKey(live) === statusKey(index.live)) return;
+      index = { ...index, live };
+      broadcast("live", { live: index.live, generated_at: index.generated_at });
+    } catch {
+      // A file caught mid-write; the next refresh reads it again.
+    }
+  }, opts.statusRefreshMs ?? 60_000);
+  statusRefresh.unref();
+
   const record: ViewerRecord = {
     pid: process.pid,
     port,
@@ -267,6 +316,7 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
     if (closing) return closed;
     closing = true;
     clearInterval(heartbeat);
+    clearInterval(statusRefresh);
     clearInterval(idleCheck);
     if (deferredLive) clearTimeout(deferredLive);
     watcher.close();
