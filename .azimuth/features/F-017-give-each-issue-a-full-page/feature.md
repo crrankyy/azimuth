@@ -2,7 +2,7 @@
 id: F-017
 title: Give each issue a full page
 summary: Each issue opens on its own page (`#/issues/<id>/page`) with triage controls, its description, related work and history derived from the index, linked features, files and source; the Issues list opens it from every row.
-status: draft
+status: in-progress
 priority: P2
 size: M
 mode: brownfield
@@ -12,6 +12,11 @@ superseded_by: null
 tags: []
 created: 2026-10-19
 updated: 2026-10-19
+approved_at: 2026-10-19
+approved_by: agent
+approved_hash: sha256:a29606ebeb23b0c71085411ec3da015c43f67effd3e452697e4a6bca922a3abc
+approved_commit: 7b62199
+review_ack_at: null
 ---
 # F-017: Give each issue a full page
 
