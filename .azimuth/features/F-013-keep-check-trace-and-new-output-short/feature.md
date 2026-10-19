@@ -2,7 +2,7 @@
 id: F-013
 title: Keep check, trace and new output short
 summary: check summarises warnings by code unless asked for them, trace hides mention-only rows, and new prints only the ID on stdout even when a later step fails.
-status: verifying
+status: done
 priority: P2
 size: M
 mode: brownfield

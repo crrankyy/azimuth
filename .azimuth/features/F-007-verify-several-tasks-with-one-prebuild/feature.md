@@ -2,7 +2,7 @@
 id: F-007
 title: Verify several tasks with one prebuild
 summary: azimuth verify takes several task and feature IDs, runs an optional prebuild once under its own timeout, makes concurrent verify processes take turns, kills a timed-out command's whole process group, records each run's wait and session, and has a one-line-per-run summary.
-status: verifying
+status: done
 priority: P1
 size: M
 mode: brownfield
