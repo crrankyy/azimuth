@@ -35,7 +35,9 @@ stat poll every 2 seconds as a fallback. It pushes over Server-Sent Events:
 - `hello`: on connect; a page connected to an older server instance reloads itself.
 
 While an agent is active, the index is also rebuilt every 10 seconds to pick up source changes the
-index reports (planned files appearing, uncommitted changes). Changed items flash briefly. If the
+index reports (planned files appearing, uncommitted changes). While a page is open, agent statuses
+are also worked out again every minute, and `live` is pushed when one changed: an agent quiet for
+30 minutes turns done without writing anything. Changed items flash briefly. If the
 connection drops, a banner says so, actions are disabled, and the page reconnects on its own.
 
 ## Screens
@@ -114,11 +116,22 @@ Markdown bodies are never rewritten.
 | `GET /api/index`                                       | The index (ETag: its `rev`)                                                                                                                                                   |
 | `GET /api/events`                                      | SSE stream (`hello`, `live`, `index`, pings)                                                                                                                                  |
 | `GET /api/features/<F-ID>/approval-diff`               | Diffs of the spec files changed since approval                                                                                                                                |
+| `GET /api/transcript/<claude-session>`                 | Needs the token: `200 {ok, claude_session, agent, entries, next, skipped}`, `403 {error: "token" \| "forbidden"}`, `404`, `400`                                               |
 | `POST /api/actions` `{action, ref, payload?, expect?}` | `200 {ok, index, changed, message}`, `409 {error: "gate", gate}`, `409 {error: "conflict" \| "busy"}`, `403 {error: "token" \| "origin" \| "host" \| "policy"}`, `404`, `400` |
 
 Actions: `approve`, `reapprove`, `request-changes` `{comment}`, `answer` `{option, text}`,
 `decide` `{decision, note?}`, `acknowledge`, `revert` `{reason}`, `move` `{to, reason, by}`,
 `set` `{field, value}`.
+
+`GET /api/transcript/<claude-session>[?agent=<id>][&after=<offset>]` serves a page of a live
+session's Claude Code transcript: the main agent's, or with `agent` a subagent's. Its `entries`
+are messages, tool calls with their status, a diff (at most 80 lines) and an output tail (40
+lines), subagent cards with the start of what the subagent returned, and results whose call is on
+an earlier page. Each request reads at most a 512 KiB window: without `after`, the complete lines
+in the file's last 512 KiB; with `after` (a byte offset: the previous page's `next`), the complete
+lines from there. `skipped` is true when content before the first line returned was left out,
+such as a line longer than the window. The route exists only in the live viewer; see
+[Transcripts](claude-code.md#transcripts) for which files it may read.
 
 ## Security
 
@@ -127,6 +140,13 @@ Actions: `approve`, `reapprove`, `request-changes` `{comment}`, `answer` `{optio
 - Writes need the per-launch token embedded in the page, sent as the `X-Azimuth-Token` header, and
   a request that carries an `Origin` must come from the viewer's own address. The token lives only
   in memory and in the served page; exports never contain it or absolute paths.
+- Transcripts can hold secrets (file contents, command output, anything pasted into a prompt), so
+  `GET /api/transcript` needs the token as well. It reads only a transcript path the hooks
+  recorded (or a subagent's file next to the recorded main transcript), and only when its real
+  path, after symlinks are resolved, is a regular `.jsonl` file under Claude Code's `projects`
+  folders (`$CLAUDE_CONFIG_DIR/projects` when set, and `~/.claude/projects`); a path that fails
+  this check is refused (`403 forbidden`). It reads at most a 512 KiB window per request. The
+  index, the CLI and exports never contain a transcript or its path.
 - No HTTP endpoint runs commands (`verify` is CLI-only).
 - Markdown is rendered to React elements, never HTML strings, and links are limited to
   `http(s)`, `mailto` and in-app routes.

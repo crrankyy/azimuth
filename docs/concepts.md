@@ -226,7 +226,29 @@ hour: a long session that is still working is left alone.
 
 Independently, the Claude Code hooks record every tool call to a live log, so the viewer shows
 what each agent is doing right now, and tell a running agent when you answer, review or move its
-work. See [Claude Code integration](claude-code.md).
+work. See [Claude Code integration](claude-code.md). Live logs are kept for 72 hours.
+
+From its live log, each Claude Code session, its main agent and each subagent get a status. An
+agent's is the first that applies:
+
+| Status    | When                                                                                                             |
+| --------- | ---------------------------------------------------------------------------------------------------------------- |
+| `done`    | The session ended, or the subagent stopped.                                                                      |
+| `waiting` | A permission prompt for one of its tool calls is open. It never expires.                                         |
+| `done`    | No record for 30 minutes (idle, crashed or abandoned): the session's for the main agent, its own for a subagent. |
+| `waiting` | The main agent only: its turn ended and it waits for your next prompt.                                           |
+| `running` | Otherwise.                                                                                                       |
+
+A permission prompt opens when Claude Code asks you to allow a call, and closes at the agent's
+next tool call (a failed one too), for the main agent also at your next prompt or its turn end,
+for a subagent at its stop, and for every agent when the session ends or restarts. A waiting
+agent carries what it waits for and since when: `Permission prompt: Bash pnpm vitest run`, or
+`Waiting for your next prompt`. The session is `waiting` when any agent has a permission prompt
+open (the earliest is shown), else `running` when any agent runs, else `waiting` when the main
+agent waits for your next prompt, else `done`. Each agent also carries its current action, its
+start and end, its last five edits with the lines they added and removed, and its last 20 wait
+spans. Statuses are worked out when the index is built; since an agent turns `done` by time
+alone, the viewer's server works them out again every minute while a page is open.
 
 ## Problems
 

@@ -42,9 +42,11 @@ passes to hooks: `$AZIMUTH_NODE`, then the path it remembered last time
    path in a sidecar next to the live log (`azimuth session start` adds the Azimuth session to
    it). After a compaction it gives a short re-grounding note instead (current session, feature and
    task).
-2. **Work.** Every tool call is appended to `.azimuth/cache/live/<session>.jsonl`; the viewer shows
-   what the agent is doing within about a second. Edits to `.azimuth/` files are validated
-   immediately, and an edit that leaves a file invalid is reported back to Claude.
+2. **Work.** Every tool call is appended to `.azimuth/cache/live/<session>.jsonl`, with the lines
+   each edit added and removed and the error of a call that failed, and so is every permission
+   prompt Claude Code shows you; the viewer shows what each agent is doing, and whether it waits
+   on you, within about a second. Edits to `.azimuth/` files are validated immediately, and an
+   edit that leaves a file invalid is reported back to Claude.
 3. **You act in the viewer.** When you answer a question, request changes on or move the feature
    the agent is working on, the agent is told right after its next tool call. Everything else you
    did, including decisions on ADRs, and anything that happened while the agent was idle or the
@@ -91,8 +93,11 @@ immediately (before starting Node) in repositories without `.azimuth/`.
 | PreToolUse (Agent)                   | sync                   | Records what a subagent is asked to do and the task or feature it names.                 |
 | PostToolUse (all tools)              | async, can wake Claude | Records the tool call; wakes Claude when you act on a feature it or a subagent works on. |
 | PostToolUse (Edit, Write, MultiEdit) | sync                   | Validates edited `.azimuth/` files and reports errors to Claude.                         |
+| PostToolUseFailure (all tools)       | async                  | Records the failed tool call with the first line of its error.                           |
+| PermissionRequest                    | sync                   | Records that an agent waits on you for a permission prompt.                              |
+| Notification                         | async                  | Records a `permission_prompt` notification as a wait; ignores the other types.           |
 | UserPromptSubmit                     | sync                   | Adds what you did in the viewer since Claude's last turn; restarts a stopped viewer.     |
-| SubagentStart, SubagentStop          | sync, async            | Records each subagent starting and finishing.                                            |
+| SubagentStart, SubagentStop          | sync, async            | Records each subagent starting and finishing, and where its transcript is.               |
 | Stop                                 | sync                   | Asks Claude to fix errors it left in `.azimuth/` files (once).                           |
 | SessionEnd                           | sync                   | Records the end of the session and closes its Azimuth session.                           |
 
@@ -102,8 +107,30 @@ returns (right away for a background subagent, when it finishes for a foreground
 launch order until then. The viewer shows each subagent's lane with its task and every feature the
 session has in flight.
 
+The PermissionRequest, Notification and PostToolUseFailure hooks only observe: each appends at
+most one live record, prints nothing and exits 0, so they never allow, deny or answer anything,
+and Claude Code asks you exactly as it would without them. From the live log, each agent gets a
+status: running, waiting on you, or done (see
+[Sessions and live activity](concepts.md#sessions-and-live-activity)). In non-interactive mode
+(`claude -p`), PermissionRequest also fires for a call that is denied without asking: its wait is
+recorded but closes at once and leaves no wait span.
+
 A hook that fails never blocks Claude: the error is logged to `.azimuth/cache/hooks.log` and
 `azimuth doctor` reports it.
+
+### Transcripts
+
+Claude Code keeps each session's transcript as a JSONL file under its `projects` folder.
+SessionStart records the main agent's transcript path in the live log's sidecar, and SubagentStop
+records each subagent's. The hooks never read transcripts; only the live viewer's server does,
+through a token-guarded route (see [HTTP API](viewer.md#http-api)). It reads only a recorded path,
+or a subagent's file next to the recorded main transcript (`<session>/subagents/agent-<id>.jsonl`),
+and only when that path, after symlinks are resolved, is a regular `.jsonl` file under
+`$CLAUDE_CONFIG_DIR/projects` (when set) or `~/.claude/projects`. Transcripts can hold secrets
+(file contents, command output, anything pasted into a prompt), so they stay on your machine: the
+index, the CLI and exports never carry a transcript or its path, only whether one exists.
+The format is Claude Code's own and undocumented (Azimuth reads it as of Claude Code 2.1.304);
+lines it doesn't recognise are skipped.
 
 ## Without the plugin
 

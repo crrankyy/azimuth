@@ -530,7 +530,7 @@ Bullet times are UTC, and each goal or note is kept to one line.
 `.azimuth/cache/` is local state and is gitignored. In a linked git worktree, the write and verify
 locks, ID marks, live logs, viewer files and hook log are kept in the main worktree's
 `.azimuth/cache/`, so every worktree of a repository shares them; live logs and their sidecars
-untouched for 24 hours are deleted.
+untouched for 72 hours are deleted.
 
 | Path                              | Contents                                                                                    |
 | --------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -568,3 +568,32 @@ A verify run (`scenarios` comes from a JUnit report the command wrote to `$AZIMU
 `waited_ms` is how long the `azimuth verify` call waited for another one before it started, and
 `ses` the session current when the run was made (`null` outside a session). Runs recorded before
 Azimuth wrote these keys don't have them.
+
+A live log is append-only: each line is one record with a `kind` and its time `at` (UTC, whole
+seconds). `agent_id` is a subagent's ID, or `null` for the main agent.
+
+| `kind`          | Written by                                            | Other fields                                                                                                                                                                                                                                                 |
+| --------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `start`         | SessionStart                                          | `source` (`startup`, `resume`, `clear`, `compact`, or `init` when `azimuth init` ran in the session), `pid` (Claude Code's process ID)                                                                                                                       |
+| `prompt`        | UserPromptSubmit                                      | `pid`                                                                                                                                                                                                                                                        |
+| `tool`          | PostToolUse, PostToolUseFailure                       | `tool`, `file`, `summary`, `agent_id`, `agent_type`; the Agent tool: `tool_use_id` and `spawned` (the subagent it started); Edit, MultiEdit and Write: `added` and `removed` (lines), when known; a failed call: `failed: true` and `error` (its first line) |
+| `wait`          | PermissionRequest, Notification (`permission_prompt`) | `source` (`permission` or `notification`), `reason`, `tool` and `target` (`null` for a notification), `agent_id` (`null` for the main agent, or for a notification whose agent is unknown)                                                                   |
+| `launch`        | PreToolUse (Agent)                                    | `tool_use_id`, `description`, `refs` (the task and feature IDs it names)                                                                                                                                                                                     |
+| `subagent`      | SubagentStart                                         | `agent_id`, `agent_type`                                                                                                                                                                                                                                     |
+| `subagent-stop` | SubagentStop                                          | `agent_id`, `transcript_path` (the subagent's transcript, or `null`)                                                                                                                                                                                         |
+| `stop`          | Stop                                                  |                                                                                                                                                                                                                                                              |
+| `end`           | SessionEnd                                            | `reason`                                                                                                                                                                                                                                                     |
+| `session`       | `azimuth session start`                               | `ses` (the Azimuth session)                                                                                                                                                                                                                                  |
+| `cursor`        | PostToolUse, UserPromptSubmit                         | `scope` (`wake` or `prompt`), `keys`: how far your viewer actions have been reported to the agent                                                                                                                                                            |
+
+```json
+{"kind":"wait","at":"2026-10-20T10:02:00Z","source":"permission","reason":"Permission prompt: Bash pnpm vitest run","tool":"Bash","target":"pnpm vitest run","agent_id":null}
+{"kind":"tool","at":"2026-10-20T10:03:00Z","tool":"Edit","file":"src/a.ts","summary":"Edited src/a.ts","agent_id":"a1","agent_type":"general-purpose","added":2,"removed":1}
+{"kind":"tool","at":"2026-10-20T10:04:00Z","tool":"Bash","file":null,"summary":"pnpm build","agent_id":null,"agent_type":null,"failed":true,"error":"Exit code 1"}
+{"kind":"subagent-stop","at":"2026-10-20T10:05:00Z","agent_id":"a1","transcript_path":"/Users/me/.claude/projects/-Users-me-shop/c1/subagents/agent-a1.jsonl"}
+```
+
+A wait's `reason` is `Permission prompt: <tool> <target>` for PermissionRequest and
+`Permission prompt: <message>` for a notification. Records written by older versions lack the
+newer fields, and their edits count as unknown sizes. The index derives each agent's status from
+these records (see [Sessions and live activity](concepts.md#sessions-and-live-activity)).
