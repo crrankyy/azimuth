@@ -56,10 +56,17 @@ Subagents run inside your Claude Code session, so Azimuth sees one session: thei
   tests first, implement, run the verify command, and report the files it changed and the
   command's result, without committing.
 - **Parallel only when independent:** run several subagents at once only for ready tasks whose
-  `files` don't overlap; otherwise one at a time. Wait for the whole batch to report before
-  verifying, since a half-finished change elsewhere can break the build.
+  `files` overlap in no file outside `parallel.shared_files` (config.yaml); otherwise one at a
+  time. `azimuth next <F-ID>` ends with the groups that can run together
+  (`Can run together: T-005.2, T-005.3 (shared: src/registry.ts)`, `On its own: T-005.4`). Wait
+  for the whole batch to report before verifying, since a half-finished change elsewhere can
+  break the build.
+- **Shared files take insertions only:** tell each subagent whose task lists a shared file to
+  add one complete insertion to it (a whole enum variant, match arm or registry entry) and never
+  to edit another task's insertion.
 - **Then commit one task at a time:** review the change, stage only that task's files and commit
-  with `Refs: <T-ID>` (step 4.4).
+  with `Refs: <T-ID>` (step 4.4). A shared file holding the insertions of several tasks goes into
+  one commit with those tasks, whose `Refs:` names each of them (`Refs: T-005.2, T-005.3`).
 - **Verify the batch in one call:** `azimuth verify <T-ID> <T-ID> … --summary` prints one line per
   run and the output of failures only. Then `azimuth move <T-ID> done` and `azimuth log` for each
   task that passed; fix a failed one, commit it and verify it again.

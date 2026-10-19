@@ -9,6 +9,7 @@ lifecycles; the viewer shows it live.
 - [Feature lifecycle and gates](#feature-lifecycle-and-gates)
 - [Autonomy](#autonomy)
 - [Derived values](#derived-values)
+- [Parallel tasks and shared files](#parallel-tasks-and-shared-files)
 - [The inbox](#the-inbox)
 - [Traceability](#traceability)
 - [Sessions and live activity](#sessions-and-live-activity)
@@ -121,8 +122,31 @@ The index (what the viewer and `azimuth status --json` read) adds values nobody 
 | blocks / blocked_by     | Reverse dependencies; open blocking questions; unfinished dependencies of approved or in-progress features.                |
 | modified since approval | The spec's hash no longer matches the approved hash.                                                                       |
 | stale                   | In progress with no activity for `stale_after_days`.                                                                       |
-| file conflicts          | Two active features creating or modifying the same file.                                                                   |
+| file conflicts          | Two active features creating or modifying the same file, unless it is a shared file (below).                               |
 | next gate               | The checks for the next forward move, each passing or failing with a detail.                                               |
+
+## Parallel tasks and shared files
+
+Ready tasks of one feature can be built at the same time, for example by subagents, when they
+change different files. Some files grow with nearly every task: an enum and its dispatch, a
+keymap, a list of commands. List them as globs in `config.yaml`:
+
+```yaml
+parallel:
+  shared_files: [src/editor/input.rs, src/editor/action.rs, "keymaps/*.toml"]
+```
+
+A shared file is never a file conflict: `W-FILE-CONFLICT` and the index's file conflicts skip it.
+Tasks that list it may run in parallel, each adding one complete insertion (a whole enum variant,
+match arm or registry entry) and leaving the others' insertions alone. Azimuth doesn't check that
+the edits are additive. The index carries the globs as `project.shared_files`.
+
+For an in-progress feature, `azimuth next <F-ID>` groups the ready tasks that can run together
+(see [Read](cli.md#read)). It takes them in its own order (in-progress tasks first, then todo
+tasks, each in plan order) and adds each task to the first group in which no task lists one of
+its files outside the shared list; otherwise the task starts a new group. Two tasks that list the
+same unshared file never share a group. A task without `files` gets a group of its own, since
+nothing says what it changes. Paths compare as written in `plan.md`.
 
 ## The inbox
 

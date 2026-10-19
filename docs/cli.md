@@ -39,11 +39,33 @@ be on your PATH).
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `azimuth status [--brief \| --json]`        | What needs you, work in flight, open high and critical issues, what's next, problem counts. `--json` prints the whole index. Outside a project, `--brief` says so and exits 0.                                                 |
 | `azimuth show <ID> [--brief \| --json]`     | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log.                                                                                           |
-| `azimuth next [F-ID] [--json]`              | The highest-priority unblocked work across the project (critical bugs and debt, then feature work by status and priority, then high-severity ones), or a feature's ready tasks.                                                |
+| `azimuth next [F-ID] [--json]`              | The highest-priority unblocked work across the project (critical bugs and debt, then feature work by status and priority, then high-severity ones), or a feature's ready tasks and which of them can run together (below).     |
 | `azimuth check [ID…] [--warnings] [--json]` | Validation problems (all, or those concerning the given IDs). Every error is listed; without an ID or `--warnings`, warnings are only counted by code on one line. `--json` lists every problem. Exit 1 when there are errors. |
 | `azimuth trace [F-ID] [--all] [--json]`     | Scenario → test coverage. References that only mention a scenario ID (outside a test name or marker) are hidden and counted on the last line; `--all` shows them, marked `(mention)`, and `--json` keeps them.                 |
 | `azimuth docs [formats\|concepts\|cli]`     | Prints this reference: the file formats, the concepts, or this page. It is bundled into the CLI, so agents read it instead of Azimuth's code.                                                                                  |
 | `azimuth index [--out <file>]`              | Writes the index JSON (default `.azimuth/cache/index.json`).                                                                                                                                                                   |
+
+`azimuth next <F-ID>` on an in-progress feature with two or more ready tasks ends with one line
+per group of them. The tasks of a group list no common file outside `parallel.shared_files`, so
+they can run together (see
+[Parallel tasks and shared files](concepts.md#parallel-tasks-and-shared-files)); a group of one
+prints as `On its own`:
+
+```
+T-005.2 azimuth move T-005.2 in-progress
+  F-005, covers S-005.2.1
+T-005.3 azimuth move T-005.3 in-progress
+  F-005, covers S-005.3.1
+T-005.4 azimuth move T-005.4 in-progress
+  F-005, covers S-005.4.1
+Can run together: T-005.2, T-005.3 (shared: src/registry.ts)
+On its own: T-005.4
+```
+
+`(shared: …)` names the shared files that two or more of the group's tasks list, and is left out
+when there are none. With an F-ID, `--json` prints `{items, groups}`: `items` is the list the
+command prints, and `groups` a list of `{tasks, shared}`, `[]` unless the feature is in progress.
+Without an ID, `--json` prints the array of items.
 
 ## Create
 

@@ -75,8 +75,10 @@ Run `azimuth new spec <F-ID>` to scaffold missing files, then replace the placeh
    Shape the graph so slices can be built at the same time, for example by subagents: give
    each slice its own files (a module per slice rather than one shared file) and make it
    depend only on what it needs, usually the scaffolding. Two tasks may list the same file
-   only if one comes `after` the other. `files` lists every file the task creates or changes,
-   since builders decide what can run in parallel from it.
+   only if one comes `after` the other, unless the file matches `parallel.shared_files` in
+   config.yaml: a registry such as an enum and its dispatch, which each task extends with one
+   complete insertion. `files` lists every file the task creates or changes, since builders
+   decide what can run in parallel from it.
 
 ## 4. Check, draft, commit, approve
 

@@ -112,6 +112,9 @@ verify:
     [package.json, pnpm-lock.yaml, Cargo.toml, Cargo.lock, go.mod, go.sum, pyproject.toml, uv.lock]
   prebuild: null # e.g. "cargo test --workspace --no-run"; null or blank: none
   build_timeout_seconds: 1800
+parallel:
+  # Files tasks extend additively (globs); tasks listing them may run in parallel
+  shared_files: [] # e.g. [src/routes/index.ts, "keymaps/*.toml"]
 viewer:
   port: 4319
   autostart: true
@@ -129,6 +132,14 @@ manifest of each crate. The example shows the default.
 the first task's verify command, so a build every command needs runs once instead of in each.
 `verify.build_timeout_seconds` is its timeout; `verify.timeout_seconds` applies to each task's
 command alone.
+
+`parallel.shared_files` lists the files that tasks extend with one complete insertion each, such
+as an enum and its dispatch or a keymap. The globs use the `tests.globs` syntax without `!` and
+match paths as written in `impact.md` and `plan.md`, so `keymaps/*.toml` matches
+`keymaps/default.toml` but not `keymaps/vim/extra.toml`. A matching path is never a file conflict (`W-FILE-CONFLICT`, the
+index's `file_conflicts`), and tasks listing it may run at the same time (see
+[Parallel tasks and shared files](concepts.md#parallel-tasks-and-shared-files)). The index
+carries the list as `project.shared_files`. The default is `[]`.
 
 ## Project knowledge
 
@@ -241,7 +252,7 @@ files:
 The body is optional narrative. A `modify` or `read` path that doesn't exist produces
 `W-IMPACT-MISSING`. A path outside every architecture module produces `W-PATH`, except `test` paths and files at
 the repository root (`package.json`, `tsconfig.json`), which configure the whole project. Two active features creating or modifying the same
-file produce `W-FILE-CONFLICT`.
+file produce `W-FILE-CONFLICT`, unless the file matches `parallel.shared_files`.
 
 ### `stories.md`
 
