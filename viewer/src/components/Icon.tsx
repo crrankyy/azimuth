@@ -8,6 +8,14 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M3.6 3h8.8L14 9v4H2V9z" />
     </>
   ),
+  agents: (
+    <>
+      <rect x="3" y="4.5" width="10" height="8.5" rx="2" />
+      <path d="M8 4.5V2.5" strokeLinecap="round" />
+      <circle cx="8" cy="2" r=".6" />
+      <path d="M6 8.2v.6M10 8.2v.6M6.5 11h3" strokeLinecap="round" />
+    </>
+  ),
   overview: (
     <>
       <rect x="2" y="2" width="5" height="5" rx="1" />

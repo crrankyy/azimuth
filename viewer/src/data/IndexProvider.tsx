@@ -60,13 +60,17 @@ function readJsonScript<T>(id: string): T | null {
   }
 }
 
+/** The `azimuth-token` meta tag's content; null without one or outside a browser (tests). */
+export function pageToken(): string | null {
+  if (typeof document === "undefined") return null;
+  return document.querySelector<HTMLMetaElement>('meta[name="azimuth-token"]')?.content ?? null;
+}
+
 function readBoot(): Boot {
   const snapshot = readJsonScript<Index>("azimuth-index");
   if (snapshot) return { mode: "export", index: snapshot, token: null, instance: null };
   const boot = readJsonScript<{ mode: "live"; instance: string }>("azimuth-boot");
-  const token =
-    document.querySelector<HTMLMetaElement>('meta[name="azimuth-token"]')?.content ?? null;
-  return { mode: "live", index: null, token, instance: boot?.instance ?? null };
+  return { mode: "live", index: null, token: pageToken(), instance: boot?.instance ?? null };
 }
 
 /** IDs of entities whose JSON differs between two indexes. */

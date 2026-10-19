@@ -1,4 +1,5 @@
 import type {
+  AgentStatus,
   CoverageStatus,
   DecisionStatus,
   FeatureStatus,
@@ -73,6 +74,22 @@ export const ISSUE_LOOK: Record<IssueStatus, StatusLook> = {
   "in-progress": { glyph: "s-active", label: "In progress", segment: "c-active" },
   resolved: { glyph: "s-done", label: "Resolved", segment: "c-pass" },
   wontfix: { glyph: "s-muted", label: "Won't fix", segment: "c-muted" },
+};
+
+/** How an agent status looks: a mark class (always paired with a label) and its labels. */
+export interface AgentLook {
+  /** "az-run" (pulsing dot) | "az-wait" (diamond) | "az-g s-done" (check glyph). */
+  mark: string;
+  /** "Running" | "Waiting on you" | "Done". */
+  label: string;
+  /** "running" | "waiting" | "done", for tabs and trees. */
+  short: string;
+}
+
+export const AGENT_LOOK: Record<AgentStatus, AgentLook> = {
+  running: { mark: "az-run", label: "Running", short: "running" },
+  waiting: { mark: "az-wait", label: "Waiting on you", short: "waiting" },
+  done: { mark: "az-g s-done", label: "Done", short: "done" },
 };
 
 /** The six lifecycle steps; side statuses (deferred, cancelled, superseded) sit outside them. */

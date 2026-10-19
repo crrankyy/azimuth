@@ -105,3 +105,21 @@ export function dayHeading(iso: string, now: number): string {
   if (localDay(iso) === localDay(yesterday.toISOString())) return `Yesterday · ${label}`;
   return label;
 }
+
+/**
+ * A duration: "45s" under a minute; "4m 01s" under ten minutes ("5m" when the seconds are 0);
+ * "25m" under an hour; "1h 05m" after ("2h" when the minutes are 0). Negative input → "0s".
+ */
+export function elapsed(_ms: number): string {
+  return "";
+}
+
+/** "just now" under 5 s, "48s ago" under a minute, else ago(iso, now); "" for null. */
+export function liveAgo(_iso: string | null | undefined, _now: number): string {
+  return "";
+}
+
+/** "12:01:04" in local time; "" for null. */
+export function clockSeconds(_iso: string | null | undefined): string {
+  return "";
+}

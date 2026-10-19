@@ -29,6 +29,7 @@ interface Item {
 
 const SECTION_LABEL: Record<Section, string> = {
   inbox: "Inbox",
+  agents: "Agents",
   overview: "Overview",
   roadmap: "Roadmap",
   features: "Features",

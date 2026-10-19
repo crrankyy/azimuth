@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
  */
 export type Section =
   | "inbox"
+  | "agents"
   | "overview"
   | "roadmap"
   | "features"
@@ -18,6 +19,7 @@ export type Section =
 
 export const SECTIONS: Section[] = [
   "inbox",
+  "agents",
   "overview",
   "roadmap",
   "features",

@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { FeatureStatus } from "../../../src/core/types";
+import type { AgentStatus, FeatureStatus } from "../../../src/core/types";
 import { FEATURE_LOOK, type StatusLook } from "../lib/status";
 
 /** The shape+fill status glyph (`.az-g`). Decorative unless given a label. */
@@ -47,4 +47,16 @@ export function StatusText({ look }: { look: StatusLook }) {
       {look.label}
     </span>
   );
+}
+
+/**
+ * `<span class="agent-status <status>"><span class="<look.mark>" aria-hidden="true"></span>Label</span>`.
+ * `short` uses look.short; `hideLabel` puts the label in a `.sr-only` span instead.
+ */
+export function AgentStatusMark(_props: {
+  status: AgentStatus;
+  short?: boolean;
+  hideLabel?: boolean;
+}) {
+  return <span className="agent-status" />;
 }

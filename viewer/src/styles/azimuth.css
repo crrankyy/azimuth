@@ -139,3 +139,14 @@ a.az-id:hover { color: var(--ink); border-color: var(--hairline-strong); }
 .az-input { box-sizing: border-box; width: 100%; padding: 8px 12px; background: var(--surface-1); color: var(--ink); border: 1px solid var(--hairline-strong); border-radius: var(--radius-md); font-size: 14px; line-height: 1.5; resize: vertical; }
 .az-input::placeholder { color: var(--ink-tertiary); }
 .az-select { appearance: none; box-sizing: border-box; height: 28px; padding: 0 26px 0 8px; background: var(--surface-1); color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--radius-md); font-size: 13px; background-image: linear-gradient(45deg, transparent 50%, var(--ink-subtle) 50%), linear-gradient(135deg, var(--ink-subtle) 50%, transparent 50%); background-position: calc(100% - 13px) 12px, calc(100% - 9px) 12px; background-size: 4px 4px; background-repeat: no-repeat; }
+
+/* Agents: run-state marks (always paired with a text label) */
+@keyframes az-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(250, 179, 135, 0.45); } 50% { box-shadow: 0 0 0 4px rgba(250, 179, 135, 0); } }
+.az-run { flex: none; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--st-active); animation: az-pulse 1.6s ease-in-out infinite; }
+.az-wait { flex: none; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--st-warning); transform: rotate(45deg); }
+.az-stripe { background: repeating-linear-gradient(-45deg, rgba(249, 226, 175, 0.28) 0 4px, rgba(249, 226, 175, 0.08) 4px 8px); }
+.az-tree { position: relative; padding-left: 28px; }
+.az-tree::before { content: ""; position: absolute; left: 13px; top: 0; bottom: 18px; width: 1.5px; background: var(--hairline-strong); }
+.az-twig { position: relative; }
+.az-twig::before { content: ""; position: absolute; left: -15px; top: 18px; width: 12px; height: 1.5px; background: var(--hairline-strong); }
+@media (prefers-reduced-motion: reduce) { .az-run { animation: none; } }
