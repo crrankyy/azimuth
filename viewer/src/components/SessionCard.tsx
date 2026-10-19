@@ -126,8 +126,8 @@ export function SessionCard({
         <div className="ses-goal">{s.goal}</div>
         {s.handoff.trim() && <Handoff text={s.handoff} />}
         {s.summary.trim() && <Prose text={s.summary} className="ses-summary" />}
-        {s.goals.trim() && <Bullets label="Goals" text={s.goals} />}
-        {s.notes.trim() && <Bullets label="Notes" text={s.notes} />}
+        {s.goals.trim() && <Bullets label="Goals" text={s.goals} startedAt={s.started_at} />}
+        {s.notes.trim() && <Bullets label="Notes" text={s.notes} startedAt={s.started_at} />}
         <dl className="ses-facts">
           <Fact label="Touched" ids={s.touched} />
           <Fact label="Raised" ids={s.raised} />
@@ -172,12 +172,34 @@ function Handoff({ text }: { text: string }) {
   );
 }
 
+const MINUTE = 60_000;
+
+/**
+ * Bullets as written (`- HH:MM · …`, in UTC) with their times in the viewer's local time, like
+ * the card header. A bullet has no date: it falls on the start's UTC day, or on the next one when
+ * its time is earlier than the start's.
+ */
+function localBullets(text: string, startedAt: string): string {
+  const start = Date.parse(startedAt);
+  if (Number.isNaN(start)) return text;
+  const startMinute = Math.floor(start / MINUTE) * MINUTE;
+  return text.replace(
+    /^(\s*- )(\d{2}):(\d{2})(?= · )/gm,
+    (_, lead: string, h: string, m: string) => {
+      const at = new Date(startMinute);
+      at.setUTCHours(Number(h), Number(m));
+      if (at.getTime() < startMinute) at.setUTCDate(at.getUTCDate() + 1);
+      return `${lead}${clock(at.toISOString())}`;
+    },
+  );
+}
+
 /** A session's timestamped bullets: the goals of later starts, or its running notes. */
-function Bullets({ label, text }: { label: string; text: string }) {
+function Bullets({ label, text, startedAt }: { label: string; text: string; startedAt: string }) {
   return (
     <section className="ses-bullets" aria-label={label}>
       <div className="ses-bullets-title">{label}</div>
-      <Prose text={text} className="ses-bullets-prose" />
+      <Prose text={localBullets(text, startedAt)} className="ses-bullets-prose" />
     </section>
   );
 }
