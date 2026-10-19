@@ -3,6 +3,7 @@ import { autostartEnabled, recordSessionAfterInit } from "../../hooks/handlers";
 import { ensureViewer } from "../../server/autostart";
 import { initProject } from "../../core/init";
 import {
+  appendNote,
   claudeSessionFromEnv,
   closeSession,
   closeStaleSessions,
@@ -44,7 +45,7 @@ export const init: Command = {
 
 export const session: Command = {
   usage:
-    'session <start --skill <name> --goal "…" | handoff "<next steps>" [--summary "…"] | close [--stale]> [--id SES-…]',
+    'session <start --skill <name> --goal "…" [--touch IDs] | note "<text>" | handoff "<next steps>" [--summary "…"] | close [--stale]> [--id SES-…]',
   summary: "Record a unit of agent work and its handoff",
   options: {
     skill: { type: "string" },
@@ -56,7 +57,7 @@ export const session: Command = {
     json: { type: "boolean" },
   },
   run({ values, positionals }) {
-    const action = requirePositional(positionals, 0, "start|handoff|close");
+    const action = requirePositional(positionals, 0, "start|note|handoff|close");
     const rt = runtime(values);
     const id = (values.id as string | undefined) ?? rt.session;
     switch (action) {
@@ -78,6 +79,12 @@ export const session: Command = {
         else print(ses);
         return;
       }
+      case "note": {
+        const text = positionals[1];
+        if (!text) throw new UsageError('session note needs "<text>".');
+        print(`Updated ${appendNote(rt.root, id, text)}`);
+        return;
+      }
       case "handoff": {
         const text = positionals[1];
         const summary = values.summary as string | undefined;
@@ -97,7 +104,9 @@ export const session: Command = {
         return;
       }
       default:
-        throw new UsageError(`Unknown session action "${action}". Use start, handoff or close.`);
+        throw new UsageError(
+          `Unknown session action "${action}". Use start, note, handoff or close.`,
+        );
     }
   },
 };

@@ -7,7 +7,7 @@ import { nextGate, type GateContext } from "./gates";
 import { gitFacts, toUtc } from "./git";
 import { buildInbox } from "./inbox";
 import { compareIds } from "./ids";
-import { readLiveSessions } from "./live";
+import { readLiveSessions, sessionsLastSeen } from "./live";
 import { loadProject, type FeatureEntity, type Model } from "./model";
 import { traceTests } from "./trace";
 import type { Feature, FeatureDetail, Index, LiveSession, Problem, VerifyRun } from "./types";
@@ -37,6 +37,7 @@ export function analyzeProject(root: string, now = new Date()): Omit<BuildResult
     git: gitFacts(root, model),
     tests: traceTests(root, model.config.tests.globs),
     exists: (path) => existsSync(join(root, path)),
+    sesLastSeen: sessionsLastSeen(root),
   };
   const derived = derive(model, facts);
   const problems = sortProblems([...model.problems, ...validate(model, facts, derived)]);

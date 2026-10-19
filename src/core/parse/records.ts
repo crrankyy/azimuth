@@ -256,6 +256,8 @@ export function parseSession(text: string, file: string): Parsed<Session> {
     raised: opt(ctx, "raised", anyIds(), []),
     summary: sectionBody(sections, "Summary"),
     handoff: sectionBody(sections, "Handoff"),
+    goals: sectionBody(sections, "Goals"),
+    notes: sectionBody(sections, "Notes"),
     file,
   };
   unknownKeys(ctx, [

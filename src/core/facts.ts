@@ -1,4 +1,4 @@
-import type { ApprovalChange, Commit, Sha } from "./types";
+import type { ApprovalChange, Commit, Id, ISODateTime, Sha } from "./types";
 
 /**
  * Everything the analysis needs from outside `.azimuth/`: git history, test files and the
@@ -34,6 +34,11 @@ export interface Facts {
   tests: Map<string, TestRef[]>;
   /** Whether a repo-relative path exists in the working tree. */
   exists: (path: string) => boolean;
+  /**
+   * Azimuth session ID → when the live log of the Claude Code session whose sidecar names it was
+   * last written (its modification time, UTC). Sessions no sidecar names are absent.
+   */
+  sesLastSeen: Map<Id, ISODateTime>;
 }
 
 export function emptyGitFacts(): GitFacts {

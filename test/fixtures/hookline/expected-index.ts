@@ -1766,6 +1766,8 @@ export const expectedIndex = {
       ],
       "summary": "T-005.2 and T-005.3 are green. Wrote the red tests for T-005.4, and S-005.2.1 fails as expected. Proposed ADR-0004, because T-005.5 needs a lease timeout.",
       "handoff": "- Next: implement exhaustion in `src/retry/policy.ts` to turn S-005.2.1 green, then add a test for S-005.2.2.\n- T-005.5 waits for ADR-0004 to be accepted.\n- Q-0002 changes how T-005.4 counts attempts. The code currently counts 429s; adjust if the answer differs.\n- F-007 also edits `src/worker/deliver.ts`. Rebase after it lands.",
+      "goals": "",
+      "notes": "",
       "file": ".azimuth/sessions/SES-20261018-1100.md"
     },
     {
@@ -1786,6 +1788,8 @@ export const expectedIndex = {
       ],
       "summary": "Drafted F-008: 3 stories, 8 scenarios, 6 tasks. The signing behaviour for replays depends on Q-0003.",
       "handoff": "- Blocked on Q-0003. Once it's answered, update S-008.2.1 to S-008.2.3 and `ReplayRequest` in the contract.\n- S-008.2.2 has a vague THEN that will be fixed with the same update.",
+      "goals": "",
+      "notes": "",
       "file": ".azimuth/sessions/SES-20261018-0930.md"
     },
     {
@@ -1811,6 +1815,8 @@ export const expectedIndex = {
       ],
       "summary": "Finished T-007.1 to T-007.4 and moved F-007 to verifying. All 5 scenarios pass, but T-007.4's lint step fails with 2 floating promises in `src/api/attempts.ts`.",
       "handoff": "- Fix the two `no-floating-promises` errors, then run `azimuth verify F-007`.\n- Then write as-built.md and reconcile architecture.md (add the attempts table to the store notes).",
+      "goals": "",
+      "notes": "",
       "file": ".azimuth/sessions/SES-20261017-1430.md"
     },
     {
@@ -1829,6 +1835,8 @@ export const expectedIndex = {
       "raised": [],
       "summary": "Specified per-endpoint token-bucket limits: 3 stories, 7 scenarios, 5 tasks. Every approval check passes.",
       "handoff": "- Ready for your approval.\n- If F-005 lands first, T-009.3 must read `next_attempt_at` rather than the old sweep.",
+      "goals": "",
+      "notes": "",
       "file": ".azimuth/sessions/SES-20261017-0915.md"
     },
     {
@@ -1847,6 +1855,8 @@ export const expectedIndex = {
       "raised": [],
       "summary": "Added `attempts: AttemptRecord[]` to `DeadLetter` so operators can see why a delivery died. This changes an approved contract.",
       "handoff": "- F-006 needs re-approval before work starts.\n- It reuses F-007's AttemptRecord type; keep the two in sync.",
+      "goals": "",
+      "notes": "",
       "file": ".azimuth/sessions/SES-20261016-1320.md"
     },
     {
@@ -1868,6 +1878,8 @@ export const expectedIndex = {
       ],
       "summary": "Wrote the F-005 spec: 3 stories, 8 scenarios, 6 tasks. Recommended superseding F-004, because per-delivery scheduling makes the sweep unnecessary.",
       "handoff": "- Q-0001 (jitter strategy) blocks approval.\n- Once it's answered, write ADR-0003 and mark F-004 superseded.",
+      "goals": "",
+      "notes": "",
       "file": ".azimuth/sessions/SES-20261007-1010.md"
     }
   ],

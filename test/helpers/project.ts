@@ -116,6 +116,7 @@ export function makeFacts(
     git: { ...emptyGitFacts(), ...overrides.git },
     tests: overrides.tests ?? new Map(),
     exists: overrides.exists ?? (() => true),
+    sesLastSeen: overrides.sesLastSeen ?? new Map(),
   };
 }
 

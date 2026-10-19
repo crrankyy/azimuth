@@ -6,6 +6,7 @@ import { idKind } from "./ids";
 import { printedName } from "./junit";
 import type { FeatureEntity, Model } from "./model";
 import { problem } from "./parse/common";
+import { sessionStale } from "./session";
 import type { FeatureStatus, Problem } from "./types";
 
 const SPECIFIED: FeatureStatus[] = ["draft", ...ACTIVE_STATUSES];
@@ -388,14 +389,9 @@ function questionProblems(model: Model): Problem[] {
   return out;
 }
 
-const OPEN_SESSION_MS = 12 * 3_600_000;
-
 function sessionProblems(model: Model, facts: Facts): Problem[] {
   return model.sessions
-    .filter(
-      (s) =>
-        s.ended_at === null && facts.now.getTime() - Date.parse(s.started_at) > OPEN_SESSION_MS,
-    )
+    .filter((s) => sessionStale(s, facts.now, facts.sesLastSeen.get(s.id)))
     .map((s) =>
       problem(
         "W-SESSION-OPEN",

@@ -3,12 +3,15 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
-import { appendLive, readLiveRecords } from "../../src/core/live";
+import { appendLive, readLiveMeta, readLiveRecords, updateLiveMeta } from "../../src/core/live";
+import { parseSession } from "../../src/core/parse/records";
+import { closeSession, startSession } from "../../src/core/session";
 import {
   describeTool,
   recordSessionAfterInit,
+  sessionEnd,
   sessionStart,
   userPromptSubmit,
   type HookEnv,
@@ -205,6 +208,24 @@ describe("Claude Code hooks", () => {
     expect(hook("session-end", { reason: "prompt_input_exit" }).code).toBe(0);
     expect(Date.now() - started).toBeLessThan(1500);
     expect(buildIndex(tree.root).index.live[0]?.ended_at).not.toBeNull();
+  });
+
+  it("S-011.4.4 closes the Azimuth session within the SessionEnd budget", () => {
+    const start = spawnSync(LAUNCHER, ["session", "start", "--goal", "Build F-001"], {
+      cwd: tree.root,
+      env: env({ AZIMUTH_ACTOR: "agent", CLAUDE_CODE_SESSION_ID: SESSION }),
+      encoding: "utf8",
+    });
+    expect(start.status).toBe(0);
+    const id = start.stdout.trim();
+    const file = `.azimuth/sessions/${id}.md`;
+    const endedAt = () =>
+      parseSession(readFileSync(join(tree.root, file), "utf8"), file).entity?.ended_at;
+    expect(endedAt()).toBeNull();
+    const started = Date.now();
+    expect(hook("session-end", { reason: "prompt_input_exit" }).code).toBe(0);
+    expect(Date.now() - started).toBeLessThan(1500);
+    expect(endedAt()).not.toBeNull();
   });
 });
 
@@ -535,5 +556,107 @@ describe("F-005 wake-ups", () => {
     } finally {
       p.cleanup();
     }
+  });
+});
+
+describe("F-011 the sidecar and the Azimuth session at Claude Code's start and end", () => {
+  const at = (time: string) => new Date(`2026-10-20T${time}Z`);
+  let project: ReturnType<typeof writeTree> | null = null;
+  afterEach(() => project?.cleanup());
+
+  function root(): string {
+    project = writeTree({ ".azimuth/config.yaml": MINIMAL_CONFIG });
+    return project.root;
+  }
+  const ctx = (dir: string, time: string) => ({
+    env: { CLAUDE_PROJECT_DIR: dir, AZIMUTH_NO_VIEWER: "1" },
+    now: at(time),
+    writeEnv: () => undefined,
+  });
+  const start = (dir: string, claude: string, time: string, extra: Record<string, string> = {}) =>
+    sessionStart({ session_id: claude, cwd: dir, ...extra }, ctx(dir, time));
+  const end = (dir: string, claude: string, time: string) =>
+    sessionEnd({ session_id: claude, cwd: dir, reason: "prompt_input_exit" }, ctx(dir, time));
+  const read = (dir: string, id: string) => {
+    const file = `.azimuth/sessions/${id}.md`;
+    return parseSession(readFileSync(join(dir, file), "utf8"), file).entity;
+  };
+
+  it("S-011.4.1 closes the open session and collects its commits", () => {
+    const dir = root();
+    initRepo(dir);
+    const id = startSession(dir, {
+      skill: "build",
+      goal: "Build F-011",
+      now: at("09:00:00"),
+      claudeSession: "c1",
+    });
+    const sha = commitAll(dir, "feat: close sessions\n\nRefs: T-011.1", "2026-10-20T09:30:00Z");
+    expect(end(dir, "c1", "10:00:00")).toEqual({ exitCode: 0 });
+    expect(readLiveRecords(dir, "c1").at(-1)).toEqual({
+      kind: "end",
+      at: "2026-10-20T10:00:00Z",
+      reason: "prompt_input_exit",
+    });
+    const session = read(dir, id);
+    expect(session?.ended_at).toBe("2026-10-20T10:00:00Z");
+    expect(session?.commits).toEqual([sha]);
+    expect(session?.touched).toContain("T-011.1");
+  });
+
+  it("S-011.4.2 leaves a session already closed alone", () => {
+    const dir = root();
+    const id = startSession(dir, {
+      skill: "build",
+      goal: "Build F-011",
+      now: at("09:00:00"),
+      claudeSession: "c1",
+    });
+    closeSession(dir, id, at("09:45:00"));
+    end(dir, "c1", "10:00:00");
+    expect(read(dir, id)?.ended_at).toBe("2026-10-20T09:45:00Z");
+  });
+
+  it("S-011.4.3 only records the end of a Claude Code session without an Azimuth session", () => {
+    const dir = root();
+    const id = startSession(dir, {
+      skill: "build",
+      goal: "Build F-011",
+      now: at("09:00:00"),
+      claudeSession: "c1",
+    });
+    appendLive(dir, "c3", { kind: "start", at: "2026-10-20T09:10:00Z", source: "startup" });
+    expect(end(dir, "c3", "10:00:00")).toEqual({ exitCode: 0 });
+    expect(readLiveRecords(dir, "c3").at(-1)).toMatchObject({ kind: "end" });
+    expect(read(dir, id)?.ended_at).toBeNull();
+  });
+
+  it("S-011.7.1 sets the start time at the first start and the transcript at each", async () => {
+    const dir = root();
+    await start(dir, "c4", "09:00:00", { source: "startup", transcript_path: "/tmp/c4.jsonl" });
+    await start(dir, "c4", "11:00:00", { source: "compact", transcript_path: "/tmp/c4-b.jsonl" });
+    expect(readLiveMeta(dir, "c4")).toEqual({
+      started_at: "2026-10-20T09:00:00Z",
+      ses: null,
+      transcript_path: "/tmp/c4-b.jsonl",
+    });
+  });
+
+  it("S-011.7.2 keeps the known transcript when a start has none", async () => {
+    const dir = root();
+    await start(dir, "c4", "09:00:00", { source: "startup", transcript_path: "/tmp/c4.jsonl" });
+    await start(dir, "c4", "10:00:00", { source: "resume" });
+    expect(readLiveMeta(dir, "c4")?.transcript_path).toBe("/tmp/c4.jsonl");
+  });
+
+  it("S-011.7.3 names the session from the sidecar in the compaction note", async () => {
+    const dir = root();
+    appendLive(dir, "c4", { kind: "start", at: "2026-10-20T09:00:00Z", source: "startup" });
+    updateLiveMeta(dir, "c4", { ses: "SES-20261020-0900" });
+    const r = await start(dir, "c4", "11:00:00", { source: "compact" });
+    const text = (
+      JSON.parse(r.stdout ?? "{}") as { hookSpecificOutput: { additionalContext: string } }
+    ).hookSpecificOutput.additionalContext;
+    expect(text.split("\n")).toContain("- You are in Azimuth session SES-20261020-0900.");
   });
 });

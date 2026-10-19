@@ -6,14 +6,16 @@ import {
   mkdirSync,
   openSync,
   readdirSync,
+  readFileSync,
   readSync,
   statSync,
   unlinkSync,
 } from "node:fs";
 import { join } from "node:path";
+import { toUtc } from "./git";
 import { featureOf, MENTION_PATTERN } from "./ids";
-import { sharedCacheDir } from "./lock";
-import type { LiveAgent, LiveEvent, LiveSession } from "./types";
+import { sharedCacheDir, writeFileAtomic } from "./lock";
+import type { Id, ISODateTime, LiveAgent, LiveEvent, LiveSession } from "./types";
 
 /**
  * Live agent activity, recorded by the Claude Code hooks as one JSON line per event in
@@ -46,6 +48,23 @@ export type LiveRecord =
   | { kind: "end"; at: string; reason?: string }
   | { kind: "cursor"; at: string; scope: "wake" | "prompt"; keys: string[] };
 
+/**
+ * The sidecar of one Claude Code session's live log: `<liveDir>/<claude-session>.meta.json`,
+ * named like `liveFile` (characters outside [\w.-] become "_"). Rewritten whole and atomically;
+ * F-014 reads `transcript_path` from it through `readLiveMeta`.
+ */
+export interface LiveMeta {
+  /**
+   * When the Claude Code session first started (its first SessionStart hook), UTC. Never changes
+   * once set.
+   */
+  started_at: ISODateTime | null;
+  /** The Azimuth session last started (or reused) in this Claude Code session. */
+  ses: Id | null;
+  /** Claude Code's transcript (JSONL) path from the latest SessionStart input that had one. */
+  transcript_path: string | null;
+}
+
 /** What deciding whether a Claude Code session is still open needs from the outside world. */
 export interface OpenCheck {
   now: Date;
@@ -56,6 +75,7 @@ export interface OpenCheck {
 }
 
 const TAIL_BYTES = 64 * 1024;
+const META_SUFFIX = ".meta.json";
 const MAX_EVENTS = 20;
 const KEEP_MS = 24 * 3_600_000;
 
@@ -95,6 +115,55 @@ export function parseLiveLines(text: string): LiveRecord[] {
 
 export function liveFile(root: string, claudeSession: string): string {
   return join(liveDir(root), `${claudeSession.replace(/[^\w.-]/g, "_")}.jsonl`);
+}
+
+/** `<liveDir>/<sanitized claude-session>.meta.json`. */
+export function liveMetaFile(root: string, claudeSession: string): string {
+  return join(liveDir(root), `${claudeSession.replace(/[^\w.-]/g, "_")}${META_SUFFIX}`);
+}
+
+/**
+ * The sidecar, or null when it is missing, isn't JSON or isn't an object. A field that isn't a
+ * string reads as null.
+ */
+export function readLiveMeta(root: string, claudeSession: string): LiveMeta | null {
+  let data: unknown;
+  try {
+    data = JSON.parse(readFileSync(liveMetaFile(root, claudeSession), "utf8"));
+  } catch {
+    // Missing, or not JSON: the sidecar is a cache, so it reads as unknown.
+    return null;
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const fields = data as Record<string, unknown>;
+  const field = (key: keyof LiveMeta) =>
+    typeof fields[key] === "string" ? (fields[key] as string) : null;
+  return {
+    started_at: field("started_at"),
+    ses: field("ses"),
+    transcript_path: field("transcript_path"),
+  };
+}
+
+/**
+ * Merges `patch` into the sidecar (creating it with null fields) and writes it atomically.
+ * Keys whose value is undefined are ignored; an existing `started_at` is kept.
+ */
+export function updateLiveMeta(
+  root: string,
+  claudeSession: string,
+  patch: Partial<LiveMeta>,
+): LiveMeta {
+  const current = readLiveMeta(root, claudeSession);
+  const merged = (key: keyof LiveMeta) =>
+    (patch[key] === undefined ? current?.[key] : patch[key]) ?? null;
+  const next: LiveMeta = {
+    started_at: current?.started_at ?? merged("started_at"),
+    ses: merged("ses"),
+    transcript_path: merged("transcript_path"),
+  };
+  writeFileAtomic(liveMetaFile(root, claudeSession), `${JSON.stringify(next, null, 2)}\n`);
+  return next;
 }
 
 /** Appends one event. A single short write with O_APPEND, so concurrent hooks don't interleave. */
@@ -167,7 +236,16 @@ function assignment(l: Launch | undefined): Pick<LiveAgent, "description" | "tas
   return { description: l?.description ?? null, task, feature };
 }
 
-export function summarizeLive(claudeSession: string, records: LiveRecord[]): LiveSession | null {
+/**
+ * As before, except that `ses` and `started_at` come from the sidecar when it has them, and from
+ * the records (the last `session` record, the first record) otherwise. Callers that know the
+ * sidecar pass it: readLiveSessions, and the SessionStart and PostToolUse hooks.
+ */
+export function summarizeLive(
+  claudeSession: string,
+  records: LiveRecord[],
+  meta?: LiveMeta | null,
+): LiveSession | null {
   if (records.length === 0) return null;
   const tools: LiveEvent[] = [];
   const agents = new Map<string, LiveAgent>();
@@ -233,8 +311,8 @@ export function summarizeLive(claudeSession: string, records: LiveRecord[]): Liv
   const features = [...new Set([mainFeature, ...running].filter((f): f is string => !!f))].sort();
   return {
     claude_session: claudeSession,
-    ses,
-    started_at: records[0]?.at ?? lastSeen,
+    ses: meta?.ses ?? ses,
+    started_at: meta?.started_at ?? records[0]?.at ?? lastSeen,
     last_seen_at: lastSeen,
     stopped_at: stoppedAt,
     ended_at: endedAt,
@@ -257,13 +335,40 @@ export function readLiveSessions(root: string, now = new Date()): LiveSession[] 
     const path = join(dir, name);
     try {
       if (now.getTime() - statSync(path).mtimeMs > KEEP_MS) continue;
-      const session = summarizeLive(name.slice(0, -6), parseLiveLines(readTail(path)));
+      const claude = name.slice(0, -6);
+      const session = summarizeLive(
+        claude,
+        parseLiveLines(readTail(path)),
+        readLiveMeta(root, claude),
+      );
       if (session) out.push(session);
     } catch {
       // Removed between listing and reading.
     }
   }
   return out.sort((a, b) => (a.last_seen_at < b.last_seen_at ? 1 : -1));
+}
+
+/**
+ * Each sidecar's `ses` → its live log's modification time (UTC); the latest wins for a shared
+ * `ses`.
+ */
+export function sessionsLastSeen(root: string): Map<Id, ISODateTime> {
+  const dir = liveDir(root);
+  const out = new Map<Id, ISODateTime>();
+  if (!existsSync(dir)) return out;
+  for (const name of readdirSync(dir)) {
+    if (!name.endsWith(META_SUFFIX)) continue;
+    const claude = name.slice(0, -META_SUFFIX.length);
+    const ses = readLiveMeta(root, claude)?.ses;
+    // A sidecar whose live log is gone (pruned, or no hook ran) says nothing about activity.
+    const log = ses ? statSync(liveFile(root, claude), { throwIfNoEntry: false }) : undefined;
+    if (!ses || !log) continue;
+    const seen = toUtc(new Date(log.mtimeMs).toISOString());
+    const known = out.get(ses);
+    if (!known || seen > known) out.set(ses, seen);
+  }
+  return out;
 }
 
 /**

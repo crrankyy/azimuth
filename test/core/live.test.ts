@@ -1,11 +1,20 @@
 import { spawnSync } from "node:child_process";
+import { mkdirSync, utimesSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   anySessionOpen,
   appendLive,
+  liveDir,
+  liveFile,
+  liveMetaFile,
   processAlive,
+  readLiveMeta,
+  readLiveSessions,
   sessionOpen,
+  sessionsLastSeen,
   summarizeLive,
+  updateLiveMeta,
   type LiveRecord,
   type OpenCheck,
 } from "../../src/core/live";
@@ -180,5 +189,92 @@ describe("F-005 subagent assignments", () => {
     const s = summarizeLive("s", records);
     expect(s?.features).toEqual(["F-003"]);
     expect(s?.agents.find((a) => a.agent_id === "a1")?.stopped_at).toBe("2026-10-18T18:05:00Z");
+  });
+});
+
+describe("F-011 the live sidecar", () => {
+  const project = () => {
+    const tree = writeTree({ ".azimuth/config.yaml": MINIMAL_CONFIG });
+    cleanup = tree.cleanup;
+    return tree.root;
+  };
+  /** Sets a live log's modification time, which stands for its Claude Code session's last write. */
+  const touchLive = (root: string, claude: string, at: string) =>
+    utimesSync(liveFile(root, claude), new Date(at), new Date(at));
+  const tool = (at: string): LiveRecord => ({
+    kind: "tool",
+    at,
+    tool: "Bash",
+    file: null,
+    summary: "ls",
+    agent_id: null,
+  });
+
+  it("S-011.2.1 merges what each writer knows", () => {
+    const root = project();
+    updateLiveMeta(root, "c1", {
+      started_at: "2026-10-20T09:00:00Z",
+      transcript_path: "/tmp/t1.jsonl",
+    });
+    updateLiveMeta(root, "c1", { ses: "SES-20261020-0900" });
+    updateLiveMeta(root, "c1", {
+      started_at: "2026-10-20T11:00:00Z",
+      transcript_path: "/tmp/t2.jsonl",
+    });
+    expect(readLiveMeta(root, "c1")).toEqual({
+      started_at: "2026-10-20T09:00:00Z",
+      ses: "SES-20261020-0900",
+      transcript_path: "/tmp/t2.jsonl",
+    });
+    expect(liveMetaFile(root, "c1")).toBe(join(liveDir(root), "c1.meta.json"));
+  });
+
+  it("S-011.2.2 reads a missing or unreadable sidecar as null", () => {
+    const root = project();
+    mkdirSync(liveDir(root), { recursive: true });
+    writeFileSync(liveMetaFile(root, "c2"), "{not json");
+    expect(readLiveMeta(root, "c1")).toBeNull();
+    expect(readLiveMeta(root, "c2")).toBeNull();
+  });
+
+  it("S-011.2.3 takes a live session's Azimuth session and start time from the sidecar", () => {
+    const root = project();
+    for (const minute of [0, 1, 2, 3, 4, 5])
+      appendLive(root, "c1", tool(`2026-10-20T11:0${minute}:00Z`));
+    touchLive(root, "c1", "2026-10-20T11:05:00Z");
+    updateLiveMeta(root, "c1", {
+      started_at: "2026-10-20T09:00:00Z",
+      ses: "SES-20261020-0900",
+      transcript_path: null,
+    });
+    const live = readLiveSessions(root, new Date("2026-10-20T11:06:00Z")).find(
+      (s) => s.claude_session === "c1",
+    );
+    expect(live?.started_at).toBe("2026-10-20T09:00:00Z");
+    expect(live?.ses).toBe("SES-20261020-0900");
+  });
+
+  it("S-011.2.4 still answers from the tail without a sidecar", () => {
+    const records: LiveRecord[] = [
+      { kind: "start", at: "2026-10-20T09:00:00Z", source: "startup" },
+      { kind: "session", at: "2026-10-20T09:01:00Z", ses: "SES-20261020-0900" },
+      tool("2026-10-20T09:02:00Z"),
+    ];
+    const live = summarizeLive("c1", records, null);
+    expect(live?.started_at).toBe("2026-10-20T09:00:00Z");
+    expect(live?.ses).toBe("SES-20261020-0900");
+  });
+
+  it("S-011.5.1 maps each sidecar's Azimuth session to its live log's last write", () => {
+    const root = project();
+    appendLive(root, "c1", tool("2026-10-20T11:30:00Z"));
+    touchLive(root, "c1", "2026-10-20T11:30:00Z");
+    updateLiveMeta(root, "c1", { ses: "SES-20261020-0900" });
+    appendLive(root, "c2", tool("2026-10-20T11:40:00Z"));
+    updateLiveMeta(root, "c2", { ses: null });
+    updateLiveMeta(root, "c3", { ses: "SES-20261019-0800" });
+    expect(sessionsLastSeen(root)).toEqual(
+      new Map([["SES-20261020-0900", "2026-10-20T11:30:00Z"]]),
+    );
   });
 });

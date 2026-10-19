@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, relative } from "node:path";
 import { analyzeProject, buildIndex } from "../core/build-index";
@@ -9,13 +10,21 @@ import {
   appendLive,
   launchRefs,
   pruneLive,
+  readLiveMeta,
   readLiveRecords,
   summarizeLive,
+  updateLiveMeta,
   type LiveRecord,
 } from "../core/live";
 import { loadProject } from "../core/model";
-import { findProjectRoot, tidyPaths, type Places } from "../core/paths";
-import { claudeSessionFromEnv, type SessionEnv } from "../core/session";
+import { parseSession } from "../core/parse/records";
+import { azPath, findProjectRoot, tidyPaths, type Places } from "../core/paths";
+import {
+  claudeSessionFromEnv,
+  closeSession,
+  sessionOfClaude,
+  type SessionEnv,
+} from "../core/session";
 import { viewerUrl } from "../server/registry";
 
 /** What Claude Code sends a command hook on stdin (only the fields Azimuth reads). */
@@ -32,6 +41,8 @@ export interface HookInput {
   stop_hook_active?: boolean;
   tool_use_id?: string;
   tool_response?: unknown;
+  /** Claude Code's transcript path, sent with every hook event. */
+  transcript_path?: string;
 }
 
 export interface HookOutput {
@@ -229,11 +240,12 @@ export async function sessionStart(input: HookInput, ctx: HookContext): Promise<
     source: input.source,
     ...claudePid(ctx.env),
   });
+  updateLiveMeta(root, id, { started_at: stamp(now), transcript_path: input.transcript_path });
   const url =
     (autostartEnabled(root, ctx.env) ? await ctx.ensureViewer?.(root) : null) ?? viewerUrl(root);
 
   if (input.source === "compact") {
-    const live = summarizeLive(id, readLiveRecords(root, id));
+    const live = summarizeLive(id, readLiveRecords(root, id), readLiveMeta(root, id));
     const lines = ["Azimuth (context restored after compaction):"];
     if (live?.ses) lines.push(`- You are in Azimuth session ${live.ses}.`);
     if (live?.feature) {
@@ -287,7 +299,7 @@ export function postToolUse(input: HookInput, ctx: HookContext): HookOutput {
   const records = readLiveRecords(root, id);
   const cursor = cursorOf(records, "wake");
   if (!cursor) return OK;
-  const live = summarizeLive(id, records);
+  const live = summarizeLive(id, records, readLiveMeta(root, id));
   const model = loadProject(root);
   const session = live?.ses ? model.sessions.find((s) => s.id === live.ses) : undefined;
   // Every feature in flight, so an orchestrator hears about features its subagents are building.
@@ -363,11 +375,27 @@ export function stop(input: HookInput, ctx: HookContext): HookOutput {
   );
 }
 
+/** Whether a session's own file says it is open (read without loadProject, for SessionEnd). */
+function sessionIsOpen(root: string, ses: string): boolean {
+  const path = azPath(root, "sessions", `${ses}.md`);
+  if (!existsSync(path)) return false;
+  return parseSession(readFileSync(path, "utf8"), relTo(root, path)).entity?.ended_at === null;
+}
+
+/**
+ * Records the end, then closes the Claude Code session's Azimuth session: skills no longer call
+ * `session close`. Claude Code gives SessionEnd 1.5 s, so this reads only the sidecar (or the
+ * tail), the session's file, the config and one `git log`. A failure leaves the session for
+ * `session close --stale`.
+ */
 export function sessionEnd(input: HookInput, ctx: HookContext): HookOutput {
   const root = projectRoot(input, ctx.env);
   const id = input.session_id;
   if (!root || !id) return OK;
-  appendLive(root, id, { kind: "end", at: stamp(ctx.now ?? new Date()), reason: input.reason });
+  const now = ctx.now ?? new Date();
+  appendLive(root, id, { kind: "end", at: stamp(now), reason: input.reason });
+  const ses = sessionOfClaude(root, id);
+  if (ses && sessionIsOpen(root, ses)) closeSession(root, ses, now);
   return OK;
 }
 

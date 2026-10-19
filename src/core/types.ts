@@ -405,6 +405,13 @@ export interface Session {
   raised: Id[];
   summary: Markdown;
   handoff: Markdown;
+  /**
+   * The `## Goals` section: one `- HH:MM · <skill> · <goal>` bullet per reusing start; "" when
+   * absent.
+   */
+  goals: Markdown;
+  /** The `## Notes` section: one `- HH:MM · <text>` bullet per `session note`; "" when absent. */
+  notes: Markdown;
   file: string;
 }
 
