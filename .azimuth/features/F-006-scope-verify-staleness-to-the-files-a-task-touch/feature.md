@@ -2,7 +2,7 @@
 id: F-006
 title: Scope verify staleness to the files a task touches
 summary: A task's verify run stays current until a later commit touches the task's files, the feature's impact, a module it depends on or a shared manifest, instead of going stale on any code commit.
-status: draft
+status: approved
 priority: P1
 size: M
 mode: brownfield
@@ -12,6 +12,11 @@ superseded_by: null
 tags: []
 created: 2026-10-19
 updated: 2026-10-19
+approved_at: 2026-10-19
+approved_by: agent
+approved_hash: sha256:19970e781903430a1ea4f18ad728eab9e8f1f92e190e4867a9f8336865f05306
+approved_commit: db672ab
+review_ack_at: null
 ---
 # F-006: Scope verify staleness to the files a task touches
 
