@@ -55,6 +55,10 @@ connection drops, a banner says so, actions are disabled, and the page reconnect
 | Verification | `#/verification/R-0142`        | Scenario coverage matrix and verify runs with output.                                                                                                                                                   |
 | Knowledge    | `#/knowledge/architecture`     | Vision, architecture with the module map, conventions, glossary.                                                                                                                                        |
 
+On a feature's Stories tab, a value settled with `azimuth settle` carries a ✓ titled "settled by
+test", and an open `{?}` reads "to be settled". The As-built tab shows the feature's notes after
+the close-out record, and opens as soon as the feature has notes.
+
 Hovering any ID shows a summary card. The problems panel lists `azimuth check` results with
 "Copy path" and, when `viewer.editor_url` is set (schemes `vscode:`, `cursor:`, `zed:`, `idea:`,
 `file:`), "Open in editor".
@@ -90,6 +94,9 @@ Every action goes through the same gated transitions as the CLI and is recorded 
 | Acknowledge / send back                     | Inbox, Decisions; Feature (acknowledge only)                        | Reviews an automatic approval, acceptance, rejection or answer. The Inbox's Review item for an agent's answer offers "Answer differently" instead of "Send back…". |
 | Priority, milestone, severity, issue status | Feature header, Features table (`p` / `m`), Issues, an issue's page | Sets the field.                                                                                                                                                    |
 | Release                                     | Roadmap                                                             | Releases a milestone.                                                                                                                                              |
+
+The Inbox's Review item for values an agent settled in a feature offers the same two actions:
+"Acknowledge" accepts them all, "Send back…" returns the spec to draft.
 
 Status changes (approve, re-approve, answer, decide, revert, move) send the status you saw; if it
 changed in the meantime the action is refused rather than applied to something you didn't see. Writes change frontmatter fields or append log entries;

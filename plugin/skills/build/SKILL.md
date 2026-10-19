@@ -27,13 +27,18 @@ Target: $ARGUMENTS
       (`// scenario: S-005.1.2` above a Rust or Go test) and a test name unique in the project.
       Run them and confirm they fail for the right reason.
    3. Implement until the task's verify command passes. Respect the contract and invariants.
+      When a passing test proves a value its scenario leaves open as `{?}`, record it with
+      `azimuth settle <S-ID> "<value>"`, which fills the scenario's first `{?}`.
    4. Commit: `feat(<F-ID>): <what>` with `Refs: <T-ID>`.
    5. `azimuth verify <T-ID> --summary` to record the run, then `azimuth move <T-ID> done`.
       Don't build by hand first: a build every verify command needs belongs in
       `verify.prebuild`, which each verify call runs once, under its own timeout. If another
       `azimuth verify` is running, the call waits its turn (`waited 40s for another verify`).
    6. After each task, or every few significant steps in a long one, add
-      `azimuth log <T-ID> "<what changed, what's next>"` so the viewer shows progress.
+      `azimuth log <T-ID> "<what changed, what's next>"` so the viewer shows progress. Record
+      what the task taught (a constraint the code revealed, a choice the spec left open) with
+      `azimuth note <T-ID> "<text>"`, which writes the feature's notes.md; never add it to
+      feature.md.
 5. Stop and report instead of pushing on when:
    - a decision is needed: raise a question (`azimuth new question … --feature <F-ID>`), and
      `azimuth move <T-ID> blocked --note "Waiting on Q-…"` if it blocks the task;
@@ -41,6 +46,14 @@ Target: $ARGUMENTS
    - the work needs a decision record: use `/azimuth:adr`.
 6. When every task is done or skipped, `azimuth move <F-ID> verifying`.
 7. `azimuth session handoff "<next steps>"`, `azimuth session close`, and report progress.
+
+## Notes, settled values and the approval
+
+`azimuth note` and `azimuth settle` never make the approval stale, so don't run
+`azimuth reapprove` after them. Every other spec edit does: a lesson written into feature.md, or
+a story corrected because the code proved a THEN wrong. A story correction still needs
+`azimuth reapprove <F-ID>`; a lesson belongs in a note. The user reviews the values you settle in
+the inbox, and the feature can't reach done while a `{?}` is left.
 
 ## Delegating to subagents
 
@@ -53,8 +66,9 @@ Subagents run inside your Claude Code session, so Azimuth sees one session: thei
   `azimuth move <T-ID> in-progress`. Give it the task's title, the scenarios it covers with their
   GIVEN/WHEN/THEN, the contract and invariants it must keep, the files it may change (the task's
   `files`), the test-naming rule from step 4.2 and the task's verify command. Ask it to write the
-  tests first, implement, run the verify command, and report the files it changed and the
-  command's result, without committing.
+  tests first, implement, run the verify command, and report the files it changed, the
+  command's result, the value a test proved for each `{?}` and what the task taught, without
+  committing. You settle those values and record those notes.
 - **Parallel only when independent:** run several subagents at once only for ready tasks whose
   `files` overlap in no file outside `parallel.shared_files` (config.yaml); otherwise one at a
   time. `azimuth next <F-ID>` ends with the groups that can run together

@@ -109,11 +109,32 @@ For a question, `--json` prints `{id, files, answered}`, where `answered` is tha
 | `azimuth reapprove <F-ID>`                                                        | Approves a changed spec again (re-runs the approval gate).                                                                                                                                                                                                                                                                                                                                                                                |
 | `azimuth answer <Q-ID> [--option <key>] [--text "…"]`                             | Answers a question, or replaces an agent's answer with yours (clearing its `resolution`). You only.                                                                                                                                                                                                                                                                                                                                       |
 | `azimuth resolve <Q-ID> --adr ADR-NNNN \| --assumption F-NNN`                     | Records how an answer was applied.                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `azimuth ack <F-ID \| ADR-ID \| Q-ID>`                                            | Acknowledges an automatic approval, acceptance or answer. You only.                                                                                                                                                                                                                                                                                                                                                                       |
+| `azimuth ack <F-ID \| ADR-ID \| Q-ID>`                                            | Acknowledges an automatic approval, acceptance or answer, or the values an agent settled in a feature's scenarios. You only.                                                                                                                                                                                                                                                                                                              |
 | `azimuth set <ID> <field> <value \| none>`                                        | Sets `priority`, `size` or `milestone` on a feature, or `severity` on an issue.                                                                                                                                                                                                                                                                                                                                                           |
 | `azimuth log <ID> "<message>" [--review]`                                         | Adds a progress note to the feature's log (for a task, prefixed with its ID). `--review` (you only) records a change request the agent must address.                                                                                                                                                                                                                                                                                      |
+| `azimuth note <T-ID \| F-ID> "<text>"`                                            | Adds what a task taught to the feature's `notes.md` (below).                                                                                                                                                                                                                                                                                                                                                                              |
+| `azimuth settle <S-ID> "<value>"`                                                 | Replaces the scenario's first `{?}` with the value a passing test proved (below).                                                                                                                                                                                                                                                                                                                                                         |
 
 Refused moves print the failing gate checks and exit 1.
+
+`note` and `settle` record what a build learned without touching the approved spec (see
+[Notes and placeholders](concepts.md#notes-and-placeholders)), so neither makes the approval
+stale. `note` takes a feature or a task in its plan and appends a `### <ID> · <date>` section
+(UTC date) to the feature's [`notes.md`](file-format.md#notesmd), creating it on the first note.
+`settle` turns the first `{?}` in the scenario's lines into `{=<value>}` and adds a log note
+`Settled <S-ID>: {=<value>}`, in one locked step. The value is trimmed and can't be empty or hold
+`{`, `}` or a line break. It says how many of the scenario's placeholders are left:
+
+```
+$ azimuth settle S-005.1.2 17..30
+S-005.1.2: settled 17..30 (1 placeholder left)
+$ azimuth settle S-005.1.2 30
+S-005.1.2: settled 30
+```
+
+Both add the IDs to the current session's `touched` list. A refusal exits 1 and writes nothing:
+an unknown feature, task or scenario, a blank note, a value that can't be written, or a scenario
+with no `{?}` left (`S-005.1.2 has no {?} left to settle.`).
 
 ## Verify
 

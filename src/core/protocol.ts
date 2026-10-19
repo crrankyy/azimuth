@@ -49,10 +49,16 @@ lives in \`.azimuth/features/F-NNN-<slug>/\`; \`.azimuth/templates/\` shows each
 - feature.md: objective, out of scope, integration points, invariants, assumptions.
 - impact.md: every file to create, modify, read or test.
 - stories.md: stories with BDD scenarios. Every story needs a happy scenario and a negative or
-  edge scenario; every THEN names an exact value, state, error or status code.
+  edge scenario; every THEN names an exact value, state, error or status code. A value only the
+  code can measure (a byte offset, a count) may be written \`{?}\` in a THEN or AND line, never
+  for undecided behaviour. When a test proves it, \`azimuth settle <S-ID> "<value>"\` fills it
+  in; the feature can't be done while a \`{?}\` is left.
 - contract.md: types, signatures and errors in the target language, without bodies.
 - plan.md: a task graph (\`after\`) in test-first order. Every scenario is covered by a task and
   every task has a verify command that exits 0 on success.
+- notes.md: what a task taught, written with \`azimuth note <T-ID> "<text>"\`, never in
+  feature.md. Notes and settled values never make the approval stale, so they need no
+  \`azimuth reapprove\`; every other spec edit, a corrected THEN included, does.
 - When a decision is ambiguous and costly to reverse, raise a question with options and a
   recommendation (\`azimuth new question "<question>" --feature F-NNN --blocking\`) instead of
   guessing. Record smaller assumptions in feature.md.

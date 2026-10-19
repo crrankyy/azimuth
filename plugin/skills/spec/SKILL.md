@@ -61,6 +61,11 @@ Run `azimuth new spec <F-ID>` to scaffold missing files, then replace the placeh
    `### S-NNN.n.m · <title> {happy|negative|edge}` with exactly one GIVEN, WHEN and THEN
    (AND lines allowed). Every story needs a happy scenario and a negative or edge scenario.
    THEN names the exact value, state, error variant or status code, never "is handled".
+   Use `{?}` only for a value the code will measure (a byte offset, a count, a size): write it
+   in a THEN or AND line, and the build settles it with the value the first passing test proves
+   (`azimuth settle`) without making the approval stale. Never use `{?}` for behaviour you
+   haven't decided; that is a question or an assumption. The feature can't be done while a `{?}`
+   is left.
 4. **contract.md**: data structures, public signatures, errors and (if stateful) a
    `stateDiagram-v2` block, in the target language, without function bodies.
 5. **plan.md**: a task graph in test-first order: types and scaffolding, then one task per

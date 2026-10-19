@@ -7,6 +7,7 @@ lifecycles; the viewer shows it live.
 
 - [Entities](#entities)
 - [Feature lifecycle and gates](#feature-lifecycle-and-gates)
+- [Notes and placeholders](#notes-and-placeholders)
 - [Autonomy](#autonomy)
 - [Derived values](#derived-values)
 - [Parallel tasks and shared files](#parallel-tasks-and-shared-files)
@@ -41,13 +42,13 @@ side states: deferred · cancelled · superseded
 Every status change goes through `azimuth move` (or a viewer action), which checks the lifecycle
 table, who is acting, and the gate for forward moves. A gate is a list of checks; all must pass.
 
-| Move                    | Gate checks                                                                                                                                                                                                                                                                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| idea → draft            | Spec files written: impact, stories, contract and plan exist, with at least one story and one task.                                                                                                                                                                                                                                                             |
-| draft → approved        | No errors in the feature · every story has a happy and a negative or edge scenario · every scenario has GIVEN, WHEN and THEN · every scenario is covered by a task · every task has a verify command · the spec is committed · no open blocking question · dependencies exist and form no cycle · size is not XL. (With `autonomy.strict`: no warnings either.) |
-| approved → in-progress  | The spec is unchanged since approval · every dependency is done (you may override this one with a reason).                                                                                                                                                                                                                                                      |
-| in-progress → verifying | Every task is done or skipped with a note · no open blocking question.                                                                                                                                                                                                                                                                                          |
-| verifying → done        | The latest verify run of every task passed at HEAD · every scenario has a passing test · `as-built.md` exists · `architecture.md` was reconciled after the feature's last commit. Commits that only change `.azimuth/` (the as-built, the reconciliation, recorded decisions) don't count for either commit check.                                              |
+| Move                    | Gate checks                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| idea → draft            | Spec files written: impact, stories, contract and plan exist, with at least one story and one task.                                                                                                                                                                                                                                                               |
+| draft → approved        | No errors in the feature · every story has a happy and a negative or edge scenario · every scenario has GIVEN, WHEN and THEN · every scenario is covered by a task · every task has a verify command · the spec is committed · no open blocking question · dependencies exist and form no cycle · size is not XL. (With `autonomy.strict`: no warnings either.)   |
+| approved → in-progress  | The spec is unchanged since approval · every dependency is done (you may override this one with a reason).                                                                                                                                                                                                                                                        |
+| in-progress → verifying | Every task is done or skipped with a note · no open blocking question.                                                                                                                                                                                                                                                                                            |
+| verifying → done        | The latest verify run of every task passed at HEAD · every scenario has a passing test · no `{?}` placeholder is left in `stories.md` · `as-built.md` exists · `architecture.md` was reconciled after the feature's last commit. Commits that only change `.azimuth/` (the as-built, the reconciliation, recorded decisions) don't count for either commit check. |
 
 For the done gate, a passing verify run stays current until a later commit changes a path the run
 depends on: the task's `files`, the feature's impact paths with change create, modify or test
@@ -71,6 +72,25 @@ questions `open → answered` (or `obsolete`; you can replace an agent's answer 
 → `superseded`, rejected → `proposed` (you, or an agent for a decision an agent rejected) and
 accepted → `proposed` (you only, for a decision an agent accepted); milestones `planned → active → released`; issues `open → in-progress → resolved |
 wontfix`.
+
+## Notes and placeholders
+
+A build learns things the spec couldn't know. Two records keep them out of the approval, so
+neither needs re-approval:
+
+- **Notes.** `azimuth note <T-ID | F-ID> "<text>"` adds what a task taught to the feature's
+  `notes.md`, which isn't part of the spec hash. The viewer shows notes in the As-built tab.
+  Lessons go there rather than into `feature.md`, whose body is hashed.
+- **Placeholders.** A THEN or AND line may write a value only the code can measure (a byte
+  offset, a count) as `{?}`: the first passing test settles it. `azimuth settle <S-ID> "<value>"`
+  turns the scenario's first `{?}` into `{=<value>}` and logs it. The hash reads every settled
+  value as `{?}`, so settling changes nothing the approval covers. The done gate waits until no
+  `{?}` is left, and the viewer marks settled and open values in the Stories tab.
+
+Every other spec edit, such as correcting a THEN the code proved wrong, still makes the approval
+stale.
+Values an agent settles reach your inbox for review, whoever approved the spec (see
+[The inbox](#the-inbox)).
 
 ## Autonomy
 
@@ -156,8 +176,10 @@ What needs you, grouped by urgency:
 - **Normal:** non-blocking questions, specs ready for your approval and proposed decisions (both
   only in manual mode), validation errors.
 - **Low:** stale work; features or decisions an agent approved or accepted on its own, to
-  acknowledge or send back; and questions an agent answered with its recommendation, to
-  acknowledge or answer differently.
+  acknowledge or send back; values an agent settled in a feature's scenarios since you last
+  acknowledged the feature, whoever approved it, to acknowledge or send back (an automatic
+  approval you haven't acknowledged lists them in its own item); and questions an agent answered
+  with its recommendation, to acknowledge or answer differently.
 
 ## Traceability
 

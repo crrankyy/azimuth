@@ -60,6 +60,8 @@ sessions in `.azimuth/`, validates them and shows them live in a local viewer. F
 | `azimuth reapprove F-NNN`                                                                                       | Approve a spec again after it changed                                  |
 | `azimuth resolve Q-NNNN --adr ADR-NNNN \| --assumption F-NNN`                                                   | Record how an answer was applied                                       |
 | `azimuth log <ID> "<message>"`                                                                                  | Progress note in the feature's log                                     |
+| `azimuth note <T-ID\|F-ID> "<text>"`                                                                            | What a task taught, in the feature's notes.md (no reapproval)          |
+| `azimuth settle <S-ID> "<value>"`                                                                               | Fill a scenario's first `{?}` with the value a passing test proved     |
 | `azimuth verify <T-ID\|F-ID>`                                                                                   | Run verify commands and record the result                              |
 | `azimuth trace [F-ID]`                                                                                          | Scenario → test coverage                                               |
 | `azimuth session start --skill <name> --goal "…"` · `session handoff "<next steps>"` · `session close`          | Record a unit of work                                                  |

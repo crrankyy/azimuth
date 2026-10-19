@@ -65,7 +65,7 @@ must match the feature.
     glossary.md
   milestones/M-02-reliable-delivery.md
   features/F-005-retry-backoff/
-    feature.md  impact.md  stories.md  contract.md  plan.md  log.md  as-built.md
+    feature.md  impact.md  stories.md  contract.md  plan.md  log.md  notes.md  as-built.md
   decisions/ADR-0003-full-jitter-backoff.md
   questions/Q-0002.md
   issues/BUG-0001-double-send-on-busy.md
@@ -217,7 +217,7 @@ approved_at: 2026-10-09
 approved_by: you # you | agent
 approved_hash: sha256:9c1e… # spec hash at approval
 approved_commit: c81e0d4 # HEAD at approval
-review_ack_at: null # set when you acknowledge an automatic approval
+review_ack_at: null # set when you acknowledge an automatic approval or values an agent settled
 overrides: [] # [{gate, reason, at}], written by `move --override`
 ```
 
@@ -282,6 +282,30 @@ Stories and scenarios are parsed from headings. No frontmatter is required.
 Every story needs at least one `happy` scenario and at least one `negative` or `edge`
 scenario before approval.
 
+#### Placeholders
+
+A value only the code can measure (a byte offset, a count) may be written `{?}` in a THEN or AND
+line: the first passing test settles it. `azimuth settle <S-ID> "<value>"` replaces the
+scenario's first `{?}` with `{=<value>}` and changes no other character of the file:
+
+```markdown
+### S-005.1.2 · Finds the heading {happy}
+
+- **GIVEN** the text `# Hi` after a BOM
+- **WHEN** it is parsed
+- **THEN** the heading starts at byte {?}
+- **AND** it ends at byte {=30}
+```
+
+| Rule        | Detail                                                                                                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Open        | `{?}`.                                                                                                                                                                                                                    |
+| Settled     | `{=`, a value of at least one character without `{`, `}` or line breaks, then `}`. `{=}` and other braces are plain text.                                                                                                 |
+| Where       | In the lines after a scenario's heading, up to the next `##` or `###` heading, in code spans too. Not in fenced code blocks, and not outside every scenario.                                                              |
+| Other files | Only `stories.md` has placeholders; `{?}` in the other spec files is plain text.                                                                                                                                          |
+| Done gate   | `done.placeholders-settled` fails while a scenario holds a `{?}` and names those scenarios.                                                                                                                               |
+| Hand edits  | The [spec hash](#spec-hash) reads every settled value as `{?}`, so writing or changing a `{=…}` by hand doesn't make the approval stale, and leaves no log entry for you to review. `azimuth settle` is the recorded way. |
+
 ### `contract.md`
 
 Optional frontmatter `language: typescript` (otherwise the first fenced code block's language
@@ -332,6 +356,29 @@ draft → approved
 | type            | `note`, `transition` (written by `move`), `review` (your "request changes" comment), `override` (accepted when reading; Azimuth itself records an override in `feature.md` `overrides` and its reason in the transition entry) |
 | auto            | Marks an automatic decision: one made under autonomy `auto`, or a `note` that an agent's question was answered with its recommendation (`questions: proceed`).                                                                 |
 | Transition body | The first line starts with `<from> → <to>`; anything after it on that line or below is commentary.                                                                                                                             |
+| Settle body     | `azimuth settle` writes a `note` whose body is exactly `Settled <S-ID>: {=<value>}`. An agent's settle entries after `review_ack_at` (all of them while it is `null`) are values for you to review in the inbox.               |
+
+### `notes.md`
+
+Optional. What a build taught, one section per note, written by `azimuth note`:
+
+```markdown
+# F-005: Notes
+
+### T-005.2 · 2026-10-20
+
+The heading starts at byte 17: the parser counts the BOM.
+
+### F-005 · 2026-10-21
+
+Split the parser in two.
+```
+
+The first note creates the file with its `# <F-ID>: Notes` title. Each note adds a
+`### <T-ID or F-ID> · <date>` heading (UTC date) and the text. Azimuth doesn't parse it further,
+so you can edit it by hand. It isn't part of the [spec hash](#spec-hash), so notes never make the
+approval stale. The index carries it without its first `# ` title line, trimmed, as the feature
+detail's `notes`; `null` when the file is missing or holds nothing else.
 
 ### `as-built.md`
 
@@ -352,10 +399,11 @@ Body sections: `## Summary`, `## Deviations`, `## Follow-ups`.
 
 `approved_hash` is `sha256:` plus the hex SHA-256 of the feature's spec content:
 the `feature.md` body (not its frontmatter), then `impact.md`, `stories.md` and `contract.md`
-in full. Each part is normalized (CRLF to LF, trailing whitespace removed from every line,
-leading and trailing blank lines removed) and the parts are joined with a line containing only
-`\u0000`. `plan.md` and `log.md` are not part of the hash, because task statuses and log
-entries change during a build.
+in full. Every settled value (`{=…}`) in `stories.md` is first replaced by `{?}`, so
+[settling a placeholder](#placeholders) never changes the hash. Each part is normalized (CRLF to
+LF, trailing whitespace removed from every line, leading and trailing blank lines removed) and
+the parts are joined with a line containing only `\u0000`. `plan.md`, `log.md` and `notes.md`
+are not part of the hash, because task statuses, log entries and notes change during a build.
 
 ## Decisions
 
