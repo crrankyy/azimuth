@@ -3,9 +3,9 @@ import type { Issue, IssueType, Level, Severity } from "../../../../src/core/typ
 import { IdChip } from "../../components/IdChip";
 import { StatusPill } from "../../components/Status";
 import { shortDate } from "../../lib/format";
-import { href, navigate } from "../../lib/router";
+import { navigate } from "../../lib/router";
 import { ISSUE_LOOK } from "../../lib/status";
-import { isOpen } from "./model";
+import { isOpen, issuePageHref } from "./model";
 
 const TYPE_ICON: Record<IssueType, ReactNode> = {
   bug: (
@@ -130,16 +130,31 @@ export function IssueTable({
             aria-selected={issue.id === selected}
             onClick={(e) => {
               if ((e.target as HTMLElement).closest("a")) return;
-              navigate(href("issues", issue.id));
+              navigate(issuePageHref(issue.id));
             }}
           >
             <td>
               <TypeLabel type={issue.type} />
             </td>
             <td>
-              <IdChip id={issue.id} />
+              <IdChip id={issue.id} to={issuePageHref(issue.id)} />
             </td>
-            <td className="iss-title">{issue.title}</td>
+            <td className="iss-title">
+              <a className="iss-title-link" href={issuePageHref(issue.id)}>
+                <span className="iss-title-text">{issue.title}</span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path d="M4.5 2.5L8 6l-3.5 3.5" />
+                </svg>
+              </a>
+            </td>
             <td>
               <SeverityCell issue={issue} />
             </td>

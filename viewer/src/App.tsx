@@ -12,13 +12,15 @@ import { FeatureDetailScreen } from "./screens/feature/FeatureDetail";
 import { FeaturesScreen } from "./screens/Features";
 import { InboxScreen } from "./screens/Inbox";
 import { IssuesScreen } from "./screens/Issues";
+import { IssuePageScreen } from "./screens/issues/IssuePage";
 import { KnowledgeScreen } from "./screens/Knowledge";
 import { OverviewScreen } from "./screens/Overview";
 import { QuestionsScreen } from "./screens/Questions";
 import { RoadmapScreen } from "./screens/Roadmap";
 import { VerificationScreen } from "./screens/Verification";
 
-function Screen({ route }: { route: Route }) {
+/** The screen for a route; `issues` with tab "page" renders IssuePageScreen. Exported for tests. */
+export function Screen({ route }: { route: Route }) {
   switch (route.section) {
     case "overview":
       return <OverviewScreen route={route} />;
@@ -35,7 +37,11 @@ function Screen({ route }: { route: Route }) {
     case "questions":
       return <QuestionsScreen route={route} />;
     case "issues":
-      return <IssuesScreen route={route} />;
+      return route.id && route.tab === "page" ? (
+        <IssuePageScreen id={route.id} />
+      ) : (
+        <IssuesScreen route={route} />
+      );
     case "activity":
       return <ActivityScreen route={route} />;
     case "verification":

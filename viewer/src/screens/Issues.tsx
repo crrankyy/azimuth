@@ -7,7 +7,7 @@ import { useListKeys } from "../lib/keys";
 import { href, navigate, type Route } from "../lib/router";
 import { IssueDetail } from "./issues/IssueDetail";
 import { IssueTable } from "./issues/IssueTable";
-import { isOpen, sortIssues } from "./issues/model";
+import { isOpen, issuePageHref, sortIssues } from "./issues/model";
 import { RiskMatrix } from "./issues/RiskMatrix";
 import "./issues/issues.css";
 
@@ -32,6 +32,10 @@ export function IssuesScreen({ route }: { route: Route }) {
       const next = rows[n];
       if (next) navigate(href("issues", next.id));
     },
+    onOpen: (n) => {
+      const issue = rows[n];
+      if (issue) navigate(issuePageHref(issue.id));
+    },
   });
   if (!index) return null;
 
@@ -42,8 +46,14 @@ export function IssuesScreen({ route }: { route: Route }) {
     { label: "Issues", href: href("issues") },
     ...(route.id && selected ? [{ label: <span className="az-mono">{selected.id}</span> }] : []),
   ];
+  const hints = (
+    <span className="iss-hints">
+      <Hint keys={["j", "k"]} label="move" />
+      <Hint keys={["↵"]} label="open" />
+    </span>
+  );
   return (
-    <Page crumbs={crumbs} hints={<Hint keys={["j", "k"]} label="move" />}>
+    <Page crumbs={crumbs} hints={hints}>
       <div className="iss-layout">
         <div className="iss-main">
           <div className="iss-header">

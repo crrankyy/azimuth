@@ -15,7 +15,7 @@ const EDITOR_SCHEMES = /^(vscode|cursor|zed|idea|file):/i;
 export function editorLink(
   template: string | null,
   root: string | null,
-  p: Problem,
+  p: Pick<Problem, "file" | "line">,
 ): string | null {
   if (!template || !root || !EDITOR_SCHEMES.test(template)) return null;
   return template.replace("{abs}", `${root}/${p.file}`).replace("{line}", String(p.line ?? 1));

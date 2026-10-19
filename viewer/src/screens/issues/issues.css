@@ -27,6 +27,11 @@
   font-size: 13px;
   color: var(--ink-subtle);
 }
+.iss-hints {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 /* Table */
 .iss-table tbody tr {
   cursor: pointer;
@@ -45,6 +50,25 @@
 }
 .iss-table tr.closed .iss-title {
   color: var(--ink-muted);
+}
+/* The title opens the issue's page; the chevron says so. */
+.iss-title-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.iss-title-text {
+  flex: 1;
+  min-width: 0;
+}
+.iss-title-link svg {
+  flex: none;
+  color: var(--ink-tertiary);
+}
+.iss-title-link:hover svg {
+  color: var(--ink);
 }
 .iss-created {
   text-align: right;
@@ -123,6 +147,13 @@
   gap: 4px;
   font-size: 13px;
   color: var(--ink-subtle);
+}
+.iss-open-page {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.iss-open-page:hover {
+  color: var(--ink);
 }
 .iss-field {
   display: inline-flex;

@@ -50,6 +50,13 @@ export function shortDate(iso: string | null | undefined): string {
   return c ? `${MONTHS[c.month]} ${c.day}` : iso;
 }
 
+/** "Oct 14, 2026" (dates as written, timestamps in local time); "" for null. */
+export function longDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const c = calendar(iso);
+  return c ? `${MONTHS[c.month]} ${c.day}, ${c.year}` : iso;
+}
+
 /** "11:56" (local time). */
 export function clock(iso: string | null | undefined): string {
   if (!iso) return "";

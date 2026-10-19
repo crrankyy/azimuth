@@ -12,7 +12,7 @@ import { shortDate } from "../../lib/format";
 import { Prose } from "../../lib/markdown";
 import { ISSUE_LOOK } from "../../lib/status";
 import { capitalize, LevelText } from "./IssueTable";
-import { featuresChanging, SEVERITY_ORDER } from "./model";
+import { featuresChanging, issuePageHref, SEVERITY_ORDER } from "./model";
 
 export function IssueDetail({
   index,
@@ -42,6 +42,9 @@ export function IssueDetail({
           · {shortDate(issue.created)}
           {issue.resolved_at ? ` · closed ${shortDate(issue.resolved_at)}` : ""}
         </span>
+        <a className="iss-open-page" href={issuePageHref(issue.id)}>
+          Open full page
+        </a>
         <span className="spacer" />
         <TriageControls issue={issue} />
       </div>
@@ -63,7 +66,7 @@ export function IssueDetail({
 }
 
 /** Severity and Status selects (§7 "Triage issue"); won't fix asks for a reason first. */
-function TriageControls({ issue }: { issue: Issue }) {
+export function TriageControls({ issue }: { issue: Issue }) {
   const run = useAction();
   const { canAct, reason } = useCanAct();
   const [busy, setBusy] = useState(false);

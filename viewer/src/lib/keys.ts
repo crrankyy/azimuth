@@ -83,8 +83,8 @@ export function useGlobalKeys(handlers: { palette: () => void; problems: () => v
 }
 
 /**
- * `j`/`k` move through a list, `Enter` opens, `a` runs the primary action. Returns nothing;
- * the caller owns the selected index.
+ * `j`/`k` move through a list, `Enter` opens, `a` runs the primary action, `Esc` leaves the view.
+ * Returns nothing; the caller owns the selected index.
  */
 export function useListKeys(opts: {
   count: number;
@@ -92,6 +92,8 @@ export function useListKeys(opts: {
   onSelect: (index: number) => void;
   onOpen?: (index: number) => void;
   onPrimary?: (index: number) => void;
+  /** Esc: leave the view (an issue's page goes back to the list). Paused like the other keys. */
+  onBack?: () => void;
   enabled?: boolean;
   /** The list itself is in an overlay (the problems panel), so overlays don't pause it. */
   insideOverlay?: boolean;
@@ -124,6 +126,8 @@ export function useListKeys(opts: {
         // Buttons and links keep their own Enter.
         if ((e.target as HTMLElement | null)?.closest?.("button, a")) return;
         o.onOpen?.(o.selected);
+      } else if (e.key === "Escape") {
+        o.onBack?.();
       } else if (e.key === "a") {
         // The action may focus a field (the inline answer); don't type the "a" into it.
         e.preventDefault();

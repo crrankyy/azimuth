@@ -1,0 +1,346 @@
+/* An issue's page (handoff screens/IssueDetail.html): header, Triage card, description,
+   Related work, History and the aside. */
+
+.ip {
+  display: flex;
+  align-items: flex-start;
+  gap: 48px;
+}
+.ip-main {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Header */
+.ip-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ip-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ip-meta .iss-type {
+  font-size: 13px;
+}
+.az-id.ip-id {
+  font-size: 13px;
+  line-height: 22px;
+  padding: 0 8px;
+  color: var(--ink);
+}
+.ip-sev {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline-strong);
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.ip-sev-critical,
+.ip-sev-high {
+  color: var(--label-red);
+  border-color: rgba(243, 139, 168, 0.4);
+}
+.ip-sev-medium {
+  color: var(--label-yellow);
+  border-color: rgba(249, 226, 175, 0.35);
+}
+.ip-levels,
+.ip-found {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.ip-levels .lvl {
+  color: var(--ink);
+}
+.ip-levels .lvl-high {
+  color: var(--label-red);
+}
+.ip-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.6px;
+  color: var(--ink);
+}
+
+/* Triage card */
+.ip-triage {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 16px;
+  box-shadow: var(--edge-highlight);
+}
+.ip-triage-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+/* Issue file names run long; the line keeps to the card's one row and shows the rest on hover. */
+.ip-writes {
+  flex: 1 1 200px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+
+/* Description */
+.ip-desc {
+  max-width: 720px;
+}
+.ip-desc > .muted {
+  margin: 0;
+  font-size: 14px;
+}
+.az-prose.ip-prose > h2:first-child {
+  margin-top: 0;
+}
+
+/* Related work and History */
+.ip-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ip-h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--ink);
+}
+.ip-rule {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.ip-none {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-tertiary);
+}
+.ip-related {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--hairline);
+}
+.ip-related-row {
+  display: grid;
+  grid-template-columns: 16px 76px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.ip-related-row:hover {
+  background: var(--surface-1);
+}
+.ip-related-id {
+  font-size: 12px;
+  color: var(--ink);
+}
+.ip-related-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ip-related-reason,
+.ip-related-status {
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.ip-related-status {
+  white-space: nowrap;
+}
+.ip-related-status.s-blocked,
+.ip-related-status.s-failing {
+  color: var(--label-red);
+}
+.ip-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ip-history-row {
+  display: grid;
+  grid-template-columns: 72px 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+.ip-history-date {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.ip-history-dot {
+  justify-self: center;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--ink-muted);
+}
+.ip-history-row.note .ip-history-dot {
+  background: none;
+  border: 1.5px solid var(--ink-subtle);
+}
+.ip-history-row.none .ip-history-dot {
+  background: none;
+  border: 1.5px dashed var(--ink-tertiary);
+}
+.ip-history-text {
+  min-width: 0;
+  color: var(--ink-muted);
+}
+.ip-history-text b {
+  font-weight: 500;
+  color: var(--ink);
+}
+.ip-history-row.none .ip-history-text {
+  color: var(--ink-tertiary);
+}
+.ip-sha {
+  font-size: 12px;
+  color: var(--ink);
+}
+
+/* Aside */
+.ip-aside {
+  width: 300px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.ip-facts {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 10px 12px;
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 13px;
+}
+.ip-facts dt {
+  color: var(--ink-subtle);
+}
+.ip-facts dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--ink);
+}
+.ip-facts .lvl-high {
+  color: var(--label-red);
+}
+.ip-fact-none {
+  color: var(--ink-tertiary);
+}
+.ip-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ip-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  text-decoration: none;
+}
+.ip-feature:hover {
+  border-color: var(--hairline-strong);
+}
+.ip-feature-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ip-feature-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+.ip-feature .az-pill {
+  height: 20px;
+}
+.ip-feature-note {
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.ip-file {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ip-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: stretch;
+}
+.ip-path {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.ip-file .az-flag {
+  font-size: 11px;
+}
+.az-mono.ip-source {
+  color: var(--ink-subtle);
+}
+.ip-source-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ip-source-actions .lc-btn {
+  text-decoration: none;
+}
+
+/* Below this width the 300px aside no longer fits beside a readable column; stack it. */
+@media (max-width: 1099px) {
+  .ip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ip-aside {
+    width: auto;
+  }
+}

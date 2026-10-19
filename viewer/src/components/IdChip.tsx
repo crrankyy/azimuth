@@ -81,16 +81,19 @@ export function IdChip({
   id,
   className = "",
   large = false,
+  to,
 }: {
   id: string;
   className?: string;
   large?: boolean;
+  /** Link target; defaults to routeForId(id). */
+  to?: string;
 }) {
   const hover = useContext(HoverCtx);
   return (
     <a
       className={`az-id ${large ? "lg" : ""} ${className}`.trim()}
-      href={routeForId(id)}
+      href={to ?? routeForId(id)}
       onMouseEnter={(e) => hover?.show(id, e.currentTarget)}
       onMouseLeave={() => hover?.hide()}
       onFocus={(e) => hover?.show(id, e.currentTarget)}
