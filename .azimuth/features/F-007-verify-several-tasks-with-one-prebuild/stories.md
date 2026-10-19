@@ -65,14 +65,14 @@
 - **THEN** the result has `exit_code` 3, `output` "outerr", `timed_out` false and `aborted` false
 
 ### S-007.3.2 · A timeout kills the command's children {negative}
-- **GIVEN** the command `sleep 60 & echo $! > child.pid; wait` with `timeoutMs` 300
+- **GIVEN** the command `sleep 60 & echo $! > child.pid; wait` with `timeoutMs` 1000
 - **WHEN** `runShell` runs it
 - **THEN** the result has `exit_code` 124 and `timed_out` true, and `process.kill(<pid in child.pid>, 0)` throws `ESRCH`
 
 ### S-007.3.3 · A child that ignores SIGTERM is killed after the grace period {edge}
-- **GIVEN** the command `trap '' TERM; sleep 60 & echo $! > child.pid; wait` with `timeoutMs` 300 and `graceMs` 200
+- **GIVEN** the command `trap '' TERM; sleep 60 & echo $! > child.pid; wait` with `timeoutMs` 1000 and `graceMs` 200
 - **WHEN** `runShell` runs it
-- **THEN** the result has `exit_code` 124, `timed_out` true and `duration_ms` ≥ 500, and `process.kill(<pid in child.pid>, 0)` throws `ESRCH`
+- **THEN** the result has `exit_code` 124, `timed_out` true and `duration_ms` ≥ 1200, and `process.kill(<pid in child.pid>, 0)` throws `ESRCH`
 
 ### S-007.3.4 · An abort kills the command's children {edge}
 - **GIVEN** the command `sleep 60 & echo $! > child.pid; wait` running under `runShell` with a 60000 ms timeout

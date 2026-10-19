@@ -16,7 +16,7 @@ approved_at: 2026-10-19
 approved_by: agent
 approved_hash: sha256:a04e47b06d2ff9658b68e1be57622865037552d58d18db4593e4fda57463eae8
 approved_commit: b463477
-review_ack_at: null
+review_ack_at: 2026-10-19T20:29:07Z
 ---
 # F-012: Let agents answer their own questions when the project allows it
 
