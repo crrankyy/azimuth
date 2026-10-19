@@ -3,6 +3,7 @@ import { existsSync, realpathSync, unlinkSync, writeFileSync, mkdirSync } from "
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { dirname, join } from "node:path";
 import { buildIndex } from "../core/build-index";
+import { AzimuthError } from "../core/errors";
 import { sharedCacheDir } from "../core/lock";
 import { anySessionOpen, liveDir, processAlive, readLiveSessions } from "../core/live";
 import { azPath } from "../core/paths";
@@ -52,6 +53,17 @@ function gitDir(root: string): string | null {
     encoding: "utf8",
   });
   return r.status === 0 ? r.stdout.trim() : null;
+}
+
+function portsTaken(first: number, attempts: number): AzimuthError {
+  const ports =
+    attempts === 1
+      ? `Port ${first} on 127.0.0.1 is`
+      : `Ports ${first}–${first + attempts - 1} on 127.0.0.1 are all`;
+  return new AzimuthError(
+    "busy",
+    `${ports} in use, so the viewer can't start. Stop viewers you no longer need (\`azimuth view --stop\` in their projects) or set viewer.port in .azimuth/config.yaml.`,
+  );
 }
 
 function listen(server: ReturnType<typeof createServer>, port: number): Promise<number> {
@@ -209,7 +221,8 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
       port = await listen(http, (opts.port ?? 0) === 0 ? 0 : (opts.port ?? 0) + i);
       break;
     } catch (e) {
-      if ((e as NodeJS.ErrnoException).code !== "EADDRINUSE" || i === attempts - 1) throw e;
+      if ((e as NodeJS.ErrnoException).code !== "EADDRINUSE") throw e;
+      if (i === attempts - 1) throw portsTaken(opts.port ?? 0, attempts);
     }
   }
 
@@ -272,12 +285,20 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
 
   const idleMs = opts.idleMs ?? 2 * 3_600_000;
   const alive = opts.alive ?? processAlive;
+  /** Another running viewer registered for this project after this one, which replaced it. */
+  const superseded = () => {
+    const current = readViewerRecord(root);
+    return !!current && current.instance !== instance && alive(current.pid);
+  };
   const idleCheck = setInterval(
     () => {
       if (!existsSync(azPath(root))) return void close();
+      if (clients.size > 0) return;
+      // Nothing points new pages or hooks at a replaced viewer, so open sessions don't keep it.
+      if (opts.register && superseded()) return void close();
       // An open Claude Code session keeps the viewer up however long it has been quiet.
       const sessionOpen = anySessionOpen(root, { now: now(), idleMs, alive });
-      if (clients.size === 0 && !sessionOpen && Date.now() - lastRequestAt > idleMs) void close();
+      if (!sessionOpen && Date.now() - lastRequestAt > idleMs) void close();
     },
     Math.min(60_000, idleMs),
   );

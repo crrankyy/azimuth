@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { closeSync, mkdirSync, openSync, realpathSync, statSync, unlinkSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { processAlive } from "../core/live";
 import { sharedCacheDir } from "../core/lock";
 import { VERSION } from "../core/version";
 import { readViewerRecord, type ViewerRecord } from "./registry";
@@ -30,12 +31,16 @@ export function viewerUrlFor(record: ViewerRecord): string {
   return `http://127.0.0.1:${record.port}/`;
 }
 
-/** Whether the recorded server answers as this project's viewer of this build. */
+/**
+ * Whether the recorded server answers as this project's viewer of this build. A server that
+ * misses the timeout while its process runs is `busy` (a large index rebuild blocks it for a
+ * while), not `down`: starting another would leave both running.
+ */
 export async function healthy(
   record: ViewerRecord,
   root: string,
   expected = buildId(),
-): Promise<"ok" | "stale" | "down"> {
+): Promise<"ok" | "stale" | "busy" | "down"> {
   try {
     const res = await fetch(`http://127.0.0.1:${record.port}/api/health`, {
       signal: AbortSignal.timeout(500),
@@ -43,8 +48,8 @@ export async function healthy(
     const body = (await res.json()) as { build?: string; root?: string };
     if (body.root !== realpathSync(root)) return "down";
     return body.build === expected ? "ok" : "stale";
-  } catch {
-    return "down";
+  } catch (e) {
+    return (e as Error).name === "TimeoutError" && processAlive(record.pid) ? "busy" : "down";
   }
 }
 
@@ -77,8 +82,8 @@ function releaseStart(root: string): void {
 }
 
 /**
- * Makes sure one viewer serves this project and returns its URL. Reuses a healthy server,
- * restarts one from an older build, otherwise starts a detached server. Waits at most
+ * Makes sure one viewer serves this project and returns its URL. Reuses a healthy or busy
+ * server, restarts one from an older build, otherwise starts a detached server. Waits at most
  * `waitMs` for it to come up; returns null if it isn't up yet.
  */
 export async function ensureViewer(root: string, waitMs = 1_500): Promise<string | null> {
@@ -86,7 +91,7 @@ export async function ensureViewer(root: string, waitMs = 1_500): Promise<string
   const existing = readViewerRecord(root);
   if (existing) {
     const state = await healthy(existing, root, build);
-    if (state === "ok") return viewerUrlFor(existing);
+    if (state === "ok" || state === "busy") return viewerUrlFor(existing);
     if (state === "stale") {
       try {
         process.kill(existing.pid, "SIGTERM");
