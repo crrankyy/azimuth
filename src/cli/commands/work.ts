@@ -115,7 +115,7 @@ export const session: Command = {
  * A detached verify command no longer gets the terminal's Ctrl-C, so SIGINT and SIGTERM abort the
  * batch instead: its command's process group is killed and the verify lock released.
  */
-function abortOnSignals() {
+export function abortOnSignals() {
   const controller = new AbortController();
   let received: NodeJS.Signals | null = null;
   const handlers = (["SIGINT", "SIGTERM"] as const).map((name) => {

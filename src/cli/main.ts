@@ -5,6 +5,7 @@ import * as harness from "./commands/harness";
 import { note } from "./commands/note";
 import * as read from "./commands/read";
 import { settle } from "./commands/settle";
+import { brief, task } from "./commands/task";
 import * as viewer from "./commands/viewer";
 import * as work from "./commands/work";
 import * as write from "./commands/write";
@@ -31,6 +32,8 @@ const COMMANDS: Record<string, Command> = {
   note,
   settle,
   verify: work.verify,
+  task,
+  brief,
   session: work.session,
   view: viewer.view,
   export: viewer.exportCommand,
