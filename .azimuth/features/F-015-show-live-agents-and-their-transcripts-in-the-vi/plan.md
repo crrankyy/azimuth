@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-015.5
     title: The Agents screen with its cards, groups and side panel (red → green)
-    status: in-progress
+    status: done
     after: [T-015.4]
     covers: [S-015.2.1, S-015.2.2, S-015.2.3, S-015.2.4, S-015.2.5, S-015.2.6, S-015.2.7, S-015.2.8, S-015.2.10, S-015.3.1, S-015.3.2, S-015.3.5, S-015.3.6, S-015.3.7, S-015.3.8]
     files: [viewer/src/screens/Agents.tsx, viewer/src/screens/agents/AgentCard.tsx, viewer/src/screens/agents/AgentsAside.tsx, viewer/src/screens/agents/agents.css, viewer/src/screens/Agents.test.tsx]
