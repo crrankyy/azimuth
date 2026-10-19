@@ -2,7 +2,7 @@
 tasks:
   - id: T-006.1
     title: Scaffolding and the verify.shared_paths key
-    status: todo
+    status: done
     after: []
     covers: [S-006.6.1, S-006.6.2, S-006.6.3]
     files: [src/core/config.ts, src/core/run-scope.ts, src/core/derive.ts, test/helpers/project.ts, test/core/parse.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-006.2
     title: Which paths a run depends on (red → green)
-    status: todo
+    status: done
     after: [T-006.1]
     covers: [S-006.1.1, S-006.1.2, S-006.1.3, S-006.2.1, S-006.2.2, S-006.2.3]
     files: [src/core/run-scope.ts, test/core/run-scope.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-006.3
     title: Which later commit made a run stale (red → green)
-    status: todo
+    status: done
     after: [T-006.1]
     covers: [S-006.3.1, S-006.3.2, S-006.3.3, S-006.3.4, S-006.3.5, S-006.3.6]
     files: [src/core/derive.ts, test/core/analysis.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-006.4
     title: The done gate names the commit and path (red → green)
-    status: todo
+    status: done
     after: [T-006.2, T-006.3]
     covers: [S-006.4.1, S-006.4.2, S-006.4.3, S-006.4.4, S-006.4.5, S-006.4.6]
     files: [src/core/gates.ts, test/core/analysis.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-006.5
     title: Reproduce issue 1 against real git
-    status: todo
+    status: done
     after: [T-006.4]
     covers: [S-006.5.1, S-006.5.2]
     files: [test/core/git-trace.test.ts]
@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-006.6
     title: Verify skill, docs and full verification
-    status: todo
+    status: done
     after: [T-006.5]
     covers: []
     files: [plugin/skills/verify/SKILL.md, docs/concepts.md, docs/file-format.md]

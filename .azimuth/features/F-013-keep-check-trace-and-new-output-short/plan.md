@@ -2,7 +2,7 @@
 tasks:
   - id: T-013.1
     title: In-process CLI test harness
-    status: todo
+    status: done
     after: []
     covers: []
     files: [test/helpers/cli.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-013.2
     title: check counts warnings by code unless --warnings or an ID (red → green)
-    status: todo
+    status: done
     after: [T-013.1]
     covers: [S-013.1.1, S-013.1.2, S-013.1.3, S-013.1.4, S-013.1.5]
     files: [src/cli/commands/read.ts, test/cli/check.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-013.3
     title: trace hides mention-only references unless --all (red → green)
-    status: todo
+    status: done
     after: [T-013.2]
     covers: [S-013.2.1, S-013.2.2, S-013.2.3, S-013.2.4]
     files: [src/cli/commands/read.ts, test/cli/trace.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-013.4
     title: new prints only the ID, before any later step can fail (red → green)
-    status: todo
+    status: done
     after: [T-013.1]
     covers: [S-013.3.1, S-013.3.2, S-013.3.3, S-013.3.4, S-013.3.5, S-013.3.6]
     files: [src/cli/commands/write.ts, src/core/create.ts, test/cli/new.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-013.5
     title: Docs and full verification
-    status: todo
+    status: done
     after: [T-013.3, T-013.4]
     covers: []
     files: [docs/cli.md]

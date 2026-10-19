@@ -2,7 +2,7 @@
 tasks:
   - id: T-010.1
     title: The parallel.shared_files key and project.shared_files in the index
-    status: todo
+    status: done
     after: []
     covers: [S-010.1.1, S-010.1.2, S-010.1.3, S-010.1.4, S-010.1.5]
     files: [src/core/config.ts, src/core/types.ts, src/core/build-index.ts, test/core/parse.test.ts, test/cli/parallel.test.ts, test/fixtures/hookline/expected-index.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-010.2
     title: File conflicts skip shared files (red → green)
-    status: todo
+    status: done
     after: [T-010.1]
     covers: [S-010.2.1, S-010.2.2, S-010.2.3, S-010.2.4]
     files: [src/core/validate.ts, src/core/derive.ts, test/core/analysis.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-010.3
     title: Group ready tasks that can run together (red → green)
-    status: todo
+    status: done
     after: [T-010.1]
     covers: [S-010.3.1, S-010.3.2, S-010.3.3, S-010.3.4, S-010.3.5, S-010.3.6]
     files: [src/core/next.ts, test/core/next.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-010.4
     title: next F-NNN prints the groups (red → green)
-    status: todo
+    status: done
     after: [T-010.3]
     covers: [S-010.4.1, S-010.4.2, S-010.4.3, S-010.4.4, S-010.4.5]
     files: [src/cli/commands/read.ts, test/cli/parallel.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-010.5
     title: Skills, docs and full verification
-    status: todo
+    status: done
     after: [T-010.2, T-010.4]
     covers: []
     files: [plugin/skills/build/SKILL.md, plugin/skills/spec/SKILL.md, docs/concepts.md, docs/file-format.md, docs/cli.md]

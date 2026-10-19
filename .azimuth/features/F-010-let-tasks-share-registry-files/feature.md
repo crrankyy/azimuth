@@ -2,7 +2,7 @@
 id: F-010
 title: Let tasks share registry files
 summary: A project-level list of shared files (parallel.shared_files) lets tasks that each add to the same registry file run in parallel without conflict warnings, and azimuth next F-NNN lists which ready tasks can run together.
-status: approved
+status: verifying
 priority: P2
 size: M
 mode: brownfield

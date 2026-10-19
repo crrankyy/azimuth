@@ -2,7 +2,7 @@
 tasks:
   - id: T-008.1
     title: Scaffolding, and notes in the index (red → green)
-    status: todo
+    status: done
     after: []
     covers: [S-008.3.1, S-008.3.2, S-008.3.3, S-008.3.4]
     files: [src/core/placeholders.ts, src/core/notes.ts, src/core/settle.ts, src/cli/commands/note.ts, src/cli/commands/settle.ts, src/cli/main.ts, src/core/types.ts, src/core/model.ts, src/core/build-index.ts, test/fixtures/hookline/expected-index.ts, test/core/notes.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-008.2
     title: azimuth note writes notes.md (red → green)
-    status: todo
+    status: done
     after: [T-008.1]
     covers: [S-008.1.1, S-008.1.2, S-008.1.3, S-008.1.4, S-008.1.5, S-008.2.1, S-008.2.2]
     files: [src/core/notes.ts, src/cli/commands/note.ts, test/core/notes.test.ts, test/cli/note.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-008.3
     title: Placeholder rules and the spec hash (red → green)
-    status: todo
+    status: done
     after: [T-008.1]
     covers: [S-008.5.1, S-008.5.2, S-008.5.3, S-008.5.4, S-008.5.5, S-008.6.1, S-008.6.2, S-008.6.3, S-008.6.4, S-008.6.5, S-008.8.1, S-008.8.2, S-008.8.3, S-008.8.4]
     files: [src/core/placeholders.ts, src/core/spec-hash.ts, test/core/placeholders.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-008.4
     title: azimuth settle records the value (red → green)
-    status: todo
+    status: done
     after: [T-008.3]
     covers: [S-008.7.1, S-008.7.2, S-008.7.3, S-008.7.4, S-008.7.5, S-008.8.5]
     files: [src/core/settle.ts, src/cli/commands/settle.ts, test/core/settle.test.ts, test/cli/settle.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-008.5
     title: The done gate waits for every placeholder (red → green)
-    status: todo
+    status: done
     after: [T-008.3]
     covers: [S-008.9.1, S-008.9.2, S-008.9.3]
     files: [src/core/gates.ts, test/core/settle-gate.test.ts, test/core/analysis.test.ts, test/core/git-trace.test.ts, test/fixtures/hookline/expected-index.ts]
@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-008.6
     title: Agent-settled values in the Review list, and acknowledging them (red → green)
-    status: todo
+    status: done
     after: [T-008.3]
     covers: [S-008.10.1, S-008.10.2, S-008.10.3, S-008.10.4, S-008.10.5, S-008.10.6, S-008.10.7, S-008.10.8]
     files: [src/core/inbox.ts, src/core/transitions.ts, src/core/delta.ts, test/core/settle-review.test.ts]
@@ -50,7 +50,7 @@ tasks:
     note: null
   - id: T-008.7
     title: Viewer shows notes and marks placeholders (red → green)
-    status: todo
+    status: done
     after: [T-008.3]
     covers: [S-008.4.1, S-008.4.2, S-008.4.3, S-008.4.4, S-008.11.1, S-008.11.2, S-008.11.3, S-008.11.4]
     files: [viewer/src/screens/feature/AsBuiltTab.tsx, viewer/src/screens/feature/featureData.ts, viewer/src/screens/feature/FeatureDetail.tsx, viewer/src/screens/feature/StoriesTab.tsx, viewer/src/screens/feature/feature.css, viewer/src/screens/feature/AsBuiltTab.test.tsx, viewer/src/screens/feature/StoriesTab.test.tsx]
@@ -58,7 +58,7 @@ tasks:
     note: null
   - id: T-008.8
     title: Agent instructions, docs and full verification
-    status: todo
+    status: in-progress
     after: [T-008.2, T-008.4, T-008.5, T-008.6, T-008.7]
     covers: []
     files: [plugin/skills/spec/SKILL.md, plugin/skills/build/SKILL.md, plugin/skills/azimuth/SKILL.md, src/core/protocol.ts, docs/cli.md, docs/concepts.md, docs/file-format.md, docs/viewer.md]

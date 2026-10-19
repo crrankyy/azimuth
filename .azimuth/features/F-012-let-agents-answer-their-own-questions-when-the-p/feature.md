@@ -2,7 +2,7 @@
 id: F-012
 title: Let agents answer their own questions when the project allows it
 summary: "With autonomy.questions: proceed, a non-blocking question an agent raises with a recommendation is answered with it at once, marked as the agent's answer and listed in your inbox until you acknowledge or overrule it."
-status: approved
+status: verifying
 priority: P2
 size: M
 mode: brownfield
@@ -14,9 +14,9 @@ created: 2026-10-19
 updated: 2026-10-19
 approved_at: 2026-10-19
 approved_by: agent
-approved_hash: sha256:a04e47b06d2ff9658b68e1be57622865037552d58d18db4593e4fda57463eae8
-approved_commit: b463477
-review_ack_at: 2026-10-19T20:29:07Z
+approved_hash: sha256:8f8a2e33257e4c8daffb7089546d8ace8c56477202f91ed976a9886894ddb3be
+approved_commit: c088d7c
+review_ack_at: null
 ---
 # F-012: Let agents answer their own questions when the project allows it
 

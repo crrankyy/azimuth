@@ -2,7 +2,7 @@
 id: F-017
 title: Give each issue a full page
 summary: Each issue opens on its own page (`#/issues/<id>/page`) with triage controls, its description, related work and history derived from the index, linked features, files and source; the Issues list opens it from every row.
-status: in-progress
+status: verifying
 priority: P2
 size: M
 mode: brownfield
