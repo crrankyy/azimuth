@@ -288,4 +288,40 @@ describe("parseConfig", () => {
   it("requires a project name", () => {
     expect(parseConfig("schema: 1\n").problems.map((p) => p.code)).toEqual(["E-SCHEMA"]);
   });
+
+  const DEFAULT_SHARED = [
+    "package.json",
+    "pnpm-lock.yaml",
+    "Cargo.toml",
+    "Cargo.lock",
+    "go.mod",
+    "go.sum",
+    "pyproject.toml",
+    "uv.lock",
+  ];
+
+  it("S-006.6.1 applies the default verify.shared_paths when the key is absent", () => {
+    const { config, problems } = parseConfig(
+      "project:\n  name: Demo\nverify:\n  timeout_seconds: 600\n",
+    );
+    expect(config.verify.shared_paths).toEqual(DEFAULT_SHARED);
+    expect(problems).toEqual([]);
+  });
+
+  it("S-006.6.2 reads a configured verify.shared_paths as given", () => {
+    const { config } = parseConfig(
+      'project:\n  name: Demo\nverify:\n  shared_paths: ["crates/*/Cargo.toml", Cargo.lock]\n',
+    );
+    expect(config.verify.shared_paths).toEqual(["crates/*/Cargo.toml", "Cargo.lock"]);
+  });
+
+  it("S-006.6.3 rejects a verify.shared_paths that isn't a list", () => {
+    const { config, problems } = parseConfig(
+      "project:\n  name: Demo\nverify:\n  shared_paths: package.json\n",
+    );
+    expect(problems.map((p) => [p.code, p.message])).toEqual([
+      ["E-SCHEMA", "verify.shared_paths must be a list of text values."],
+    ]);
+    expect(config.verify.shared_paths).toEqual(DEFAULT_SHARED);
+  });
 });

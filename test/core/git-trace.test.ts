@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
+import { showBrief } from "../../src/core/brief";
 import { gitFacts, readBlobs, readCommits, toUtc } from "../../src/core/git";
 import { globToRegExp, inModule } from "../../src/core/glob";
 import { loadProject } from "../../src/core/model";
@@ -312,5 +313,91 @@ describe("close-out in its natural order", () => {
       ["done.as-built", true],
       ["done.architecture-reconciled", false],
     ]);
+  });
+});
+
+describe("another feature's commits after a passing run (issue 1)", () => {
+  // F-001 and F-002 are built in parallel lanes; T-001.1 passed before F-002's commit landed.
+  const briefAfter = (laterPath: string) => {
+    const tree = writeTree({
+      ".gitignore": ".azimuth/cache/\n",
+      ".azimuth/config.yaml": MINIMAL_CONFIG,
+      ...featureFiles({
+        id: "F-001",
+        status: "verifying",
+        impact: [{ path: "src/a.ts", change: "modify" }],
+        tasks: [
+          {
+            id: "T-001.1",
+            status: "done",
+            covers: ["S-001.1.1", "S-001.1.2"],
+            files: ["src/a.ts"],
+          },
+        ],
+      }),
+      ...featureFiles({
+        id: "F-002",
+        status: "verifying",
+        impact: [{ path: "src/b.ts", change: "modify" }],
+        tasks: [
+          {
+            id: "T-002.1",
+            status: "done",
+            covers: ["S-002.1.1", "S-002.1.2"],
+            files: ["src/b.ts"],
+          },
+        ],
+      }),
+      "src/a.ts": "export const a = 0;\n",
+      "src/b.ts": "export const b = 0;\n",
+    });
+    cleanup = tree.cleanup;
+    initRepo(tree.root);
+    commitAll(tree.root, "chore: start", "2026-10-01T10:00:00Z");
+    tree.write("src/a.ts", "export const a = 1;\n");
+    const x = commitAll(
+      tree.root,
+      "feat(F-001): build it\n\nRefs: T-001.1",
+      "2026-10-02T10:00:00Z",
+    );
+    tree.write(
+      ".azimuth/cache/runs/R-0001.json",
+      JSON.stringify({
+        id: "R-0001",
+        target: "T-001.1",
+        command: "pnpm test",
+        ok: true,
+        exit_code: 0,
+        duration_ms: 1,
+        at: "2026-10-02T10:05:00Z",
+        commit: x,
+        output_tail: "",
+        scenarios: [],
+        junit: null,
+      }),
+    );
+    tree.write(laterPath, "export const changed = 2;\n");
+    const y = commitAll(
+      tree.root,
+      "feat(F-002): build it\n\nRefs: T-002.1",
+      "2026-10-02T11:00:00Z",
+    );
+    const { index } = buildIndex(tree.root, { now: new Date("2026-10-02T12:00:00Z") });
+    return { brief: showBrief(index, "F-001")?.split("\n") ?? [], x, y };
+  };
+
+  it("S-006.5.1 keeps the run current across a commit to a file only another feature lists", () => {
+    expect(briefAfter("src/b.ts").brief).toContain(
+      "  ✓ Latest verify run of every task passed at HEAD",
+    );
+  });
+
+  it("S-006.5.2 names the commit and path when the feature's own file changes", () => {
+    const { brief, x, y } = briefAfter("src/a.ts");
+    expect(x).toHaveLength(7);
+    expect(y).toHaveLength(7);
+    expect(brief).toContain(
+      `  ✗ Latest verify run of every task passed at HEAD — T-001.1 last passed at ${x}; ${y} changed src/a.ts`,
+    );
   });
 });

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { statusBrief } from "../../src/core/brief";
-import { codeChangedSince, derive, isCodeCommit } from "../../src/core/derive";
+import { codeChangedSince, derive, isCodeCommit, staleCause } from "../../src/core/derive";
 import { evaluateGate, nextGate, type GateContext } from "../../src/core/gates";
 import { buildInbox } from "../../src/core/inbox";
 import type { Model } from "../../src/core/model";
@@ -183,6 +183,96 @@ describe("code commits", () => {
     expect(codeChangedSince("bbbbbbb", facts)).toBe(false);
     expect(codeChangedSince("aaaaaaa", facts)).toBe(true);
     expect(codeChangedSince("ddddddd", facts)).toBeNull();
+  });
+});
+
+describe("staleCause", () => {
+  /** Commits newest first, each with its changed files (null: not known). */
+  const history = (entries: [string, string[] | null][]) =>
+    makeFacts({
+      git: {
+        available: true,
+        head: entries[0]?.[0] ?? null,
+        commits: entries.map(([sha]) => ({
+          sha,
+          at: "2026-10-17T10:00:00Z",
+          actor: "agent" as const,
+          session: null,
+          subject: sha,
+          refs: [],
+          files_changed: 1,
+        })),
+        files: new Map(
+          entries.filter((e): e is [string, string[]] => e[1] !== null).map(([s, f]) => [s, f]),
+        ),
+      },
+    });
+  const only =
+    (...paths: string[]) =>
+    (path: string) =>
+      paths.includes(path);
+
+  it("S-006.3.1 keeps the run current when later commits miss the scope", () => {
+    const facts = history([
+      ["ccccccc", ["docs/x.md"]],
+      ["bbbbbbb", ["src/b.ts"]],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("aaaaaaa", facts, only("src/a.ts"))).toBeNull();
+  });
+
+  it("S-006.3.2 names the earliest touching commit and its first matching path", () => {
+    const facts = history([
+      ["ddddddd", ["src/z.ts"]],
+      ["ccccccc", ["src/a.ts", "src/z.ts"]],
+      ["bbbbbbb", ["src/b.ts"]],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("aaaaaaa", facts, only("src/a.ts", "src/z.ts"))).toEqual({
+      kind: "changed",
+      commit: "ccccccc",
+      path: "src/a.ts",
+    });
+  });
+
+  it("S-006.3.3 counts the first path outside .azimuth/ without a scope", () => {
+    const facts = history([
+      ["ccccccc", [".azimuth/features/F-001-x/log.md", "docs/readme.md"]],
+      ["bbbbbbb", [".azimuth/features/F-001-x/as-built.md"]],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("aaaaaaa", facts, null)).toEqual({
+      kind: "changed",
+      commit: "ccccccc",
+      path: "docs/readme.md",
+    });
+  });
+
+  it("S-006.3.4 never counts Azimuth's records, even in scope", () => {
+    const facts = history([
+      ["bbbbbbb", [".azimuth/project/architecture.md"]],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("aaaaaaa", facts, () => true)).toBeNull();
+  });
+
+  it("S-006.3.5 names a later commit whose changed files are unknown", () => {
+    const facts = history([
+      ["bbbbbbb", null],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("aaaaaaa", facts, () => false)).toEqual({
+      kind: "unknown-files",
+      commit: "bbbbbbb",
+    });
+  });
+
+  it("S-006.3.6 reports a run outside the history read", () => {
+    const facts = history([
+      ["bbbbbbb", ["src/b.ts"]],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("9999999", facts, null)).toEqual({ kind: "outside-history" });
   });
 });
 
@@ -374,14 +464,131 @@ describe("gates", () => {
     it("S-002.1.2 makes the run stale when code changed after it", () => {
       expect(verifyCheck(["src/app.ts"])).toMatchObject({
         ok: false,
-        detail: "T-001.1 last passed at aaaaaaa",
+        detail: "T-001.1 last passed at aaaaaaa; bbbbbbb changed src/app.ts",
       });
     });
 
     it("S-002.1.3 makes the run stale when the later commit's files are unknown", () => {
       expect(verifyCheck(null)).toMatchObject({
         ok: false,
-        detail: "T-001.1 last passed at aaaaaaa",
+        detail: "T-001.1 last passed at aaaaaaa; bbbbbbb's changed files are unknown",
+      });
+    });
+  });
+
+  describe("which later commits make a passing run stale", () => {
+    interface Setup {
+      impact?: { path: string; change: string }[];
+      taskFiles?: string[];
+      runAt?: string;
+      /** Commits after the run's, newest (HEAD) first, with their files (null: unknown). */
+      later: [string, string[] | null][];
+      config?: string;
+    }
+    const verifyCheck = ({
+      impact = [{ path: "src/a.ts", change: "modify" }],
+      taskFiles = ["src/a.ts"],
+      runAt = "aaaaaaa",
+      later,
+      config,
+    }: Setup) => {
+      const model = load(
+        {
+          ...featureFiles({
+            id: "F-001",
+            status: "verifying",
+            impact,
+            tasks: [
+              {
+                id: "T-001.1",
+                status: "done",
+                covers: ["S-001.1.1", "S-001.1.2"],
+                files: taskFiles,
+              },
+            ],
+          }),
+          ".azimuth/cache/runs/R-0001.json": JSON.stringify({
+            id: "R-0001",
+            target: "T-001.1",
+            at: "2026-10-17T10:00:00Z",
+            ok: true,
+            commit: runAt,
+            scenarios: [],
+          }),
+        },
+        config,
+      );
+      const history: [string, string[] | null][] = [...later, ["aaaaaaa", ["src/a.ts"]]];
+      const facts = makeFacts({
+        git: {
+          available: true,
+          head: history[0]?.[0] ?? null,
+          commits: history.map(([sha]) => ({
+            sha,
+            at: "2026-10-17T11:00:00Z",
+            actor: "agent" as const,
+            session: null,
+            subject: sha,
+            refs: [],
+            files_changed: 1,
+          })),
+          files: new Map(
+            history.filter((e): e is [string, string[]] => e[1] !== null).map(([s, f]) => [s, f]),
+          ),
+        },
+      });
+      const gate = nextGate(analyze(model, facts), model.features[0]!);
+      return gate?.checks.find((c) => c.id === "done.verify-passed");
+    };
+
+    it("S-006.4.1 keeps the run current across another feature's commit", () => {
+      expect(verifyCheck({ later: [["bbbbbbb", ["src/b.ts"]]] })?.ok).toBe(true);
+    });
+
+    it("S-006.4.2 names the commit and path when the task's file changes", () => {
+      expect(verifyCheck({ later: [["bbbbbbb", ["src/a.ts"]]] })).toMatchObject({
+        ok: false,
+        detail: "T-001.1 last passed at aaaaaaa; bbbbbbb changed src/a.ts",
+      });
+    });
+
+    it("S-006.4.3 names a later commit whose changed files are unknown", () => {
+      expect(verifyCheck({ later: [["bbbbbbb", null]] })).toMatchObject({
+        ok: false,
+        detail: "T-001.1 last passed at aaaaaaa; bbbbbbb's changed files are unknown",
+      });
+    });
+
+    it("S-006.4.4 keeps today's detail for a run outside the history read", () => {
+      expect(verifyCheck({ runAt: "9999999", later: [["bbbbbbb", ["src/b.ts"]]] })).toMatchObject({
+        ok: false,
+        detail: "T-001.1 last passed at 9999999",
+      });
+    });
+
+    it("S-006.4.5 replaces the default shared paths with configured ones", () => {
+      const check = verifyCheck({
+        config: `${MINIMAL_CONFIG}verify:\n  shared_paths: ["crates/*/Cargo.toml"]\n`,
+        later: [
+          ["ccccccc", ["crates/core/Cargo.toml"]],
+          ["bbbbbbb", ["Cargo.lock"]],
+        ],
+      });
+      expect(check).toMatchObject({
+        ok: false,
+        detail: "T-001.1 last passed at aaaaaaa; ccccccc changed crates/core/Cargo.toml",
+      });
+    });
+
+    it("S-006.4.6 falls back to any code commit for a task without paths", () => {
+      const check = verifyCheck({
+        impact: [{ path: "src/c.ts", change: "read" }],
+        taskFiles: [],
+        later: [["bbbbbbb", ["docs/readme.md"]]],
+      });
+      expect(check).toMatchObject({
+        ok: false,
+        detail: "T-001.1 last passed at aaaaaaa; bbbbbbb changed docs/readme.md",
       });
     });
   });

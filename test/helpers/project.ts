@@ -9,6 +9,8 @@ export interface TaskSpec {
   after?: string[];
   verify?: string;
   note?: string;
+  /** Written as the task's `files` when given. */
+  files?: string[];
 }
 
 export interface FeatureSpec {
@@ -88,6 +90,7 @@ export function featureFiles(spec: FeatureSpec): Record<string, string> {
         `    status: ${t.status ?? "todo"}`,
         `    after: [${(t.after ?? []).join(", ")}]`,
         `    covers: [${(t.covers ?? []).join(", ")}]`,
+        t.files ? `    files: [${t.files.map((f) => JSON.stringify(f)).join(", ")}]` : null,
         `    verify: ${t.verify ?? "pnpm test"}`,
         t.note ? `    note: ${t.note}` : null,
       ]

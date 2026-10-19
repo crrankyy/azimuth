@@ -1,6 +1,8 @@
-import { codeChangedSince, commitsFor, isCodeCommit, type Derived } from "./derive";
+import { commitsFor, isCodeCommit, sameCommit, staleCause, type Derived } from "./derive";
 import type { Facts } from "./facts";
 import type { FeatureEntity, Model } from "./model";
+import type { TaskRaw } from "./parse/feature";
+import { inScope, runScope } from "./run-scope";
 import type { FeatureStatus, Gate, GateCheck, Problem } from "./types";
 
 /** The forward transition each status is waiting for. */
@@ -221,11 +223,34 @@ function verifyGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
   ];
 }
 
-/** A run at HEAD is current, and so is one followed only by commits to Azimuth's records. */
-function runCurrent(commit: string | null, head: string, facts: Facts): boolean {
-  if (commit === null) return false;
-  if (commit === head) return true;
-  return codeChangedSince(commit, facts) === false;
+/**
+ * Why a task's passing run isn't current, as the done gate words it; null when it is. A run at
+ * HEAD is current, and so is one that no later commit touched within the task's scope.
+ */
+function staleRun(
+  ctx: GateContext,
+  f: FeatureEntity,
+  task: TaskRaw,
+  commit: string | null,
+  head: string,
+): string | null {
+  if (commit === null) return `${task.id} last passed at an uncommitted tree`;
+  if (sameCommit(commit, head)) return null;
+  const { model } = ctx;
+  const scope = runScope(
+    task,
+    f,
+    model.knowledge.architecture.modules,
+    model.config.verify.shared_paths,
+  );
+  const cause = staleCause(commit, ctx.facts, scope ? (p) => inScope(p, scope) : null);
+  if (!cause) return null;
+  const passed = `${task.id} last passed at ${commit}`;
+  if (cause.kind === "changed") return `${passed}; ${cause.commit} changed ${cause.path}`;
+  if (cause.kind === "unknown-files")
+    return `${passed}; ${cause.commit}'s changed files are unknown`;
+  // Outside the history the index read there is no commit or path to name.
+  return passed;
 }
 
 function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
@@ -237,8 +262,10 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
     const run = ctx.derived.lastRun.get(task.id);
     if (!run) stale.push(`${task.id} has no run`);
     else if (!run.ok) failed.push(`${task.id} failed at ${run.commit ?? "an uncommitted tree"}`);
-    else if (head && !runCurrent(run.commit, head, ctx.facts))
-      stale.push(`${task.id} last passed at ${run.commit ?? "an uncommitted tree"}`);
+    else if (head) {
+      const why = staleRun(ctx, f, task, run.commit, head);
+      if (why) stale.push(why);
+    }
   }
   const verifyDetail = (failed.length > 0 ? failed : stale).join("; ");
   const info = ctx.derived.info.get(f.id);

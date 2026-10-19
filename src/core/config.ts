@@ -18,7 +18,12 @@ export interface Config {
   git: { log_depth: number; agent_pattern: string; arch_stale_after_commits: number };
   autonomy: Autonomy;
   stale_after_days: number;
-  verify: { timeout_seconds: number; output_tail_lines: number };
+  verify: {
+    timeout_seconds: number;
+    output_tail_lines: number;
+    /** Globs (globToRegExp) of repo-relative files every verify run depends on. */
+    shared_paths: string[];
+  };
   viewer: { port: number; autostart: boolean; editor_url: string | null };
 }
 
@@ -31,7 +36,21 @@ export const DEFAULT_CONFIG: Config = {
   git: { log_depth: 500, agent_pattern: "Claude", arch_stale_after_commits: 10 },
   autonomy: { approve_specs: "auto", accept_adrs: "auto", strict: false },
   stale_after_days: 5,
-  verify: { timeout_seconds: 600, output_tail_lines: 40 },
+  verify: {
+    timeout_seconds: 600,
+    output_tail_lines: 40,
+    // A glob without "/" or "**" matches the repository root only.
+    shared_paths: [
+      "package.json",
+      "pnpm-lock.yaml",
+      "Cargo.toml",
+      "Cargo.lock",
+      "go.mod",
+      "go.sum",
+      "pyproject.toml",
+      "uv.lock",
+    ],
+  },
   viewer: { port: 4319, autostart: true, editor_url: null },
 };
 
@@ -60,7 +79,7 @@ const SHAPE: Record<string, Record<string, Reader<unknown>> | Reader<unknown>> =
     strict: r.bool(),
   },
   stale_after_days: r.int(1),
-  verify: { timeout_seconds: r.int(1), output_tail_lines: r.int(1) },
+  verify: { timeout_seconds: r.int(1), output_tail_lines: r.int(1), shared_paths: r.strings() },
   viewer: { port: r.int(1), autostart: r.bool(), editor_url: r.nullable(r.string()) },
 };
 

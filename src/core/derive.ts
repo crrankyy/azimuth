@@ -69,16 +69,20 @@ function maxTime(values: (string | null | undefined)[]): string | null {
 }
 
 /** Abbreviated SHAs can differ in length; one is a prefix of the other for the same commit. */
-const sameCommit = (a: string, b: string) => a.startsWith(b) || b.startsWith(a);
+export const sameCommit = (a: string, b: string) => a.startsWith(b) || b.startsWith(a);
 
 /**
  * Whether a commit changed anything outside `.azimuth/`, i.e. more than Azimuth's own records.
  * A commit whose changed files aren't known counts as a code commit.
  */
 export function isCodeCommit(sha: string, facts: Facts): boolean {
-  const files =
-    facts.git.files.get(sha) ?? [...facts.git.files].find(([s]) => sameCommit(s, sha))?.[1];
+  const files = changedFiles(sha, facts);
   return !files || files.some((path) => !path.startsWith(".azimuth/"));
+}
+
+/** The files a commit changed, as git prints them; undefined when they aren't known. */
+function changedFiles(sha: string, facts: Facts): string[] | undefined {
+  return facts.git.files.get(sha) ?? [...facts.git.files].find(([s]) => sameCommit(s, sha))?.[1];
 }
 
 /**
@@ -89,6 +93,37 @@ export function codeChangedSince(sha: string, facts: Facts): boolean | null {
   const at = facts.git.commits.findIndex((c) => sameCommit(c.sha, sha));
   if (at === -1) return null;
   return facts.git.commits.slice(0, at).some((c) => isCodeCommit(c.sha, facts));
+}
+
+/** Why a passing run is no longer current. */
+export type StaleCause =
+  /** A later code commit changed a path in scope (or, without a scope, outside .azimuth/). */
+  | { kind: "changed"; commit: string; path: string }
+  /** A later commit's changed files aren't known. */
+  | { kind: "unknown-files"; commit: string }
+  /** The run's commit isn't in the history the index read. */
+  | { kind: "outside-history" };
+
+/**
+ * The earliest commit after `sha`, up to HEAD, that changed a path outside .azimuth/ for which
+ * `touches` is true (any such path when `touches` is null), or whose changed files aren't known.
+ * Within that commit, the first such path in git's order. Null when the run is still current.
+ */
+export function staleCause(
+  sha: string,
+  facts: Facts,
+  touches: ((path: string) => boolean) | null,
+): StaleCause | null {
+  const at = facts.git.commits.findIndex((c) => sameCommit(c.sha, sha));
+  if (at === -1) return { kind: "outside-history" };
+  // Commits are newest first: walk from the one right after the run up to HEAD.
+  for (const commit of facts.git.commits.slice(0, at).reverse()) {
+    const files = changedFiles(commit.sha, facts);
+    if (!files) return { kind: "unknown-files", commit: commit.sha };
+    const path = files.find((p) => !p.startsWith(".azimuth/") && (touches?.(p) ?? true));
+    if (path !== undefined) return { kind: "changed", commit: commit.sha, path };
+  }
+  return null;
 }
 
 /**
