@@ -42,6 +42,13 @@ Use `--blocking` only when the answer changes stories or the contract. Record sm
 reversible choices as assumptions in feature.md. Keep writing the parts that don't depend on
 open questions.
 
+If the Autonomy line of the status above says `questions proceed`, raise each smaller choice
+as a non-blocking question with `--recommend` (no `--blocking`) instead of only writing the
+assumption. The CLI answers it with your recommendation at once and says so on stderr. Proceed
+with it: write the assumption into feature.md and record it with
+`azimuth resolve Q-NNNN --assumption <F-ID>`. The user can answer it differently in the viewer;
+that answer then reaches you like any other. Under `questions ask`, only the user answers.
+
 ## 3. Write the spec (in this order)
 
 Run `azimuth new spec <F-ID>` to scaffold missing files, then replace the placeholders:

@@ -101,6 +101,7 @@ git:
 autonomy:
   approve_specs: auto # auto | manual
   accept_adrs: auto # auto | manual
+  questions: ask # ask | proceed: agents take their own recommendation on non-blocking questions
   strict: false # true: auto-approval also requires zero warnings
 stale_after_days: 5
 verify:
@@ -318,7 +319,7 @@ draft → approved
 | Header          | `## <timestamp> · <actor> · <type>[ · <session>][ · auto]`                                                                                                                                                                     |
 | actor           | `you` or `agent`                                                                                                                                                                                                               |
 | type            | `note`, `transition` (written by `move`), `review` (your "request changes" comment), `override` (accepted when reading; Azimuth itself records an override in `feature.md` `overrides` and its reason in the transition entry) |
-| auto            | Marks an automatic decision (autonomy `auto`).                                                                                                                                                                                 |
+| auto            | Marks an automatic decision: one made under autonomy `auto`, or a `note` that an agent's question was answered with its recommendation (`questions: proceed`).                                                                 |
 | Transition body | The first line starts with `<from> → <to>`; anything after it on that line or below is commentary.                                                                                                                             |
 
 ### `as-built.md`
@@ -385,12 +386,33 @@ options:
     label: Sign with the endpoint's current secret
     detail: Works after rotation.
     recommended: true
-answer: null # {option, text, answered_at}; written by the answer action
+answer: null # {option, text, answered_at, by}; written by the answer action
 resolution: null # {kind: assumption | adr, ref}; written by the agent that applies the answer
+review_ack_at: null # set when you acknowledge an agent's answer
 ```
 
 Body section: `## Context` (why the agent could not decide). Exactly one option should be
 recommended.
+
+`answer.by` is `you` or `agent`; an answer without `by` (written before Azimuth recorded it) is
+yours. Under `autonomy.questions: proceed`, `azimuth new question` run by an agent answers a
+non-blocking question with exactly one recommended option at once, with that option and an empty
+`text`:
+
+```yaml
+status: answered
+answer:
+  option: a
+  text: ""
+  answered_at: 2026-10-20T09:00:00Z
+  by: agent
+review_ack_at: 2026-10-20T10:00:00Z # absent until you acknowledge it
+```
+
+When the question names a feature, the feature's log gets a `note` marked `auto`:
+`Q-0001 answered with its recommendation: Lockfile`. When you answer such a question
+differently, your answer replaces the agent's (`by: you`) and `resolution` goes back to `null`;
+`review_ack_at` stays as it was.
 
 ## Issues
 

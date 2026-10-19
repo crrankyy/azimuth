@@ -66,7 +66,7 @@ re-approval (`azimuth reapprove`) before it can start.
 
 Other lifecycles: tasks `todo → in-progress → done` (plus `blocked`/`skipped` with a note; a task
 moves to in-progress or done only while its feature is in progress);
-questions `open → answered` (or `obsolete`); decisions `proposed → accepted | rejected`, accepted
+questions `open → answered` (or `obsolete`; you can replace an agent's answer with yours); decisions `proposed → accepted | rejected`, accepted
 → `superseded`, rejected → `proposed` (you, or an agent for a decision an agent rejected) and
 accepted → `proposed` (you only, for a decision an agent accepted); milestones `planned → active → released`; issues `open → in-progress → resolved |
 wontfix`.
@@ -79,16 +79,31 @@ Azimuth is agent-first. In `config.yaml`:
 autonomy:
   approve_specs: auto # agents approve a spec once every gate check passes
   accept_adrs: auto # agents accept their own decisions
+  questions: ask # proceed: agents take their own recommendation on non-blocking questions
   strict: false # true: automatic approval also requires zero warnings
 ```
 
 With `auto`, an agent that finishes a spec approves it and moves on to building; the gates still
 apply. Every automatic approval of a spec and acceptance or rejection of a decision appears in your inbox as
-**Review** until you acknowledge it or send it back (a spec to draft, a decision to proposed). Guardrails hold in every mode:
+**Review** until you acknowledge it or send it back (a spec to draft, a decision to proposed).
 
-- Only you answer questions, release milestones and override gates.
-- An agent can't accept a decision that resolves a question you haven't answered, or one that
-  replaces a decision you accepted.
+With `questions: proceed`, a question an agent raises is answered with its recommendation as soon
+as `azimuth new question` creates it, when it is not blocking and exactly one option is
+recommended. The answer is marked as the agent's (`answer.by: agent`), the log of the feature
+the question names notes it as an automatic decision, and the agent applies it and records it
+with `azimuth resolve` like any answer. It is never reported to agents as your decision. It appears in your inbox as **Review**
+until you acknowledge it or answer differently; your answer replaces the agent's, clears its
+resolution and reaches the agent like any answer of yours. Blocking questions, questions you
+raise and questions without one recommended option wait for you. Under `ask`, the default, every
+question does.
+
+Guardrails hold in every mode:
+
+- Only you answer questions, release milestones and override gates. Under `questions: proceed`
+  the project answers an agent's new question with the agent's own recommendation, but no agent
+  can answer an open question or change an answer.
+- An agent can't accept a decision that resolves an open question, or one that replaces a
+  decision you accepted.
 - The viewer always acts as you.
 
 The CLI decides who is acting from `AZIMUTH_ACTOR` (`agent` or `you`), which the Claude Code
@@ -116,8 +131,9 @@ What needs you, grouped by urgency:
 - **High:** blocking questions, failing verify runs, specs changed since approval.
 - **Normal:** non-blocking questions, specs ready for your approval and proposed decisions (both
   only in manual mode), validation errors.
-- **Low:** stale work, and features or decisions an agent approved or accepted on its own, to
-  acknowledge or send back.
+- **Low:** stale work; features or decisions an agent approved or accepted on its own, to
+  acknowledge or send back; and questions an agent answered with its recommendation, to
+  acknowledge or answer differently.
 
 ## Traceability
 

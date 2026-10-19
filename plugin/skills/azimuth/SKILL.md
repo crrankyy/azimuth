@@ -23,7 +23,11 @@ sessions in `.azimuth/`, validates them and shows them live in a local viewer. F
 - **Keep the viewer current** on long work: move tasks to `in-progress`/`done` as you go and add
   `azimuth log <ID> "<progress>"` notes at meaningful points.
 - **Commit** with Conventional Commits and a `Refs: <T-ID or F-ID>` trailer.
-- **Only the user** answers questions, releases milestones and overrides gates.
+- **Only the user** answers questions, releases milestones and overrides gates. When the
+  Autonomy line above says `questions proceed`, a non-blocking question you raise with
+  `--recommend` is answered with your recommendation at once (`azimuth new question` says so):
+  proceed with it and record it with `azimuth resolve`. The user can answer differently later.
+  Blocking questions, and every question under `questions ask`, wait for the user.
 
 ## Workflow skills
 

@@ -20,6 +20,11 @@ Azimuth viewer. Follow this protocol whenever you work in this repository.
 - Only the user answers questions, releases milestones and overrides gates. You may approve
   specs and accept decisions only when the project's autonomy settings allow it; the CLI
   enforces this.
+- When \`azimuth status --brief\` shows \`questions proceed\`, the user has let the CLI answer a
+  non-blocking question you raise with \`--recommend\` with that recommendation, and
+  \`azimuth new question\` says so. Proceed with it and record it (\`azimuth resolve Q-…\`).
+  The user can answer differently later; that answer reaches you like any other. Under
+  \`questions ask\`, and for blocking questions, every question waits for the user.
 - The user's answers and change requests from the viewer reach you in Azimuth's session-start
   and prompt context ("Decided by the user…"). Apply each one, then record it
   (\`azimuth resolve Q-…\`), before approving or building on the spec it affects.
