@@ -2,7 +2,7 @@
 id: F-011
 title: Keep one Azimuth session per Claude Code session
 summary: Inside one Claude Code session, session start reuses the open Azimuth session and adds its goal, session note appends progress, SessionEnd closes it, and a sidecar keeps the session, start time and transcript path of long sessions.
-status: verifying
+status: done
 priority: P2
 size: M
 mode: brownfield
