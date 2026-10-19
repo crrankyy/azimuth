@@ -143,6 +143,30 @@
 .az-prose.ses-summary p:last-child {
   margin-bottom: 0;
 }
+.ses-bullets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ses-bullets-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ink-subtle);
+}
+.az-prose.ses-bullets-prose {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+.az-prose.ses-bullets-prose ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.az-prose.ses-bullets-prose li {
+  margin: 0 0 2px;
+}
 .ses-facts {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);

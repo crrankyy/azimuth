@@ -51,8 +51,8 @@ function Chevron({ up }: { up: boolean }) {
 
 /**
  * One agent work session. Collapsed, it is a single line; expanded, it shows the goal, the
- * handoff (the most prominent part: it is what the next session starts from), the summary, and
- * what it touched, raised and committed.
+ * handoff (the most prominent part: it is what the next session starts from), the summary, the
+ * goals added and notes written while it was reused, and what it touched, raised and committed.
  */
 export function SessionCard({
   session: s,
@@ -126,6 +126,8 @@ export function SessionCard({
         <div className="ses-goal">{s.goal}</div>
         {s.handoff.trim() && <Handoff text={s.handoff} />}
         {s.summary.trim() && <Prose text={s.summary} className="ses-summary" />}
+        {s.goals.trim() && <Bullets label="Goals" text={s.goals} />}
+        {s.notes.trim() && <Bullets label="Notes" text={s.notes} />}
         <dl className="ses-facts">
           <Fact label="Touched" ids={s.touched} />
           <Fact label="Raised" ids={s.raised} />
@@ -166,6 +168,16 @@ function Handoff({ text }: { text: string }) {
         Handoff to the next session
       </div>
       <Prose text={text} className="ses-handoff-prose" />
+    </section>
+  );
+}
+
+/** A session's timestamped bullets: the goals of later starts, or its running notes. */
+function Bullets({ label, text }: { label: string; text: string }) {
+  return (
+    <section className="ses-bullets" aria-label={label}>
+      <div className="ses-bullets-title">{label}</div>
+      <Prose text={text} className="ses-bullets-prose" />
     </section>
   );
 }
