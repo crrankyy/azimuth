@@ -108,11 +108,17 @@ const optionsReader: Reader<QuestionOption[]> = (v) => {
   return { ok: true, value: options };
 };
 
+/** An answer without `by` was written before agents could answer, so it is yours. */
 const answerReader: Reader<Question["answer"]> = (v) => {
   if (v === null || v === undefined) return { ok: true, value: null };
   const o = v as Record<string, unknown>;
-  if (typeof v !== "object" || typeof o.answered_at !== "string") {
-    return { ok: false, expected: "{option, text, answered_at}" };
+  const by = o.by ?? "you";
+  if (
+    typeof v !== "object" ||
+    typeof o.answered_at !== "string" ||
+    (by !== "you" && by !== "agent")
+  ) {
+    return { ok: false, expected: "{option, text, answered_at, by: you | agent}" };
   }
   return {
     ok: true,
@@ -120,6 +126,7 @@ const answerReader: Reader<Question["answer"]> = (v) => {
       option: o.option === null || o.option === undefined ? null : String(o.option),
       text: typeof o.text === "string" ? o.text : "",
       answered_at: o.answered_at,
+      by,
     },
   };
 };
@@ -155,6 +162,7 @@ export function parseQuestion(text: string, file: string): Parsed<Question> {
     options: opt(ctx, "options", optionsReader, []),
     answer: opt(ctx, "answer", answerReader, null),
     resolution: opt(ctx, "resolution", resolutionReader, null),
+    review_ack_at: opt(ctx, "review_ack_at", r.nullable(r.datetime()), null),
     file,
   };
   unknownKeys(ctx, [
@@ -169,6 +177,7 @@ export function parseQuestion(text: string, file: string): Parsed<Question> {
     "options",
     "answer",
     "resolution",
+    "review_ack_at",
   ]);
   return { entity: ctx.failed ? null : entity, problems: [...problems, ...finishSchema(ctx)] };
 }

@@ -24,7 +24,16 @@ export function userEventsSince(model: Model, cursor: Cursor): UserEvent[] {
   const after = (at: string | null | undefined) => Boolean(at) && Date.parse(at as string) >= since;
   const events: Omit<UserEvent, "key">[] = [];
   for (const q of model.questions) {
-    if (!q.answer || !after(q.answer.answered_at)) continue;
+    if (after(q.review_ack_at)) {
+      events.push({
+        at: q.review_ack_at as string,
+        ref: q.id,
+        feature: q.feature,
+        text: `acknowledged the automatic answer to ${q.id}`,
+      });
+    }
+    // An agent's own answer is not your decision, so only your answers are reported.
+    if (q.answer?.by !== "you" || !after(q.answer.answered_at)) continue;
     const option = q.options.find((o) => o.key === q.answer?.option);
     const what = [option?.label, q.answer.text].filter(Boolean).join(" — ");
     events.push({

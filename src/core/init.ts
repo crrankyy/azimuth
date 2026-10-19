@@ -153,6 +153,7 @@ git:
 autonomy:
   approve_specs: auto # auto: agents approve specs that pass every gate; manual: only you
   accept_adrs: auto # auto: agents accept their own decisions; manual: only you
+  questions: ask # ask: only you answer; proceed: agents take their own recommendation on non-blocking questions
   strict: false # true: automatic approval also requires zero warnings
 stale_after_days: 5
 verify:

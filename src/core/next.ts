@@ -42,9 +42,14 @@ function failingChecks(f: Feature): string {
     .join("; ");
 }
 
-/** Questions the user answered that no agent has applied yet (`azimuth resolve` not run). */
+/**
+ * Questions you answered (answer.by: you) that no agent has applied yet (`azimuth resolve` not
+ * run). An agent's own answer is not the user's decision, so it is left out.
+ */
 export function pendingAnswers(index: Index): Question[] {
-  return index.questions.filter((q) => q.status === "answered" && !q.resolution);
+  return index.questions.filter(
+    (q) => q.status === "answered" && q.answer?.by === "you" && !q.resolution,
+  );
 }
 
 /** The user's answer in words: the chosen option's label and their note. */

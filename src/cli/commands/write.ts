@@ -14,10 +14,12 @@ import {
   addLogEntry,
   answerQuestion,
   move as moveEntity,
+  proceedWithRecommendation,
   reapproveFeature,
   resolveQuestion,
   setField,
   type Result,
+  type Who,
 } from "../../core/transitions";
 import { PRIORITIES, type Priority, type QuestionOption } from "../../core/types";
 import { print, printJson, requirePositional, runtime, UsageError, type Runtime } from "../io";
@@ -37,6 +39,25 @@ function reportCreated(rt: Runtime, created: Created): void {
   print(created.id);
   const files = created.files.length ? `created ${created.files.join(", ")}` : "nothing new";
   process.stderr.write(`${files}\n`);
+}
+
+/**
+ * Reports a new question like any record, then, under autonomy.questions: proceed, answers it with
+ * the agent's recommendation and says so on stderr, so stdout stays the ID alone. With --json the
+ * output gains `answered`, printed even when answering fails so the ID is never lost.
+ */
+function reportQuestion(rt: Runtime, created: Created, who: Who): void {
+  if (!rt.json) reportCreated(rt, created);
+  let answered: Result | null = null;
+  try {
+    answered = proceedWithRecommendation(rt.root, created.id, who);
+  } finally {
+    if (rt.json) printJson({ ...created, answered });
+  }
+  if (rt.json || !answered) return;
+  process.stderr.write(
+    `${answered.message}\nProceed with it and record it with azimuth resolve ${created.id}. The user can overrule it in the viewer.\n`,
+  );
 }
 
 function list(value: unknown): string[] {
@@ -189,7 +210,8 @@ export const newCommand: Command = {
         );
     }
     // The ID goes out before anything that can still fail, so `$(azimuth new …)` never loses one.
-    reportCreated(rt, created);
+    if (kind === "question") reportQuestion(rt, created, ctx);
+    else reportCreated(rt, created);
     if (toRecord) recordInSession(rt.root, rt.session, toRecord);
   },
 };
@@ -243,7 +265,7 @@ export const reapprove: Command = {
 
 export const answer: Command = {
   usage: 'answer <Q-ID> [--option <key>] [--text "…"]',
-  summary: "Answer a question (you only)",
+  summary: "Answer a question, or replace an agent's answer (you only)",
   options: { option: { type: "string" }, text: { type: "string" }, json: { type: "boolean" } },
   run({ values, positionals }) {
     const id = requirePositional(positionals, 0, "Q-ID");
@@ -284,8 +306,8 @@ export const resolve: Command = {
 };
 
 export const ack: Command = {
-  usage: "ack <F-ID | ADR-ID>",
-  summary: "Acknowledge an automatic approval or acceptance (you only)",
+  usage: "ack <F-ID | ADR-ID | Q-ID>",
+  summary: "Acknowledge an automatic approval, acceptance or answer (you only)",
   options: { json: { type: "boolean" } },
   run({ values, positionals }) {
     const id = requirePositional(positionals, 0, "ID");

@@ -38,6 +38,7 @@ export const expectedIndex = {
     "autonomy": {
       "approve_specs": "manual",
       "accept_adrs": "manual",
+      "questions": "ask",
       "strict": false
     },
     "editor_url": null,
@@ -1563,12 +1564,14 @@ export const expectedIndex = {
       "answer": {
         "option": "full",
         "text": "Full jitter. Spreading load after an outage matters more than predictability.",
-        "answered_at": "2026-10-07T12:30:00Z"
+        "answered_at": "2026-10-07T12:30:00Z",
+        "by": "you"
       },
       "resolution": {
         "kind": "adr",
         "ref": "ADR-0003"
       },
+      "review_ack_at": null,
       "file": ".azimuth/questions/Q-0001.md"
     },
     {
@@ -1606,6 +1609,7 @@ export const expectedIndex = {
       ],
       "answer": null,
       "resolution": null,
+      "review_ack_at": null,
       "file": ".azimuth/questions/Q-0002.md"
     },
     {
@@ -1642,6 +1646,7 @@ export const expectedIndex = {
       ],
       "answer": null,
       "resolution": null,
+      "review_ack_at": null,
       "file": ".azimuth/questions/Q-0003.md"
     }
   ],

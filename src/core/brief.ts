@@ -25,7 +25,7 @@ export function statusBrief(index: Index, viewerUrl: string | null = null): stri
     : "";
   lines.push(`${p.name} · ${p.mode}${git}`);
   lines.push(
-    `Autonomy: specs ${p.autonomy.approve_specs}, decisions ${p.autonomy.accept_adrs}${viewerUrl ? ` · Viewer: ${viewerUrl}` : ""}`,
+    `Autonomy: specs ${p.autonomy.approve_specs}, decisions ${p.autonomy.accept_adrs}, questions ${p.autonomy.questions}${viewerUrl ? ` · Viewer: ${viewerUrl}` : ""}`,
   );
   const needs = index.inbox.filter((i) => i.urgency !== "low");
   if (needs.length) {

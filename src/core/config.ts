@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { parseDocument, isMap, isScalar } from "yaml";
 import { AZ_DIR, CONFIG_FILE, azPath } from "./paths";
 import { r, type Reader } from "./schema";
-import type { Autonomy, Problem, ProjectMode } from "./types";
+import { QUESTION_AUTONOMY, type Autonomy, type Problem, type ProjectMode } from "./types";
 
 export interface Config {
   schema: 1;
@@ -38,7 +38,7 @@ export const DEFAULT_CONFIG: Config = {
   commands: {},
   tests: { globs: ["**/*.test.*", "**/*_test.*", "**/test_*.py", "tests/**/*"] },
   git: { log_depth: 500, agent_pattern: "Claude", arch_stale_after_commits: 10 },
-  autonomy: { approve_specs: "auto", accept_adrs: "auto", strict: false },
+  autonomy: { approve_specs: "auto", accept_adrs: "auto", questions: "ask", strict: false },
   stale_after_days: 5,
   verify: {
     timeout_seconds: 600,
@@ -82,6 +82,7 @@ const SHAPE: Record<string, Record<string, Reader<unknown>> | Reader<unknown>> =
   autonomy: {
     approve_specs: r.oneOf(["auto", "manual"] as const),
     accept_adrs: r.oneOf(["auto", "manual"] as const),
+    questions: r.oneOf(QUESTION_AUTONOMY),
     strict: r.bool(),
   },
   stale_after_days: r.int(1),

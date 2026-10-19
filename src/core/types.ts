@@ -67,6 +67,9 @@ export type ProjectMode = "greenfield" | "brownfield";
 export type CoverageStatus = "passing" | "failing" | "not-run" | "untested";
 export type Actor = "you" | "agent";
 export type AutonomyLevel = "auto" | "manual";
+
+export const QUESTION_AUTONOMY = ["ask", "proceed"] as const;
+export type QuestionAutonomy = (typeof QUESTION_AUTONOMY)[number];
 export type Urgency = "high" | "normal" | "low";
 
 export const INBOX_KINDS = [
@@ -107,6 +110,11 @@ export interface Index {
 export interface Autonomy {
   approve_specs: AutonomyLevel;
   accept_adrs: AutonomyLevel;
+  /**
+   * ask: only you answer questions. proceed: a new non-blocking question an agent raises with
+   * exactly one recommended option is answered with it at once (answer.by: agent).
+   */
+  questions: QuestionAutonomy;
   /** When true, auto-approval also requires zero warnings in the feature. */
   strict: boolean;
 }
@@ -351,8 +359,16 @@ export interface Question {
   links: Id[];
   context: Markdown;
   options: QuestionOption[];
-  answer: null | { option: string | null; text: string; answered_at: ISODateTime };
+  answer: null | {
+    option: string | null;
+    text: string;
+    answered_at: ISODateTime;
+    /** Who answered. Files written before F-012 have no `by`, which means you. */
+    by: Actor;
+  };
   resolution: null | { kind: "assumption" | "adr"; ref: Id };
+  /** Set when you acknowledge an agent's answer; null otherwise (also when the key is absent). */
+  review_ack_at: ISODateTime | null;
   file: string;
 }
 

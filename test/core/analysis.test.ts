@@ -966,7 +966,12 @@ describe("next and status brief", () => {
           feature: "F-009",
           status: "answered",
           options: [{ key: "a", label: "Per endpoint", detail: "", recommended: true }],
-          answer: { option: "a", text: "Start low", answered_at: "2026-10-18T10:30:00Z" },
+          answer: {
+            option: "a",
+            text: "Start low",
+            answered_at: "2026-10-18T10:30:00Z",
+            by: "you",
+          },
           resolution: null,
         },
       ];

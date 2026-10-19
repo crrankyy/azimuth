@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { analyzeProject } from "./build-index";
+import { loadConfig } from "./config";
 import { AzimuthError } from "./errors";
 import { updateFrontmatter, updateFrontmatterItem } from "./frontmatter";
 import { evaluateGate, NEXT_STATUS, type GateContext } from "./gates";
@@ -578,7 +579,10 @@ export function answerQuestion(
     const { model } = analyzeProject(root, now);
     const q = model.questions.find((x) => x.id === id);
     if (!q) throw new AzimuthError("not-found", `${id} does not exist.`);
-    if (q.status !== "open") throw new AzimuthError("conflict", `${id} is already ${q.status}.`);
+    // An agent's answer is yours to replace; your own answer is final.
+    const replacing = q.status === "answered" && q.answer?.by === "agent";
+    if (q.status !== "open" && !replacing)
+      throw new AzimuthError("conflict", `${id} is already ${q.status}.`);
     const option = answer.option ?? null;
     if (option !== null && !q.options.some((o) => o.key === option)) {
       throw new AzimuthError(
@@ -589,17 +593,73 @@ export function answerQuestion(
     const text = answer.text?.trim() ?? "";
     if (option === null && text === "")
       throw new AzimuthError("invalid", "An answer needs an option or some text.");
-    const updated = updateFrontmatter(read(root, q.file), {
+    const updates: Record<string, unknown> = {
       status: "answered",
-      answer: { option, text, answered_at: stamp(now) },
-    });
+      answer: { option, text, answered_at: stamp(now), by: "you" },
+    };
+    // A resolution recorded how the agent's answer was applied; yours has to be applied afresh.
+    if (replacing) updates.resolution = null;
+    const updated = updateFrontmatter(read(root, q.file), updates);
+    return {
+      ref: id,
+      from: q.status,
+      to: "answered",
+      changed: save(root, [{ file: q.file, text: updated }]),
+      auto: false,
+      message: `${id}: answered${replacing ? ", replacing the agent's answer" : ""}`,
+    };
+  });
+}
+
+/**
+ * Under autonomy.questions: proceed, answers a question an agent has just raised with its one
+ * recommended option (answer.by: agent) and notes it in the feature's log as an automatic
+ * decision. Returns null and writes nothing when the question has to wait for you: the mode is
+ * ask, the actor is you, or the question is blocking, not open or without exactly one
+ * recommended option.
+ */
+export function proceedWithRecommendation(root: string, id: string, opts: Who): Result | null {
+  // Checked before the lock, so a project under ask writes and waits exactly as before.
+  if (opts.actor !== "agent" || loadConfig(root).config.autonomy.questions !== "proceed")
+    return null;
+  const now = opts.now ?? new Date();
+  return withLock(root, () => {
+    const { ctx, model } = analyzeProject(root, now);
+    const q = model.questions.find((x) => x.id === id);
+    if (!q) throw new AzimuthError("not-found", `${id} does not exist.`);
+    const recommended = q.options.filter((o) => o.recommended);
+    const option = recommended.length === 1 ? recommended[0] : undefined;
+    if (!option || q.blocking || q.status !== "open") return null;
+    const at = stamp(now);
+    const writes: Write[] = [
+      {
+        file: q.file,
+        text: updateFrontmatter(read(root, q.file), {
+          status: "answered",
+          answer: { option: option.key, text: "", answered_at: at, by: "agent" },
+        }),
+      },
+    ];
+    const feature = q.feature ? ctx.derived.features.get(q.feature) : undefined;
+    if (feature) {
+      writes.push(
+        logWrite(root, feature, {
+          at,
+          actor: "agent",
+          type: "note",
+          session: opts.session ?? null,
+          auto: true,
+          body: `${id} answered with its recommendation: ${option.label}`,
+        }),
+      );
+    }
     return {
       ref: id,
       from: "open",
       to: "answered",
-      changed: save(root, [{ file: q.file, text: updated }]),
-      auto: false,
-      message: `${id}: answered`,
+      changed: save(root, writes),
+      auto: true,
+      message: `${id}: answered automatically with its recommendation (${option.key}: ${option.label})`,
     };
   });
 }
@@ -734,7 +794,7 @@ export function moveIssue(root: string, id: string, toRaw: string, opts: MoveOpt
   });
 }
 
-/** Records that you reviewed an automatic approval or acceptance. */
+/** Records that you reviewed an automatic approval, acceptance or answer. */
 export function acknowledge(root: string, id: string, opts: Who): Result {
   if (opts.actor !== "you")
     throw new AzimuthError("policy", "Only the user acknowledges automatic decisions.");
@@ -743,8 +803,13 @@ export function acknowledge(root: string, id: string, opts: Who): Result {
     const { model } = analyzeProject(root, now);
     const feature = model.features.find((f) => f.id === id);
     const decision = model.decisions.find((d) => d.id === id);
-    const file = feature?.files.feature ?? decision?.file;
-    const auto = feature ? feature.approved_by === "agent" : decision?.decided_by === "agent";
+    const question = model.questions.find((q) => q.id === id);
+    const file = feature?.files.feature ?? decision?.file ?? question?.file;
+    const auto = feature
+      ? feature.approved_by === "agent"
+      : decision
+        ? decision.decided_by === "agent"
+        : question?.answer?.by === "agent";
     if (!file || !auto)
       throw new AzimuthError("invalid", `${id} has no automatic decision to acknowledge.`);
     const updated = updateFrontmatter(read(root, file), { review_ack_at: stamp(now) });

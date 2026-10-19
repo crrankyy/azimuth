@@ -19,6 +19,17 @@ export function buildInbox(ctx: GateContext, derived: Derived): InboxItem[] {
   const now = facts.now.toISOString().replace(/\.\d{3}Z$/, "Z");
 
   for (const q of model.questions) {
+    if (q.status === "answered" && q.answer?.by === "agent" && !q.review_ack_at) {
+      const option = q.options.find((o) => o.key === q.answer?.option);
+      items.push({
+        kind: "review-auto",
+        ref: q.id,
+        title: q.title,
+        detail: `Answered by an agent with its recommendation: ${option?.label ?? q.answer.text}. Acknowledge it or answer differently.`,
+        since: q.answer.answered_at,
+        urgency: "low",
+      });
+    }
     if (q.status !== "open") continue;
     const feature = q.feature ? derived.features.get(q.feature) : undefined;
     let detail: string;

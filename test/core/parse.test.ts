@@ -280,7 +280,12 @@ describe("parseConfig", () => {
       "project:\n  name: Demo\n  colour: blue\nstack:\n  languages: [typescript]\n",
     );
     expect(config.project.name).toBe("Demo");
-    expect(config.autonomy).toEqual({ approve_specs: "auto", accept_adrs: "auto", strict: false });
+    expect(config.autonomy).toEqual({
+      approve_specs: "auto",
+      accept_adrs: "auto",
+      questions: "ask",
+      strict: false,
+    });
     expect(config.stack.display).toEqual(["typescript"]);
     expect(problems).toEqual([expect.objectContaining({ code: "W-UNKNOWN-KEY", line: 3 })]);
   });
