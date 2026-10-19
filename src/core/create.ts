@@ -109,11 +109,16 @@ function createRecord(
   name: (id: string) => string,
   templateName: string,
   values: Record<string, string>,
+  updates: Record<string, unknown> = {},
 ): Created {
   let file = "";
   const id = allocateId(root, kind, (id) => {
     file = `.azimuth/${folder}/${name(id)}`;
-    writeExclusive(root, file, fill(template(root, templateName), { ...values, id }));
+    const text = fill(template(root, templateName), { ...values, id });
+    // Fields go in before the file exists: a failure then leaves no half-made record and, since
+    // allocateId only marks an ID once this succeeds, uses no ID.
+    const filled = Object.keys(updates).length ? updateFrontmatter(text, updates) : text;
+    writeExclusive(root, file, filled);
   });
   return { id, files: [file] };
 }
@@ -142,7 +147,7 @@ export function createDecision(
   input: { title: string; links?: string[] },
   ctx: CreateContext,
 ): Created {
-  const created = createRecord(
+  return createRecord(
     root,
     "decision",
     "decisions",
@@ -152,9 +157,8 @@ export function createDecision(
       ...baseValues(ctx),
       title: input.title,
     },
+    input.links?.length ? { links: input.links } : {},
   );
-  if (input.links?.length) patch(root, created.files[0] as string, { links: input.links });
-  return created;
 }
 
 export function createQuestion(
@@ -172,18 +176,24 @@ export function createQuestion(
   if (input.feature && !loadProject(root).features.some((f) => f.id === input.feature)) {
     throw new AzimuthError("not-found", `${input.feature} does not exist.`);
   }
-  const created = createRecord(root, "question", "questions", (id) => `${id}.md`, "question.md", {
-    ...baseValues(ctx),
-    title: input.title,
-    summary: input.context ?? "",
-    feature: input.feature ?? "null",
-    blocking: input.blocking ? "true" : "false",
-  });
   const updates: Record<string, unknown> = {};
   if (input.options?.length) updates.options = input.options;
   if (input.links?.length) updates.links = input.links;
-  if (Object.keys(updates).length) patch(root, created.files[0] as string, updates);
-  return created;
+  return createRecord(
+    root,
+    "question",
+    "questions",
+    (id) => `${id}.md`,
+    "question.md",
+    {
+      ...baseValues(ctx),
+      title: input.title,
+      summary: input.context ?? "",
+      feature: input.feature ?? "null",
+      blocking: input.blocking ? "true" : "false",
+    },
+    updates,
+  );
 }
 
 export function createIssue(
@@ -197,7 +207,11 @@ export function createIssue(
   },
   ctx: CreateContext,
 ): Created {
-  const created = createRecord(
+  const updates: Record<string, unknown> = {};
+  if (input.severity && input.type !== "risk") updates.severity = input.severity;
+  if (input.files?.length) updates.files = input.files;
+  if (input.links?.length) updates.links = input.links;
+  return createRecord(
     root,
     input.type,
     "issues",
@@ -207,16 +221,6 @@ export function createIssue(
       ...baseValues(ctx),
       title: input.title,
     },
+    updates,
   );
-  const updates: Record<string, unknown> = {};
-  if (input.severity && input.type !== "risk") updates.severity = input.severity;
-  if (input.files?.length) updates.files = input.files;
-  if (input.links?.length) updates.links = input.links;
-  if (Object.keys(updates).length) patch(root, created.files[0] as string, updates);
-  return created;
-}
-
-function patch(root: string, rel: string, updates: Record<string, unknown>): void {
-  const path = join(root, rel);
-  writeFileSync(path, updateFrontmatter(readFileSync(path, "utf8"), updates));
 }

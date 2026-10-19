@@ -20,20 +20,23 @@ import {
   type Result,
 } from "../../core/transitions";
 import { PRIORITIES, type Priority, type QuestionOption } from "../../core/types";
-import {
-  color,
-  print,
-  printJson,
-  requirePositional,
-  runtime,
-  UsageError,
-  type Runtime,
-} from "../io";
+import { print, printJson, requirePositional, runtime, UsageError, type Runtime } from "../io";
 import type { Command } from "../types";
 
 function report(rt: Runtime, result: Result | Created, text: string): void {
   if (rt.json) printJson(result);
   else print(text);
+}
+
+/** Prints a new record's ID on stdout and its files on stderr, or `{id, files}` with --json. */
+function reportCreated(rt: Runtime, created: Created): void {
+  if (rt.json) {
+    printJson(created);
+    return;
+  }
+  print(created.id);
+  const files = created.files.length ? `created ${created.files.join(", ")}` : "nothing new";
+  process.stderr.write(`${files}\n`);
 }
 
 function list(value: unknown): string[] {
@@ -108,6 +111,7 @@ export const newCommand: Command = {
     const ctx = { actor: rt.actor, session: rt.session };
     const title = kind === "spec" ? "" : requirePositional(positionals, 1, "title");
     let created: Created;
+    let toRecord: Parameters<typeof recordInSession>[2] | null = null;
     switch (kind) {
       case "feature": {
         const priority = values.priority as string | undefined;
@@ -123,13 +127,13 @@ export const newCommand: Command = {
           },
           ctx,
         );
-        recordInSession(rt.root, rt.session, { touched: [created.id] });
+        toRecord = { touched: [created.id] };
         break;
       }
       case "spec": {
         const featureId = requirePositional(positionals, 1, "F-ID");
         created = scaffoldSpec(rt.root, featureId, ctx);
-        recordInSession(rt.root, rt.session, { touched: [featureId] });
+        toRecord = { touched: [featureId] };
         break;
       }
       case "milestone":
@@ -142,7 +146,7 @@ export const newCommand: Command = {
       case "adr":
       case "decision":
         created = createDecision(rt.root, { title, links: list(values.links) }, ctx);
-        recordInSession(rt.root, rt.session, { raised: [created.id] });
+        toRecord = { raised: [created.id] };
         break;
       case "question": {
         const options = parseOptions(values.option, values.recommend);
@@ -158,7 +162,7 @@ export const newCommand: Command = {
           },
           ctx,
         );
-        recordInSession(rt.root, rt.session, { raised: [created.id] });
+        toRecord = { raised: [created.id] };
         break;
       }
       case "issue": {
@@ -176,7 +180,7 @@ export const newCommand: Command = {
           },
           ctx,
         );
-        recordInSession(rt.root, rt.session, { raised: [created.id] });
+        toRecord = { raised: [created.id] };
         break;
       }
       default:
@@ -184,11 +188,9 @@ export const newCommand: Command = {
           `Unknown kind "${kind}". Use feature, spec, milestone, adr, question or issue.`,
         );
     }
-    report(
-      rt,
-      created,
-      `${color.bold(created.id)} created: ${created.files.join(", ") || "nothing new"}`,
-    );
+    // The ID goes out before anything that can still fail, so `$(azimuth new …)` never loses one.
+    reportCreated(rt, created);
+    if (toRecord) recordInSession(rt.root, rt.session, toRecord);
   },
 };
 
