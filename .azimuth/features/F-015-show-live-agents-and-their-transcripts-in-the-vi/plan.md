@@ -50,7 +50,7 @@ tasks:
     note: null
   - id: T-015.7
     title: Transcript tabs, keys and the now line (red → green)
-    status: in-progress
+    status: done
     after: [T-015.2]
     covers: [S-015.4.3, S-015.4.7, S-015.4.8]
     files: [viewer/src/screens/agents/transcript.ts, viewer/src/screens/agents/transcript.test.ts]

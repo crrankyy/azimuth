@@ -1,0 +1,557 @@
+/* An agent's live transcript (handoff screens/AgentTranscript.html): header, agent tabs, the
+   entry list (64px time column, 860px entries), the 300px side panel and the follow pill. */
+
+.tr {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.tr-hints {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Header */
+.tr-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+.tr-head-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tr-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.tr-status .agent-status {
+  font-size: 13px;
+  font-weight: 500;
+}
+.tr-ses,
+.tr-cc {
+  color: var(--ink-muted);
+}
+.tr-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+}
+.tr-working {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.tr-head-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+.tr-follow {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+.tr-follow[aria-pressed="false"] {
+  background: none;
+  color: var(--ink-muted);
+}
+
+/* Agent tabs */
+.tr-tabs {
+  align-items: center;
+}
+.tr-tablist {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.tr-tablist .az-tab .agent-status {
+  gap: 0;
+}
+.tr-tab-name {
+  font-size: 13px;
+}
+.tr-branch {
+  align-self: center;
+  padding: 0 2px;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.tr-show-all {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  cursor: pointer;
+}
+.tr-show-all-link {
+  color: var(--ink-muted);
+  text-decoration: underline;
+}
+.tr-show-all[aria-pressed="true"] .tr-show-all-link {
+  color: var(--ink);
+}
+
+/* Notes */
+.tr-alert {
+  align-self: flex-start;
+  max-width: 860px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--st-danger-border);
+  background: var(--st-danger-tint);
+  font-size: 13px;
+  color: var(--label-red);
+}
+.tr-note {
+  margin: 0 0 8px 80px;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+
+/* Entries beside the side panel */
+.tr-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+}
+.tr-main {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 860px;
+}
+.tr-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tr-entry {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 16px;
+  padding: 10px 0;
+  /* Following live scrolls the last item into view above the pill. */
+  scroll-margin-bottom: 80px;
+}
+.tr-entry.tr-tool {
+  padding: 4px 0;
+}
+.tr-time {
+  padding-top: 3px;
+  font-size: 11px;
+  color: var(--ink-tertiary);
+}
+.tr-tool .tr-time {
+  padding-top: 7px;
+}
+.tr-spawn-entry .tr-time {
+  padding-top: 12px;
+}
+
+/* Messages */
+.tr-msg {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+.tr-message.user .tr-msg {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--hairline-strong);
+}
+.tr-avatar {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  display: grid;
+  place-items: center;
+}
+.tr-avatar path {
+  fill: var(--primary);
+}
+.az-prose.tr-msg-text {
+  min-width: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.tr-message.user .az-prose.tr-msg-text {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.az-prose.tr-msg-text > :last-child {
+  margin-bottom: 0;
+}
+
+/* Tool rows */
+.tr-call {
+  min-width: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  overflow: hidden;
+}
+.tr-call.open {
+  border-radius: var(--radius-md);
+}
+.tr-call-head {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--surface-1);
+  font-size: 13px;
+  cursor: pointer;
+}
+.tr-call-head:focus-visible {
+  outline: 2px solid var(--primary-focus);
+  outline-offset: -2px;
+}
+.tr-call-head svg {
+  flex: none;
+  stroke: var(--ink-subtle);
+  stroke-width: 1.5;
+}
+.tr-tool-name {
+  flex: none;
+  width: 40px;
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.tr-target {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink);
+}
+.tr-sizes {
+  flex: none;
+  font-size: 12px;
+}
+.tr-sizes .add {
+  color: var(--label-green);
+}
+.tr-sizes .del {
+  color: var(--label-red);
+}
+.tr-running {
+  flex: none;
+  font-size: 12px;
+  color: var(--st-active);
+}
+.tr-call .az-code {
+  border: 0;
+  border-radius: 0;
+  border-top: 1px solid var(--hairline);
+  font-size: 12px;
+}
+.tr-call .tr-diff {
+  padding: 10px 0;
+}
+/* Block lines so added and removed rows tint edge to edge. */
+.tr-diff > span {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  box-sizing: border-box;
+  padding: 0 14px;
+}
+.tr-diff .diff-add {
+  color: var(--label-green);
+  background: var(--st-success-tint);
+}
+.tr-diff .diff-del {
+  color: var(--label-red);
+  background: var(--st-danger-wash);
+}
+.tr-diff .diff-hunk {
+  color: var(--ink-tertiary);
+}
+.tr-call .az-code.output {
+  padding: 8px 12px;
+}
+
+/* Subagent cards */
+.tr-spawn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline-strong);
+}
+.tr-spawn.running {
+  border-color: rgba(250, 179, 135, 0.45);
+}
+.tr-spawn-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.tr-spawn-head svg {
+  flex: none;
+  stroke: var(--ink-muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.tr-spawn-label {
+  color: var(--ink-subtle);
+}
+.tr-spawn-type {
+  font-size: 12px;
+  color: var(--ink);
+}
+.tr-spawn-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.tr-spawn-status.running {
+  color: var(--st-active);
+}
+.tr-spawn-status.waiting {
+  color: var(--st-warning);
+}
+.tr-spawn-status.failed {
+  color: var(--label-red);
+}
+.tr-spawn-status .agent-status {
+  gap: 6px;
+}
+.tr-spawn-desc {
+  font-size: 14px;
+  color: var(--ink);
+}
+.tr-spawn-now {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  background: var(--canvas);
+  font-size: 12px;
+}
+.tr-ago {
+  flex: none;
+  color: var(--st-active);
+}
+.tr-spawn-out {
+  padding-left: 10px;
+  border-left: 2px solid var(--hairline-strong);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tr-spawn-link {
+  align-self: flex-start;
+  font-size: 12px;
+  color: var(--ink-subtle);
+  text-decoration: none;
+}
+.tr-spawn-link:hover {
+  color: var(--ink);
+}
+
+/* The now line */
+.tr-now-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.tr-now-text.waiting {
+  color: var(--st-warning);
+}
+
+/* Side panel */
+.tr-aside {
+  width: 300px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.tr-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+/* The tree's line runs from the main session down to its last subagent. */
+.az-tree.tr-agents {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 0;
+}
+.tr-subagents {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tr-agent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.tr-agent:hover,
+.tr-agent.shown {
+  background: var(--surface-2);
+}
+.tr-agent .agent-status {
+  gap: 0;
+}
+.az-mono.tr-agent-name {
+  font-size: 12px;
+}
+.tr-agent-meta {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.tr-agent-meta.running {
+  color: var(--st-active);
+}
+.tr-agent-meta.waiting {
+  color: var(--st-warning);
+}
+.tr-covers,
+.tr-commits {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tr-cover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tr-files {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 6px 10px;
+  font-size: 12px;
+}
+.tr-file {
+  display: contents;
+}
+.tr-how {
+  color: var(--ink-tertiary);
+}
+.tr-file.edited .tr-how {
+  color: var(--st-active);
+}
+.tr-path {
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+}
+.tr-file.edited .tr-path {
+  color: var(--ink);
+}
+.tr-commit {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.tr-sha {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.tr-subject {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-muted);
+}
+
+/* The follow pill stays at the bottom of the window while the list scrolls. */
+.tr-pill {
+  position: sticky;
+  bottom: 16px;
+  align-self: flex-start;
+  margin-left: 80px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: var(--edge-highlight);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.tr-pill button {
+  appearance: none;
+  border: 0;
+  border-left: 1px solid var(--hairline-tertiary);
+  background: none;
+  padding: 0 0 0 10px;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* Below 1280px the side panel moves under the transcript. */
+@media (max-width: 1279px) {
+  .tr-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 32px;
+  }
+  .tr-aside {
+    width: auto;
+  }
+}
