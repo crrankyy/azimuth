@@ -74,7 +74,7 @@ tasks:
     note: null
   - id: T-014.10
     title: Docs and full verification
-    status: in-progress
+    status: done
     after: [T-014.6, T-014.9]
     covers: []
     files: [docs/claude-code.md, docs/file-format.md, docs/viewer.md, docs/concepts.md]

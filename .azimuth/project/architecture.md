@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-20
-reconciled_at: 2317d73
+reconciled_at: 37467ad
 modules:
   - name: core
     path: src/core
@@ -77,8 +77,8 @@ frontmatter, Vitest, ESLint and Prettier. pnpm only.
 - An agent answers a question only under `autonomy.questions: proceed`, and only a new,
   non-blocking one it raised with exactly one recommended option (`answer.by: agent`).
   `azimuth answer` stays yours, and your answer replaces an agent's.
-- The viewer server binds 127.0.0.1, checks `Host` on every request and the token and `Origin` on
-  writes, and always acts as you.
+- The viewer server binds 127.0.0.1, checks `Host` on every request, the token and `Origin` on
+  writes and the token on transcript reads, and always acts as you.
 - One viewer per project: autostart reuses a recorded viewer that answers, or that times out while
   its pid is alive (busy), and a viewer whose `viewer.json` names another live instance exits once
   its last page closes.
@@ -123,10 +123,24 @@ prints and the server pushes to the viewer over SSE.
   the SES from its own file. The sidecar `live/<claude-session>.meta.json` (`readLiveMeta`,
   `updateLiveMeta` in `live.ts`) keeps `started_at`, `ses` and `transcript_path`, so they survive
   the live log's 64 KB tail.
+- Live agents: the PermissionRequest, Notification (`permission_prompt`) and PostToolUseFailure
+  hooks append `wait` records and failed `tool` records; tool records carry edit sizes
+  (`editSize` in `src/core/tools.ts`) and `subagent-stop` the subagent's transcript path.
+  `deriveActivity` (`src/core/live-agents.ts`, no I/O) gives each live session, its `main` agent
+  and each subagent a status (`running`, `waiting` or `done`; 30 minutes without a record is
+  done), its wait, current action, last edits and wait spans. Live logs are kept 72 hours, and
+  while a page is connected the server re-derives statuses every 60 s and pushes `live` when one
+  changed. `GET /api/transcript/<claude-session>` (`src/server/transcript.ts`) is the live
+  server's only, behind the page's token: it serves a window of a transcript path a hook recorded
+  (or the subagent file beside it), once its real path is a regular `.jsonl` file under Claude
+  Code's `projects` folders, normalised by `src/core/transcript.ts`. The index and exports carry
+  only `transcript: boolean`.
 - Finishing tasks: `azimuth task finish` (`src/core/finish.ts`) checks the feature, adds the
-  note, stages the task's changed files and the feature's records, commits with a `Refs:`
-  trailer, runs `verifyBatch` and moves the task to done, stopping at the first failure;
-  `azimuth brief` (`src/core/task-brief.ts`) prints a subagent prompt from the records.
+  optional note, stages the task's changed files and the feature's records, commits with a
+  `Refs:` trailer, runs `verifyBatch` and moves the task to done, stopping at the first failure
+  (after a failed verify the commit stays and only the log entry follows); `azimuth brief`
+  (`src/core/task-brief.ts`) prints a subagent prompt from the model alone, without git or a
+  clock.
 - Viewer: each issue has a page at `#/issues/<id>/page` (`viewer/src/screens/issues/`), whose
   related work (`related.ts`) and history (`history.ts`) are derived from the index on every
   render.

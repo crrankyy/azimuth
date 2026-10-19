@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-009.6
     title: Build and azimuth skills, protocol, docs and full verification
-    status: in-progress
+    status: done
     after: [T-009.5]
     covers: []
     files: [plugin/skills/build/SKILL.md, plugin/skills/azimuth/SKILL.md, src/core/protocol.ts, docs/cli.md, docs/concepts.md]
