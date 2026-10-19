@@ -130,8 +130,9 @@ const item: InboxItem = {
 Autonomy: specs auto, decisions auto, questions proceed[ · Viewer: <url>]
 
 # src/cli/commands/write.ts
-new question … (usage unchanged). When proceedWithRecommendation answers it, the text output is:
-  Q-0001 created: .azimuth/questions/Q-0001.md
+new question … (usage unchanged). stdout is only the ID (F-013); when proceedWithRecommendation
+answers it, stderr is:
+  created .azimuth/questions/Q-0001.md
   Q-0001: answered automatically with its recommendation (a: Lockfile)
   Proceed with it and record it with azimuth resolve Q-0001. The user can overrule it in the viewer.
 --json: {"id": "Q-0001", "files": [".azimuth/questions/Q-0001.md"], "answered": Result | null}
