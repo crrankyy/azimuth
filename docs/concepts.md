@@ -48,6 +48,17 @@ table, who is acting, and the gate for forward moves. A gate is a list of checks
 | in-progress → verifying | Every task is done or skipped with a note · no open blocking question.                                                                                                                                                                                                                                                                                          |
 | verifying → done        | The latest verify run of every task passed at HEAD · every scenario has a passing test · `as-built.md` exists · `architecture.md` was reconciled after the feature's last commit. Commits that only change `.azimuth/` (the as-built, the reconciliation, recorded decisions) don't count for either commit check.                                              |
 
+For the done gate, a passing verify run stays current until a later commit changes a path the run
+depends on: the task's `files`, the feature's impact paths with change create, modify or test
+(each with everything under it), the paths of the modules that the modules holding the feature's
+create and modify entries depend on (directly), and the files `verify.shared_paths` matches (root
+build manifests such as `package.json` or `Cargo.lock` by default). Paths under `.azimuth/` never
+count. A task without `files` in a feature without create, modify or test entries has no such
+paths, so any later code commit makes its run stale. A run is also stale after a later commit
+whose changed files aren't known, and when its commit is older than the history the index reads
+(`git.log_depth`). The check names the commit and the path that made a run stale, so close-out
+reruns only those runs: `T-006.2 last passed at abc1234; def5678 changed src/core/gates.ts`.
+
 Moves that undo or park work (back to draft, deferred, cancelled, verifying → in-progress) need a
 reason, which goes into the feature's log. Approval records the spec hash and the commit it was
 made at; if the spec changes later, the feature is flagged **modified since approval** and needs

@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Close out an Azimuth feature in verifying - rerun every verify command, confirm scenario coverage, write as-built.md, reconcile the architecture doc and move it to done.
+description: Close out an Azimuth feature in verifying - rerun the verify runs the done gate names, confirm scenario coverage, write as-built.md, reconcile the architecture doc and move it to done.
 argument-hint: "<F-NNN>"
 allowed-tools:
   - Bash(azimuth *)
@@ -14,10 +14,14 @@ Target: $ARGUMENTS
 
 1. `azimuth session start --skill verify --goal "Close out <F-ID>" --touch <F-ID>` and
    `azimuth show <F-ID> --brief` (the "Next gate → done" checks are your checklist).
-2. `azimuth verify <F-ID>` runs every task's verify command at HEAD. If one fails, fix it
-   (`azimuth move <F-ID> in-progress --reason "…"` first if it needs real work), commit, verify again.
+2. Rerun only the runs that "Latest verify run of every task passed at HEAD" names:
+   `azimuth verify <T-ID>` for each task in its detail. A passing run stays current until a later
+   commit changes a path the task depends on, and the detail names that commit and path
+   (`T-006.2 last passed at abc1234; def5678 changed src/core/gates.ts`). When the check passes,
+   rerun nothing. If a run fails, fix it (`azimuth move <F-ID> in-progress --reason "…"` first if
+   it needs real work), commit, verify that task again.
 3. `azimuth trace <F-ID>`: every scenario must have a passing test. Add missing tests (named
-   with the scenario ID), commit them and rerun verify.
+   with the scenario ID), commit them and rerun the runs the done gate then names.
 4. Write `.azimuth/features/<F-ID>-<slug>/as-built.md` from
    `.azimuth/templates/feature/as-built.md`: compare the files actually changed
    (`git log --name-only` for commits with `Refs:` to this feature) with impact.md; list
@@ -27,7 +31,7 @@ Target: $ARGUMENTS
    flow), then set `reconciled_at` to the current `git rev-parse --short HEAD`.
 6. `azimuth check <F-ID>`, then commit: `docs(<F-ID>): close out` with `Refs: <F-ID>`. Keep this
    commit to files under `.azimuth/`: commits that only change Azimuth's records don't make the
-   verify runs stale or put the architecture behind, but a code change does.
+   verify runs stale or put the architecture behind, but a code change can.
 7. `azimuth move <F-ID> done`. If a check still fails, fix what it names.
 8. Hand off and close the session, commit the pending `.azimuth/` changes, and tell the user the
    feature is done and mention follow-ups.

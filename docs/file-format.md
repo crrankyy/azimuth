@@ -106,6 +106,9 @@ stale_after_days: 5
 verify:
   timeout_seconds: 600
   output_tail_lines: 40
+  # Files every verify run depends on (globs); replaces the default list, [] turns it off
+  shared_paths:
+    [package.json, pnpm-lock.yaml, Cargo.toml, Cargo.lock, go.mod, go.sum, pyproject.toml, uv.lock]
 viewer:
   port: 4319
   autostart: true
@@ -113,6 +116,11 @@ viewer:
 ```
 
 Every key except `project.name` has a default. Unknown keys produce `W-UNKNOWN-KEY`.
+
+`verify.shared_paths` lists the files outside a task's own paths whose change makes its verify
+runs stale for the done gate. The globs use the `tests.globs` syntax without `!` and match
+repo-relative paths, so `Cargo.toml` matches the root file only and `crates/*/Cargo.toml` the
+manifest of each crate. The example shows the default.
 
 ## Project knowledge
 
