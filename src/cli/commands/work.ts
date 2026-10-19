@@ -1,3 +1,4 @@
+import { constants } from "node:os";
 import { autostartEnabled, recordSessionAfterInit } from "../../hooks/handlers";
 import { ensureViewer } from "../../server/autostart";
 import { initProject } from "../../core/init";
@@ -8,8 +9,9 @@ import {
   startSession,
   writeHandoff,
 } from "../../core/session";
-import { runVerify, verifyTargets } from "../../core/verify";
-import { color, print, printJson, requirePositional, runtime, UsageError } from "../io";
+import { verifyBatch, verifyTargets, type VerifyProgress } from "../../core/verify";
+import { print, printJson, requirePositional, runtime, UsageError } from "../io";
+import { reportLines, type ReportMode } from "../verify-report";
 import type { Command } from "../types";
 
 export const init: Command = {
@@ -100,35 +102,65 @@ export const session: Command = {
   },
 };
 
+/**
+ * A detached verify command no longer gets the terminal's Ctrl-C, so SIGINT and SIGTERM abort the
+ * batch instead: its command's process group is killed and the verify lock released.
+ */
+function abortOnSignals() {
+  const controller = new AbortController();
+  let received: NodeJS.Signals | null = null;
+  const handlers = (["SIGINT", "SIGTERM"] as const).map((name) => {
+    const handler = () => {
+      received ??= name;
+      controller.abort();
+    };
+    process.on(name, handler);
+    return [name, handler] as const;
+  });
+  return {
+    signal: controller.signal,
+    received: () => received,
+    dispose: () => handlers.forEach(([name, handler]) => process.off(name, handler)),
+  };
+}
+
 export const verify: Command = {
-  usage: "verify [T-ID | F-ID] [--json]",
+  usage: "verify [T-ID | F-ID …] [--no-prebuild] [--summary] [--json]",
   summary: "Run verify commands and record the results (default: every in-flight feature)",
-  options: { json: { type: "boolean" } },
-  run({ values, positionals }) {
+  options: {
+    "no-prebuild": { type: "boolean" },
+    summary: { type: "boolean" },
+    json: { type: "boolean" },
+  },
+  async run({ values, positionals }) {
     const rt = runtime(values);
-    const targets = verifyTargets(rt.root, positionals[0] ?? null);
-    const runs = [];
-    for (const target of targets) {
-      if (!rt.json) print(color.dim(`${target.task}: ${target.command}`));
-      const run = runVerify(rt.root, target);
-      runs.push(run);
+    const targets = verifyTargets(rt.root, positionals);
+    const mode: ReportMode = values.summary ? "summary" : "full";
+    const onProgress = (event: VerifyProgress) => {
       if (!rt.json) {
-        const verdict = run.ok
-          ? color.green("passed")
-          : color.red(`failed (exit ${run.exit_code})`);
-        print(`${run.id} ${target.task} ${verdict} in ${(run.duration_ms / 1000).toFixed(1)}s`);
-        if (!run.ok && run.output_tail)
-          print(
-            color.dim(
-              run.output_tail
-                .split("\n")
-                .map((l) => `    ${l}`)
-                .join("\n"),
-            ),
-          );
+        for (const line of reportLines(event, mode)) print(line);
+        return;
       }
+      // stdout stays JSON; a failed prebuild, which leaves no run to show, goes to stderr.
+      if (event.kind === "prebuilt" && !event.result.ok) {
+        for (const line of reportLines(event, mode)) process.stderr.write(`${line}\n`);
+      }
+    };
+    const interrupt = abortOnSignals();
+    try {
+      const result = await verifyBatch(rt.root, targets, {
+        prebuild: !values["no-prebuild"],
+        ses: rt.session,
+        onProgress,
+        signal: interrupt.signal,
+      });
+      if (rt.json) printJson(result.runs);
+      const received = interrupt.received();
+      if (received) return 128 + constants.signals[received];
+      const ok = (result.prebuild?.ok ?? true) && result.runs.every((r) => r.ok);
+      return ok ? 0 : 1;
+    } finally {
+      interrupt.dispose();
     }
-    if (rt.json) printJson(runs);
-    return runs.every((r) => r.ok) ? 0 : 1;
   },
 };
