@@ -5,7 +5,7 @@ import formatsDoc from "../../../docs/file-format.md?raw";
 import { buildIndex } from "../../core/build-index";
 import { showBrief, statusBrief } from "../../core/brief";
 import { featureOf } from "../../core/ids";
-import { nextForFeature, nextWork } from "../../core/next";
+import { nextForFeature, nextWork, taskGroups, type TaskGroup } from "../../core/next";
 import { azPath } from "../../core/paths";
 import type { Index, Problem } from "../../core/types";
 import { viewerUrl } from "../../server/registry";
@@ -144,6 +144,13 @@ function findEntity(index: Index, id: string): unknown {
   return null;
 }
 
+/** `Can run together: T-1, T-2 (shared: a.ts)`, or `On its own: T-3` for a group of one. */
+function groupLine(g: TaskGroup): string {
+  if (g.tasks.length < 2) return `On its own: ${g.tasks.join(", ")}`;
+  const shared = g.shared.length > 0 ? ` (shared: ${g.shared.join(", ")})` : "";
+  return `Can run together: ${g.tasks.join(", ")}${shared}`;
+}
+
 export const next: Command = {
   usage: "next [F-ID] [--json]",
   summary: "The highest-priority unblocked work (or the ready tasks of one feature)",
@@ -153,16 +160,23 @@ export const next: Command = {
     const { index } = buildIndex(rt.root, { mode: "live" });
     const featureId = positionals[0];
     let items;
+    let groups: TaskGroup[] | null = null;
     if (featureId) {
       const f = index.features.find((x) => x.id === featureId);
       if (!f) throw new UsageError(`${featureId} not found.`);
       items = nextForFeature(index, f);
+      groups = taskGroups(index, f);
     } else {
       items = nextWork(index);
     }
-    if (rt.json) printJson(items);
+    if (rt.json) printJson(groups ? { items, groups } : items);
     else if (items.length === 0) print("Nothing to do: no unblocked work.");
-    else for (const i of items) print(`${color.bold(i.ref)} ${i.action}\n  ${color.dim(i.reason)}`);
+    else {
+      for (const i of items) print(`${color.bold(i.ref)} ${i.action}\n  ${color.dim(i.reason)}`);
+      // With a single ready task there is nothing to run beside it.
+      if (groups && groups.flatMap((g) => g.tasks).length >= 2)
+        for (const g of groups) print(groupLine(g));
+    }
   },
 };
 

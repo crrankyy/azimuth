@@ -42,7 +42,8 @@ export const expectedIndex = {
       "strict": false
     },
     "editor_url": null,
-    "root": null
+    "root": null,
+    "shared_files": []
   },
   "knowledge": {
     "vision": {

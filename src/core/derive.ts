@@ -1,5 +1,6 @@
 import type { Facts } from "./facts";
 import { ACTIVE_STATUSES } from "./flows";
+import { globToRegExp, matchesAny } from "./glob";
 import { featureOf } from "./ids";
 import type { FeatureEntity, Model } from "./model";
 import { specHash } from "./spec-hash";
@@ -162,7 +163,10 @@ export function derive(model: Model, facts: Facts): Derived {
     currentHash.set(f.id, f.spec ? specHash(f.spec) : null);
   }
 
-  const conflicts = fileConflicts(model.features);
+  const conflicts = fileConflicts(
+    model.features,
+    model.config.parallel.shared_files.map(globToRegExp),
+  );
   const staleMs = model.config.stale_after_days * 86_400_000;
   const info = new Map<string, DerivedInfo>();
   for (const f of model.features) {
@@ -219,13 +223,17 @@ export function derive(model: Model, facts: Facts): Derived {
   return { features, info, coverage, lastRun, currentHash };
 }
 
-/** Paths that two active features both create or modify. */
-function fileConflicts(features: FeatureEntity[]): Map<string, { path: string; with: string }[]> {
+/** Paths that two active features both create or modify, shared files aside. */
+function fileConflicts(
+  features: FeatureEntity[],
+  shared: RegExp[],
+): Map<string, { path: string; with: string }[]> {
   const owners = new Map<string, string[]>();
   for (const f of features) {
     if (!ACTIVE_STATUSES.includes(f.status)) continue;
     for (const entry of f.impact) {
       if (entry.change !== "create" && entry.change !== "modify") continue;
+      if (matchesAny(entry.path, shared)) continue;
       const list = owners.get(entry.path) ?? [];
       if (!list.includes(f.id)) list.push(f.id);
       owners.set(entry.path, list);

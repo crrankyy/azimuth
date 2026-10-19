@@ -28,6 +28,14 @@ export interface Config {
     /** Timeout of the prebuild alone. */
     build_timeout_seconds: number;
   };
+  parallel: {
+    /**
+     * Globs (globToRegExp) of repo-relative files that tasks extend additively, such as an
+     * enum, its dispatch or a keymap. They are never file conflicts, and tasks listing them
+     * may run at the same time.
+     */
+    shared_files: string[];
+  };
   viewer: { port: number; autostart: boolean; editor_url: string | null };
 }
 
@@ -57,6 +65,7 @@ export const DEFAULT_CONFIG: Config = {
     prebuild: null,
     build_timeout_seconds: 1800,
   },
+  parallel: { shared_files: [] },
   viewer: { port: 4319, autostart: true, editor_url: null },
 };
 
@@ -93,6 +102,7 @@ const SHAPE: Record<string, Record<string, Reader<unknown>> | Reader<unknown>> =
     prebuild: r.nullable(r.string()),
     build_timeout_seconds: r.int(1),
   },
+  parallel: { shared_files: r.strings() },
   viewer: { port: r.int(1), autostart: r.bool(), editor_url: r.nullable(r.string()) },
 };
 

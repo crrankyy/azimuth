@@ -754,6 +754,63 @@ describe("validate", () => {
     ]);
   });
 
+  describe("shared files", () => {
+    const SHARED = `${MINIMAL_CONFIG}parallel:\n  shared_files: [src/registry.ts]\n`;
+
+    /** F-001 in progress and F-002 verifying, both modifying or creating `impact`. */
+    function twoActive(impact: { path: string; change: string }[], config: string): Model {
+      return load(
+        {
+          ...featureFiles({ id: "F-001", status: "in-progress", impact }),
+          ...featureFiles({ id: "F-002", status: "verifying", impact }),
+        },
+        config,
+      );
+    }
+
+    const conflicts = (model: Model) => {
+      const facts = makeFacts();
+      return validate(model, facts, derive(model, facts))
+        .filter((p) => p.code === "W-FILE-CONFLICT")
+        .map((p) => p.message);
+    };
+
+    const REGISTRY = [
+      { path: "src/a.ts", change: "modify" },
+      { path: "src/registry.ts", change: "modify" },
+    ];
+
+    it("S-010.2.1 doesn't report a shared path", () => {
+      expect(conflicts(twoActive(REGISTRY, SHARED))).toEqual([
+        "F-001 and F-002 both modify src/a.ts.",
+      ]);
+    });
+
+    it("S-010.2.2 leaves a shared path out of the index's file conflicts", () => {
+      const { info } = derive(twoActive(REGISTRY, SHARED), makeFacts());
+      expect(info.get("F-001")?.file_conflicts).toEqual([{ path: "src/a.ts", with: "F-002" }]);
+      expect(info.get("F-002")?.file_conflicts).toEqual([{ path: "src/a.ts", with: "F-001" }]);
+    });
+
+    it("S-010.2.3 matches a single star within one directory", () => {
+      const model = twoActive(
+        [
+          { path: "keymaps/default.toml", change: "modify" },
+          { path: "keymaps/vim/extra.toml", change: "create" },
+        ],
+        `${MINIMAL_CONFIG}parallel:\n  shared_files: ["keymaps/*.toml"]\n`,
+      );
+      expect(conflicts(model)).toEqual(["F-001 and F-002 both modify keymaps/vim/extra.toml."]);
+    });
+
+    it("S-010.2.4 reports every common path without shared files", () => {
+      expect(conflicts(twoActive(REGISTRY, MINIMAL_CONFIG))).toEqual([
+        "F-001 and F-002 both modify src/a.ts.",
+        "F-001 and F-002 both modify src/registry.ts.",
+      ]);
+    });
+  });
+
   it("BUG-0028 counts only code commits since architecture.md was reconciled", () => {
     const model = load({
       ".azimuth/project/architecture.md": "---\nreconciled_at: r000000\n---\n",

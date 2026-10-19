@@ -329,4 +329,28 @@ describe("parseConfig", () => {
     ]);
     expect(config.verify.shared_paths).toEqual(DEFAULT_SHARED);
   });
+
+  it("S-010.1.1 leaves parallel.shared_files empty when the key is absent", () => {
+    const { config, problems } = parseConfig("project: { name: Demo }\n");
+    expect(config.parallel.shared_files).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  it("S-010.1.2 reads a configured parallel.shared_files as given", () => {
+    const { config, problems } = parseConfig(
+      'project: { name: Demo }\nparallel: { shared_files: [src/registry.ts, "keymaps/*.toml"] }\n',
+    );
+    expect(config.parallel.shared_files).toEqual(["src/registry.ts", "keymaps/*.toml"]);
+    expect(problems).toEqual([]);
+  });
+
+  it("S-010.1.3 rejects a parallel.shared_files that isn't a list", () => {
+    const { config, problems } = parseConfig(
+      "project: { name: Demo }\nparallel: { shared_files: src/registry.ts }\n",
+    );
+    expect(problems.map((p) => [p.code, p.message])).toEqual([
+      ["E-SCHEMA", "parallel.shared_files must be a list of text values."],
+    ]);
+    expect(config.parallel.shared_files).toEqual([]);
+  });
 });

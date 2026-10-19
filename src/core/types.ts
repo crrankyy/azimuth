@@ -130,6 +130,8 @@ export interface Project {
   editor_url: string | null;
   /** Absolute repo root in live mode; null in exports. */
   root: string | null;
+  /** config.parallel.shared_files, as written. */
+  shared_files: string[];
 }
 
 export interface KnowledgeDoc {

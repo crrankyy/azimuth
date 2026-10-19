@@ -1,7 +1,7 @@
 import { codeCommitsAfter, type Derived } from "./derive";
 import { ACTIVE_STATUSES } from "./flows";
 import type { Facts } from "./facts";
-import { inModule } from "./glob";
+import { globToRegExp, inModule, matchesAny } from "./glob";
 import { idKind } from "./ids";
 import { printedName } from "./junit";
 import type { FeatureEntity, Model } from "./model";
@@ -299,13 +299,17 @@ function pathProblems(model: Model, facts: Facts, f: FeatureEntity): Problem[] {
 function conflictProblems(model: Model): Problem[] {
   const out: Problem[] = [];
   const active = model.features.filter((f) => ACTIVE_STATUSES.includes(f.status));
+  const shared = model.config.parallel.shared_files.map(globToRegExp);
   for (let i = 0; i < active.length; i++) {
     for (let j = i + 1; j < active.length; j++) {
       const a = active[i] as FeatureEntity;
       const b = active[j] as FeatureEntity;
       const paths = (f: FeatureEntity) =>
         new Set(
-          f.impact.filter((e) => e.change === "create" || e.change === "modify").map((e) => e.path),
+          f.impact
+            .filter((e) => e.change === "create" || e.change === "modify")
+            .map((e) => e.path)
+            .filter((path) => !matchesAny(path, shared)),
         );
       const bp = paths(b);
       for (const path of paths(a)) {

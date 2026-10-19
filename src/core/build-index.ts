@@ -147,6 +147,7 @@ export function buildIndex(root: string, options: BuildOptions = {}): BuildResul
       autonomy: config.autonomy,
       editor_url: config.viewer.editor_url,
       root: mode === "live" ? root : null,
+      shared_files: config.parallel.shared_files,
     },
     knowledge: {
       vision: knowledge.vision,

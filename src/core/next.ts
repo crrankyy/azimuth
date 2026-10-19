@@ -1,7 +1,9 @@
+import { globToRegExp, matchesAny } from "./glob";
 import {
   PRIORITIES,
   SEVERITIES,
   type Feature,
+  type Id,
   type Index,
   type Issue,
   type Question,
@@ -30,6 +32,73 @@ export function readyTasks(f: Feature): Task[] {
     ...ready.filter((t) => t.status === "in-progress"),
     ...ready.filter((t) => t.status === "todo"),
   ];
+}
+
+/** Ready tasks that can be built at the same time. */
+export interface TaskGroup {
+  /** Task IDs, in the order next lists them. */
+  tasks: Id[];
+  /** Files matching parallel.shared_files that two or more of the tasks list, sorted. */
+  shared: string[];
+}
+
+interface FormingGroup {
+  tasks: Task[];
+  /** Files outside the shared list that its tasks list. */
+  claimed: Set<string>;
+  /** It holds a task without files: nothing says what that task changes, so no other joins. */
+  closed: boolean;
+}
+
+/** Shared files that two or more of the tasks list, sorted. */
+function sharedIn(tasks: Task[], shared: RegExp[]): string[] {
+  const listedBy = new Map<string, number>();
+  for (const t of tasks) {
+    for (const path of new Set(t.files)) {
+      if (matchesAny(path, shared)) listedBy.set(path, (listedBy.get(path) ?? 0) + 1);
+    }
+  }
+  return [...listedBy]
+    .filter(([, n]) => n >= 2)
+    .map(([path]) => path)
+    .sort();
+}
+
+/**
+ * Groups tasks greedily, in the order given: each task joins the first group in which no task
+ * lists one of its files, files matching `sharedFiles` aside; otherwise it starts a new group.
+ * A task without files starts a group of its own that no later task joins. Paths compare as
+ * written; the globs are compiled with globToRegExp.
+ */
+export function parallelGroups(tasks: Task[], sharedFiles: string[]): TaskGroup[] {
+  const shared = sharedFiles.map(globToRegExp);
+  const groups: FormingGroup[] = [];
+  for (const t of tasks) {
+    const own = t.files.filter((path) => !matchesAny(path, shared));
+    const closed = t.files.length === 0;
+    const group = closed
+      ? undefined
+      : groups.find((g) => !g.closed && own.every((path) => !g.claimed.has(path)));
+    if (!group) {
+      groups.push({ tasks: [t], claimed: new Set(own), closed });
+      continue;
+    }
+    group.tasks.push(t);
+    for (const path of own) group.claimed.add(path);
+  }
+  return groups.map((g) => ({
+    tasks: g.tasks.map((t) => t.id),
+    shared: sharedIn(g.tasks, shared),
+  }));
+}
+
+/**
+ * The groups of a feature's ready tasks, in readyTasks order (in-progress first, then todo,
+ * each in plan order), using index.project.shared_files. [] unless the feature is in progress.
+ */
+export function taskGroups(index: Index, f: Feature): TaskGroup[] {
+  if (f.status !== "in-progress") return [];
+  return parallelGroups(readyTasks(f), index.project.shared_files);
 }
 
 const byPriority = (a: Feature, b: Feature) =>
