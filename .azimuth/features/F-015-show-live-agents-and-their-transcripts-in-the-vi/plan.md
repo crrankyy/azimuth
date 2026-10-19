@@ -66,7 +66,7 @@ tasks:
     note: null
   - id: T-015.9
     title: The Inbox's agent line follows the status (red → green)
-    status: in-progress
+    status: done
     after: [T-015.2]
     covers: [S-015.7.1, S-015.7.2, S-015.7.3]
     files: [viewer/src/screens/Inbox.tsx, viewer/src/screens/Inbox.test.tsx]

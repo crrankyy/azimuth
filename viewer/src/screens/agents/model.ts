@@ -1,5 +1,15 @@
-import type { Index, LiveSession, LiveWait } from "../../../../src/core/types";
-import type { AgentRow } from "../../data/agents";
+import { globToRegExp, matchesAny } from "../../../../src/core/glob";
+import type { AgentStatus, Index, LiveSession, LiveWait } from "../../../../src/core/types";
+import {
+  activeSessions,
+  agentRows,
+  isPermissionWait,
+  sessionEnd,
+  shortLabel,
+  type AgentRow,
+} from "../../data/agents";
+import { featureById, sessionById, taskById } from "../../data/selectors";
+import { localDay, plural } from "../../lib/format";
 
 export type AgentsFilter = "active" | "running" | "waiting" | "finished";
 
@@ -43,23 +53,46 @@ export interface WaitingAgent {
   wait: LiveWait;
 }
 
-export function agentGroups(_live: LiveSession[], _now: number): AgentGroups {
-  return { running: [], waiting: [], finished: [] };
+export function agentGroups(live: LiveSession[], now: number): AgentGroups {
+  const today = localDay(new Date(now).toISOString());
+  const finished = live
+    .flatMap((session) => {
+      const end = sessionEnd(session);
+      return end && localDay(end) === today ? [{ session, end: Date.parse(end) }] : [];
+    })
+    .sort((a, b) => b.end - a.end)
+    .map(({ session }) => session);
+  return {
+    running: live.filter((s) => s.status === "running"),
+    waiting: live.filter((s) => s.status === "waiting"),
+    finished,
+  };
 }
 
 /** active = running + waiting sessions; the others count their group. */
-export function filterCounts(_groups: AgentGroups): Record<AgentsFilter, number> {
-  return { active: 0, running: 0, waiting: 0, finished: 0 };
+export function filterCounts(groups: AgentGroups): Record<AgentsFilter, number> {
+  return {
+    active: groups.running.length + groups.waiting.length,
+    running: groups.running.length,
+    waiting: groups.waiting.length,
+    finished: groups.finished.length,
+  };
 }
 
 /** active: every group; running, waiting, finished: that group only (the others empty). */
-export function shownGroups(_groups: AgentGroups, _filter: AgentsFilter): AgentGroups {
-  return { running: [], waiting: [], finished: [] };
+export function shownGroups(groups: AgentGroups, filter: AgentsFilter): AgentGroups {
+  if (filter === "active") return groups;
+  return {
+    running: filter === "running" ? groups.running : [],
+    waiting: filter === "waiting" ? groups.waiting : [],
+    finished: filter === "finished" ? groups.finished : [],
+  };
 }
 
 /** Sessions that aren't done and the number of their subagents (all statuses). */
-export function headerCounts(_live: LiveSession[]): StatusCount {
-  return { sessions: 0, subagents: 0 };
+export function headerCounts(live: LiveSession[]): StatusCount {
+  const active = activeSessions(live);
+  return { sessions: active.length, subagents: active.reduce((n, s) => n + s.agents.length, 0) };
 }
 
 /**
@@ -67,19 +100,34 @@ export function headerCounts(_live: LiveSession[]): StatusCount {
  * finished group and subagents that are done with ended_at on the local day of `now`.
  */
 export function rightNow(
-  _live: LiveSession[],
-  _now: number,
+  live: LiveSession[],
+  now: number,
 ): { running: StatusCount; waiting: StatusCount; doneToday: StatusCount } {
+  const today = localDay(new Date(now).toISOString());
+  const subagents = live.flatMap((s) => s.agents);
+  const count = (status: AgentStatus): StatusCount => ({
+    sessions: live.filter((s) => s.status === status).length,
+    subagents: subagents.filter((a) => a.status === status).length,
+  });
   return {
-    running: { sessions: 0, subagents: 0 },
-    waiting: { sessions: 0, subagents: 0 },
-    doneToday: { sessions: 0, subagents: 0 },
+    running: count("running"),
+    waiting: count("waiting"),
+    doneToday: {
+      sessions: agentGroups(live, now).finished.length,
+      subagents: subagents.filter(
+        (a) => a.status === "done" && a.ended_at !== null && localDay(a.ended_at) === today,
+      ).length,
+    },
   };
 }
 
 /** "2 sessions · 2 subagents", "1 session", "3 subagents"; "None" when both are 0. */
-export function countLine(_count: StatusCount): string {
-  return "";
+export function countLine(count: StatusCount): string {
+  const parts = [
+    count.sessions > 0 ? plural(count.sessions, "session") : null,
+    count.subagents > 0 ? plural(count.subagents, "subagent") : null,
+  ].filter((part) => part !== null);
+  return parts.length > 0 ? parts.join(" · ") : "None";
 }
 
 /**
@@ -87,31 +135,87 @@ export function countLine(_count: StatusCount): string {
  * conflicts: those with two or more editors whose path matches no `sharedFiles` glob.
  */
 export function editedFiles(
-  _live: LiveSession[],
-  _sharedFiles: string[],
+  live: LiveSession[],
+  sharedFiles: string[],
 ): { files: EditedFile[]; conflicts: EditedFile[] } {
-  return { files: [], conflicts: [] };
+  const byPath = new Map<string, EditedFile>();
+  for (const session of live) {
+    for (const row of agentRows(session)) {
+      if (row.status === "done") continue;
+      const editor: Editor = {
+        key: row.key,
+        label: row.agent_id ? `${shortLabel(session)} ${row.name}` : shortLabel(session),
+        href: row.href,
+      };
+      for (const edit of row.edits) {
+        const file = byPath.get(edit.file) ?? { path: edit.file, editors: [] };
+        byPath.set(edit.file, file);
+        if (!file.editors.some((e) => e.key === editor.key)) file.editors.push(editor);
+      }
+    }
+  }
+  const files = [...byPath.values()];
+  const shared = sharedFiles.map(globToRegExp);
+  const conflicts = files.filter((f) => f.editors.length > 1 && !matchesAny(f.path, shared));
+  return { files, conflicts };
+}
+
+/** The features a session works on: `features`, else its single `feature`. */
+function sessionFeatures(session: Pick<LiveSession, "features" | "feature">): string[] {
+  if (session.features.length > 0) return session.features;
+  return session.feature ? [session.feature] : [];
 }
 
 /** Pairs of derived.file_conflicts whose features are both in flight in a session that isn't done, sorted by path then features. */
-export function plannedOverlaps(_index: Index): Overlap[] {
-  return [];
+export function plannedOverlaps(index: Index): Overlap[] {
+  const inFlight = new Set(activeSessions(index.live).flatMap(sessionFeatures));
+  const pairs = new Map<string, Overlap>();
+  for (const feature of index.features) {
+    if (!inFlight.has(feature.id)) continue;
+    for (const conflict of feature.derived.file_conflicts) {
+      if (!inFlight.has(conflict.with)) continue;
+      const features = [feature.id, conflict.with].sort() as [string, string];
+      pairs.set(`${conflict.path}\n${features.join("\n")}`, { path: conflict.path, features });
+    }
+  }
+  return [...pairs.values()].sort(
+    (a, b) =>
+      a.path.localeCompare(b.path) ||
+      a.features[0].localeCompare(b.features[0]) ||
+      a.features[1].localeCompare(b.features[1]),
+  );
 }
 
 /** Open permission waits of every agent of every session that isn't done, oldest first. */
-export function needsYou(_live: LiveSession[]): WaitingAgent[] {
-  return [];
+export function needsYou(live: LiveSession[]): WaitingAgent[] {
+  return activeSessions(live)
+    .flatMap((session) =>
+      agentRows(session).flatMap((row) =>
+        row.waiting && isPermissionWait(row.waiting) ? [{ session, row, wait: row.waiting }] : [],
+      ),
+    )
+    .sort((a, b) => Date.parse(a.wait.since) - Date.parse(b.wait.since));
 }
 
 /** "<goal or No goal recorded>[ · N subagents][ · left a handoff]" (handoff: the SES's non-blank handoff). */
-export function finishedSummary(_index: Index, _session: LiveSession): string {
-  return "";
+export function finishedSummary(index: Index, session: LiveSession): string {
+  const handoff = session.ses ? sessionById(index, session.ses)?.handoff.trim() : "";
+  return [
+    session.goal ?? "No goal recorded",
+    session.agents.length > 0 ? plural(session.agents.length, "subagent") : null,
+    handoff ? "left a handoff" : null,
+  ]
+    .filter((part) => part !== null)
+    .join(" · ");
 }
 
 /** Chips and title for "Working on": features (else [feature]), task, and the task's title, else the only feature's title. */
 export function workingOn(
-  _index: Index,
-  _session: Pick<LiveSession, "features" | "feature" | "task">,
+  index: Index,
+  session: Pick<LiveSession, "features" | "feature" | "task">,
 ): { features: string[]; task: string | null; title: string | null } {
-  return { features: [], task: null, title: null };
+  const features = sessionFeatures(session);
+  const taskTitle = session.task ? taskById(index, session.task)?.task.title : undefined;
+  const only = features.length === 1 && features[0] ? featureById(index, features[0]) : undefined;
+  return { features, task: session.task, title: taskTitle ?? only?.title ?? null };
 }
