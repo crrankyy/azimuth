@@ -2,7 +2,7 @@
 id: BUG-0075
 type: bug
 title: task finish doesn't say it is waiting for another verify
-status: open
+status: resolved
 severity: low
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: [F-009]
 files: [src/core/finish.ts]
 found_by: SES-20261019-2021
 created: 2026-10-19
-resolved_at: null
+resolved_at: 2026-10-19
 ---
 ## Repro
 Run `azimuth task finish` while another `azimuth verify` holds the verify lock.

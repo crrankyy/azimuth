@@ -2,7 +2,7 @@
 id: BUG-0074
 type: bug
 title: task finish can't be rerun after a verify that failed for reasons outside the task
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: [F-009]
 files: [src/core/finish.ts]
 found_by: SES-20261019-2021
 created: 2026-10-19
-resolved_at: null
+resolved_at: 2026-10-19
 ---
 ## Repro
 1. `azimuth task finish T-009.6 --commit "…"` while another lane's files fail `format:check`.
