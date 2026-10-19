@@ -22,24 +22,30 @@ Target: $ARGUMENTS
 4. Repeat until `azimuth next <F-ID>` has no ready task (when you hand tasks to subagents,
    follow "Delegating to subagents" below):
    1. `azimuth move <T-ID> in-progress`.
-   2. Write the tests for the scenarios the task covers. Each test name starts with its scenario
-      ID (`it("S-005.1.2 …")`); where a name can't hold the ID, use the protocol's marker
-      (`// scenario: S-005.1.2` above a Rust or Go test) and a test name unique in the project.
-      Run them and confirm they fail for the right reason.
+   2. Build the task yourself, or hand it to a subagent whose prompt is `azimuth brief <T-ID>`
+      (see "Delegating to subagents"). Write the tests for the scenarios the task covers. Each
+      test name starts with its scenario ID (`it("S-005.1.2 …")`); where a name can't hold the
+      ID, use the protocol's marker (`// scenario: S-005.1.2` above a Rust or Go test) and a test
+      name unique in the project. Run them and confirm they fail for the right reason.
    3. Implement until the task's verify command passes. Respect the contract and invariants.
       When a passing test proves a value its scenario leaves open as `{?}`, record it with
       `azimuth settle <S-ID> "<value>"`, which fills the scenario's first `{?}`.
-   4. Commit: `feat(<F-ID>): <what>` with `Refs: <T-ID>`.
-   5. `azimuth verify <T-ID> --summary` to record the run, then `azimuth move <T-ID> done`.
+   4. `azimuth task finish <T-ID> --commit "feat(<F-ID>): <what>" [--note "<what it taught>"]`
+      replaces the commit, verify, move and log steps. It checks the feature, adds the note to
+      the feature's notes.md, stages the task's changed `files` and the feature's changed
+      records, commits them with a `Refs: <T-ID>` trailer (hooks run), runs the verify command
+      and moves the task to done with the result in its log. It prints one line per step and
+      stops at the first ✗: fix the cause and run it again, without `--note` when the note step
+      already ran. After a failed verify the commit stays and the task stays in progress; the
+      fix goes in the next finish's commit. `not staged:` lists changed files it left out.
       Don't build by hand first: a build every verify command needs belongs in
-      `verify.prebuild`, which each verify call runs once, under its own timeout. If another
-      `azimuth verify` is running, the call waits its turn (`waited 40s for another verify`).
-   6. After each task, or every few significant steps in a long one, add
+      `verify.prebuild`, which each finish runs once, under its own timeout.
+   5. Every few significant steps in a long task, add
       `azimuth log <T-ID> "<what changed, what's next>"` so the viewer shows progress (and
-      `azimuth session note "<progress>"` for the session's own record). Record
-      what the task taught (a constraint the code revealed, a choice the spec left open) with
-      `azimuth note <T-ID> "<text>"`, which writes the feature's notes.md; never add it to
-      feature.md.
+      `azimuth session note "<progress>"` for the session's own record). Record what the task
+      taught (a constraint the code revealed, a choice the spec left open) with `--note` on
+      `task finish`, or `azimuth note <T-ID> "<text>"`, which writes the feature's notes.md; never
+      add it to feature.md.
 5. Stop and report instead of pushing on when:
    - a decision is needed: raise a question (`azimuth new question … --feature <F-ID>`), and
      `azimuth move <T-ID> blocked --note "Waiting on Q-…"` if it blocks the task;
@@ -66,24 +72,24 @@ recorded in yours.
   `azimuth session start` would add its goal to your session, and parallel commits in one working
   tree pick up each other's files.
 - **Hand each subagent one ready task** from `azimuth next <F-ID>`, after
-  `azimuth move <T-ID> in-progress`. Give it the task's title, the scenarios it covers with their
-  GIVEN/WHEN/THEN, the contract and invariants it must keep, the files it may change (the task's
-  `files`), the test-naming rule from step 4.2 and the task's verify command. Ask it to write the
-  tests first, implement, run the verify command, and report the files it changed, the
-  command's result, the value a test proved for each `{?}` and what the task taught, without
-  committing. You settle those values and record those notes.
+  `azimuth move <T-ID> in-progress`. Its prompt is the output of `azimuth brief <T-ID>`: the
+  task, the scenarios it covers, the contract and invariants, the files it may change, the
+  verify command, the feature's notes and the rules (tests first, test names, no git or
+  azimuth, report the files changed, the verify result and the value a test proved for each
+  `{?}`). Add only what the records don't hold, such as asking it to report what the task
+  taught. You settle those values and pass the lesson to `task finish --note`.
 - **Parallel only when independent:** run several subagents at once only for ready tasks whose
   `files` overlap in no file outside `parallel.shared_files` (config.yaml); otherwise one at a
   time. `azimuth next <F-ID>` ends with the groups that can run together
   (`Can run together: T-005.2, T-005.3 (shared: src/registry.ts)`, `On its own: T-005.4`). Wait
-  for the whole batch to report before verifying, since a half-finished change elsewhere can
-  break the build.
+  for the whole batch to report before finishing any of its tasks, since a half-finished change
+  elsewhere can break the build.
 - **Shared files take insertions only:** tell each subagent whose task lists a shared file to
   add one complete insertion to it (a whole enum variant, match arm or registry entry) and never
   to edit another task's insertion.
-- **Then commit one task at a time:** review the change, stage only that task's files and commit
-  with `Refs: <T-ID>` (step 4.4). A shared file holding the insertions of several tasks goes into
-  one commit with those tasks, whose `Refs:` names each of them (`Refs: T-005.2, T-005.3`).
-- **Verify the batch in one call:** `azimuth verify <T-ID> <T-ID> … --summary` prints one line per
-  run and the output of failures only. Then `azimuth move <T-ID> done` and `azimuth log` for each
-  task that passed; fix a failed one, commit it and verify it again.
+- **Then finish the batch one task at a time:** once the whole batch has reported, review each
+  change and run `azimuth task finish` (step 4.4) for its tasks one after another, never in
+  parallel. Each commits only its task's files and the feature's records. A shared file is
+  staged whole, so the first finished task that lists it commits it with every task's
+  insertions, and the next task's commit no longer sees it changed. Fix a task whose finish
+  failed and finish it again.

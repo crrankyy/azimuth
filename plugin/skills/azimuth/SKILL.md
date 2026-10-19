@@ -63,5 +63,7 @@ sessions in `.azimuth/`, validates them and shows them live in a local viewer. F
 | `azimuth note <T-ID\|F-ID> "<text>"`                                                                            | What a task taught, in the feature's notes.md (no reapproval)          |
 | `azimuth settle <S-ID> "<value>"`                                                                               | Fill a scenario's first `{?}` with the value a passing test proved     |
 | `azimuth verify <T-ID\|F-ID>`                                                                                   | Run verify commands and record the result                              |
+| `azimuth task finish <T-ID> --commit "<message>" [--note "<text>"]`                                             | Commit a task's files with `Refs:`, verify it and move it to done      |
+| `azimuth brief <T-ID>`                                                                                          | The prompt for a subagent building a task, from the records            |
 | `azimuth trace [F-ID]`                                                                                          | Scenario → test coverage                                               |
 | `azimuth session start --skill <name> --goal "…"` · `session note "…"` · `session handoff "<next steps>"`       | Record work: one session per Claude Code session, closed by the plugin |

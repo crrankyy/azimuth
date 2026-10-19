@@ -2,7 +2,7 @@
 tasks:
   - id: T-009.1
     title: Scaffolding, command wiring and the abortOnSignals export
-    status: in-progress
+    status: done
     after: []
     covers: []
     files: [src/core/finish.ts, src/core/task-brief.ts, src/cli/commands/task.ts, src/cli/main.ts, src/cli/commands/work.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-009.2
     title: Refs trailer and path selection (red → green)
-    status: in-progress
+    status: done
     after: [T-009.1]
     covers: [S-009.1.1, S-009.1.2, S-009.1.3, S-009.1.4, S-009.2.1, S-009.2.2, S-009.2.3]
     files: [src/core/finish.ts, test/core/finish.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-009.3
     title: finishTask against real git (red → green)
-    status: in-progress
+    status: done
     after: [T-009.2]
     covers: [S-009.3.1, S-009.3.2, S-009.3.3, S-009.4.1, S-009.4.2, S-009.4.3, S-009.4.4, S-009.4.5, S-009.4.6, S-009.5.1, S-009.5.2, S-009.5.3, S-009.5.4]
     files: [src/core/finish.ts, test/core/finish.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-009.4
     title: The subagent brief (red → green)
-    status: in-progress
+    status: done
     after: [T-009.1]
     covers: [S-009.7.1, S-009.7.2, S-009.7.3, S-009.7.4, S-009.7.5]
     files: [src/core/task-brief.ts, test/core/task-brief.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-009.5
     title: task finish and brief on the command line (red → green)
-    status: in-progress
+    status: done
     after: [T-009.3, T-009.4]
     covers: [S-009.6.1, S-009.6.2, S-009.6.3, S-009.6.4, S-009.8.1, S-009.8.2, S-009.8.3]
     files: [src/cli/commands/task.ts, test/cli/task.test.ts]

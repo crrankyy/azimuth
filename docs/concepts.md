@@ -73,6 +73,13 @@ questions `open → answered` (or `obsolete`; you can replace an agent's answer 
 accepted → `proposed` (you only, for a decision an agent accepted); milestones `planned → active → released`; issues `open → in-progress → resolved |
 wontfix`.
 
+An agent builds each task in a loop: `azimuth move <T-ID> in-progress`, the tests and the code
+(written by the agent itself, or by a subagent whose prompt is `azimuth brief <T-ID>`, built
+from the records), then `azimuth task finish <T-ID> --commit "<message>"`. Finish commits the
+task's changed files and the feature's changed records with a `Refs: <T-ID>` trailer, runs the
+task's verify command and moves the task to done when the run passes; after a failed run the
+commit stays and the task stays in progress (see [Finish a task](cli.md#finish-a-task)).
+
 ## Notes and placeholders
 
 A build learns things the spec couldn't know. Two records keep them out of the approval, so
@@ -168,6 +175,11 @@ its files outside the shared list; otherwise the task starts a new group. Two ta
 same unshared file never share a group. A task without `files` gets a group of its own, since
 nothing says what it changes. Paths compare as written in `plan.md`.
 
+When the whole group has reported, the agent finishes its tasks one at a time with
+`azimuth task finish`. Each commits only its own task's files and the feature's records. A shared
+file is staged whole: the first task finished that lists it commits it with every task's
+insertions, and the next task's commit no longer sees it changed.
+
 ## The inbox
 
 What needs you, grouped by urgency:
@@ -190,8 +202,9 @@ What needs you, grouped by urgency:
   the scenario IDs and marked tests' function names its output shows (see
   [`azimuth verify`](cli.md#verify)); a JUnit report written to `$AZIMUTH_JUNIT` makes that exact
   per test.
-- **Task → commit:** commits carry a `Refs: T-005.2` trailer; a commit without one is linked by
-  the IDs in its Conventional Commits scope (`feat(F-005): …`).
+- **Task → commit:** commits carry a `Refs: T-005.2` trailer, which `azimuth task finish` adds;
+  a commit without one is linked by the IDs in its Conventional Commits scope
+  (`feat(F-005): …`).
 - **Question → decision → feature:** a resolved question points at the ADR or feature that
   applied it.
 

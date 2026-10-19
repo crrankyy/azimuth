@@ -39,9 +39,12 @@ Azimuth viewer. Follow this protocol whenever you work in this repository.
   previous handoff.
 - The Azimuth plugin closes the session when the Claude Code session ends. Without the plugin,
   finish with \`azimuth session close\`.
-- Keep the viewer current during long work: move a task to \`in-progress\` when you start it
-  and to \`done\` when its verify passes, and add \`azimuth log <ID> "<progress>"\` notes at
-  meaningful points.
+- Keep the viewer current during long work: move a task to \`in-progress\` when you start it,
+  and add \`azimuth log <ID> "<progress>"\` notes at meaningful points.
+- Finish each task with \`azimuth task finish <T-ID> --commit "<message>"\`: it commits the
+  task's files and the feature's records with a \`Refs: <T-ID>\` trailer, runs the task's verify
+  command and moves the task to \`done\` when it passes.
+- \`azimuth brief <T-ID>\` prints the prompt for a subagent building a task, from the records.
 - Commit with Conventional Commits and a \`Refs:\` trailer naming the task or feature
   (\`Refs: T-005.2\`). Commit pending \`.azimuth/\` changes as well
   (\`chore(azimuth): record decisions\`).
@@ -73,7 +76,8 @@ lives in \`.azimuth/features/F-NNN-<slug>/\`; \`.azimuth/templates/\` shows each
 - Start each test name with the scenario it covers: \`it("S-005.1.2 rejects an expired token", …)\`
   (pytest: \`@pytest.mark.scenario("S-005.1.2")\`; other languages: a \`// scenario: S-005.1.2\`
   comment above the test).
-- After committing a task, run \`azimuth verify <T-ID>\`; the result appears in the viewer.
+- \`azimuth task finish\` runs the task's verify command after committing it; the result
+  appears in the viewer.
 `;
 
 // The blank line after the start marker is what Prettier expects, so formatters leave the block alone.

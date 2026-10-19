@@ -43,6 +43,7 @@ be on your PATH).
 | `azimuth next [F-ID] [--json]`              | The highest-priority unblocked work across the project (critical bugs and debt, then feature work by status and priority, then high-severity ones), or a feature's ready tasks and which of them can run together (below).     |
 | `azimuth check [ID…] [--warnings] [--json]` | Validation problems (all, or those concerning the given IDs). Every error is listed; without an ID or `--warnings`, warnings are only counted by code on one line. `--json` lists every problem. Exit 1 when there are errors. |
 | `azimuth trace [F-ID] [--all] [--json]`     | Scenario → test coverage. References that only mention a scenario ID (outside a test name or marker) are hidden and counted on the last line; `--all` shows them, marked `(mention)`, and `--json` keeps them.                 |
+| `azimuth brief <T-ID> [--json]`             | The prompt for a subagent building the task, in Markdown, from the records alone (below). `--json` prints `{task, feature, text}`.                                                                                             |
 | `azimuth docs [formats\|concepts\|cli]`     | Prints this reference: the file formats, the concepts, or this page. It is bundled into the CLI, so agents read it instead of Azimuth's code.                                                                                  |
 | `azimuth index [--out <file>]`              | Writes the index JSON (default `.azimuth/cache/index.json`).                                                                                                                                                                   |
 
@@ -67,6 +68,16 @@ On its own: T-005.4
 when there are none. With an F-ID, `--json` prints `{items, groups}`: `items` is the list the
 command prints, and `groups` a list of `{tasks, shared}`, `[]` unless the feature is in progress.
 Without an ID, `--json` prints the array of items.
+
+`azimuth brief <T-ID>` prints, in this order: the task's title, its feature and the status of its
+`after` tasks; the lines of each scenario it covers, as written in `stories.md`, with settled
+values filled in and `{?}` kept; `contract.md`, its headings one level deeper; the feature's
+invariants; the files it may change; its verify command; the feature's `notes.md`; and the rules
+(the test-naming form for the project's `stack.languages`, tests first, only the listed files, no
+`git` or `azimuth` and nothing under `.azimuth/`, what to report, and how to report a `{?}` value
+when a covered scenario holds one). A part with nothing to show is left out, except the files,
+the verify command and the rules. It writes nothing and runs no git, and the same records give
+the same text. An unknown feature or task exits 1.
 
 ## Create
 
@@ -186,6 +197,87 @@ names are matched without their module path, so give marked tests unique names; 
 warns (`W-TEST-NAME`) when marked tests in different files share one. Test runners that
 print none of these (`go test` without `-v`) need a JUnit report, whose test cases are matched by
 scenario ID or function name too. `$AZIMUTH_TASK` holds the task ID.
+
+## Finish a task
+
+`azimuth task finish <T-ID> --commit "<message>" [--note "<text>"] [--json]` commits a task,
+verifies it and moves it to done in one call. It runs these steps in order and stops at the first
+that fails:
+
+1. **check** reads only: the project is a git repository, the feature and the task exist and are
+   both in progress, the task has a verify command, the feature has no errors (counted as
+   `azimuth check <F-ID>` counts them; warnings don't stop it), and nothing is already staged
+   outside the paths the stage step would stage. A failed check changes nothing.
+2. **note**, with `--note` only, adds the text to the feature's `notes.md` as `azimuth note` does,
+   so it goes into the commit.
+3. **stage** runs `git add` on the changed paths (modified, added, deleted, renamed and untracked;
+   never ignored ones) that are one of the task's `files` or lie under one, and on the changed
+   records under the feature's folder. Every other changed path is left out and listed as
+   `not staged`. It fails when there is nothing to stage.
+4. **commit** makes one commit of exactly the staged paths. Hooks run; finish never passes
+   `--no-verify`, amends, pushes or makes a second commit.
+5. **verify** runs `verify.prebuild` and the task's verify command and records the run, as
+   `azimuth verify <T-ID>` does, waiting for another running verify first.
+6. **done** moves the task to done when the run passed. The move's log entry carries the result:
+   `T-005.4: in-progress → done. Committed 1a2b3c4; R-0142 passed.`
+7. **log**: after a failed run or prebuild, a log note records the result instead:
+   `T-005.4: Committed 1a2b3c4; R-0142 failed (exit 1).`
+
+The move and its log entry are written after the commit and stay uncommitted; the next
+`task finish` in the feature commits them with its records, and close-out commits the last ones.
+They change only `.azimuth/`, so they never make the run stale.
+
+A file that two tasks list, such as a [shared file](concepts.md#parallel-tasks-and-shared-files),
+is staged whole: the first task finished commits it with every task's insertions, and the next
+task's commit no longer sees it changed.
+
+The message gets a `Refs: <T-ID>` trailer unless a line after its first already starts with
+`Refs:` (any case); that message is kept as written. When the message has more than one
+paragraph and its last one holds only `Token: value` trailers such as `Co-Authored-By:`, `Refs:`
+becomes the first line of that paragraph, so git still reads them all as trailers; otherwise it
+is added as a new last paragraph. Trailing whitespace is removed.
+
+finish prints one line per step: `✓` for a step that ran, `✗` for the one that failed, followed
+by its output indented four spaces (the feature's errors, git's output with the hooks', or the
+run's output tail), and `- <step>: not run` for the steps that didn't run. `not staged:` follows
+the stage step when it left paths out:
+
+```
+$ azimuth task finish T-005.4 --commit "feat(F-005): count files" --note "Counts the BOM."
+✓ check: F-005 has no errors
+✓ note: T-005.4: note added
+✓ stage: .azimuth/features/F-005-counts/notes.md, src/count.ts, test/count.test.ts
+  not staged: src/other.ts
+✓ commit: 1a2b3c4 feat(F-005): count files
+✓ verify: R-0142 passed in 1.2s
+✓ done: T-005.4: in-progress → done
+✓ log: Committed 1a2b3c4; R-0142 passed.
+
+$ azimuth task finish T-005.4 --commit "feat(F-005): count files"
+✓ check: F-005 has no errors
+✓ stage: src/count.ts
+✓ commit: 1a2b3c4 feat(F-005): count files
+✗ verify: R-0142 failed (exit 1) in 0.4s
+    S-005.4.1 counts files
+- done: not run
+✓ log: Committed 1a2b3c4; R-0142 failed (exit 1).
+```
+
+`--json` prints only the result, whatever the outcome: `{task, feature, ok, steps, staged,
+not_staged, commit, run, interrupted}`, where each step is `{step, status, detail, output}` and
+`status` is `done`, `failed` or `not-run`. A failed git step shows the last
+`verify.output_tail_lines` lines of git's output. Unless the check failed, the feature and the
+task are added to the current session's `touched` list.
+
+It exits 0 when the task is done and 1 when a step failed. Usage errors exit 2 and change nothing:
+no `--commit` or a blank one, an ID that isn't a task ID, an action other than `finish`, or no
+project. Ctrl-C or SIGTERM during the verify step kills the running command as in
+`azimuth verify`: no run is recorded, nothing is logged, the commit stays and finish exits 130 or 143.
+
+To rerun after a failure, fix what the `✗` line names and run `task finish` again; leave out
+`--note` when the note step already ran, since the note stays in `notes.md`. After a failed
+commit the paths stay staged. After a failed verify the commit stays and the task stays in
+progress: the next finish commits the fix with the failure's log entry and verifies again.
 
 ## Sessions
 
