@@ -2,7 +2,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { IDLE_REASON } from "../../../src/core/live-agents";
 import type { Index, LiveSession } from "../../../src/core/types";
-import { AGENTS_NOW, agentsLive, indexWithLive } from "../../../test/fixtures/live/agents";
+import {
+  AGENTS_NOW,
+  agentsLive,
+  indexWithLive,
+  liveAgent,
+} from "../../../test/fixtures/live/agents";
 import { UiProvider } from "../components/Ui";
 import { IndexContext, type Connection } from "../data/IndexProvider";
 import { parseRoute } from "../lib/router";
@@ -69,6 +74,9 @@ const links = (html: string) =>
     text(inner ?? ""),
   ]);
 
+/** A card's subagent tree. */
+const treeOf = (card: string) => card.split('class="az-tree')[1] ?? "";
+
 /** The text of the first element with this class. */
 const byClass = (html: string, cls: string) =>
   text(new RegExp(`<(\\w+) class="${cls}"[^>]*>(.*?)</\\1>`).exec(html)?.[2] ?? "");
@@ -132,9 +140,9 @@ describe("F-015 the Agents screen", () => {
     expect(byClass(html, "agent-working")).toBe("Working on F-010 Prometheus metrics");
   });
 
-  it("S-015.2.5 lists each subagent in the card's tree", () => {
+  it("S-015.2.5 lists each subagent in the card's tree, running, then waiting, then done", () => {
     const html = card(render(indexWithLive(agentsLive())), "SES-20261018-1201");
-    const tree = links(html.split('class="az-tree')[1] ?? "");
+    const tree = links(treeOf(html));
     expect(tree.map(([to]) => to)).toEqual(["#/agents/c1201/a1", "#/agents/c1201/a2"]);
     for (const part of [
       "Running",
@@ -146,6 +154,31 @@ describe("F-015 the Agents screen", () => {
       expect(tree[0]?.[1]).toContain(part);
     for (const part of ["Done", "explorer", "Find every caller of decideRetry()", "1m 12s"])
       expect(tree[1]?.[1]).toContain(part);
+
+    // First seen: a2 (done), a8 (waiting), a9 (done), a1 (running).
+    const live = agentsLive();
+    const c1201 = find(live, "c1201");
+    const [runner, explorer] = c1201.agents;
+    const asking = liveAgent({
+      agent_id: "a8",
+      agent_type: "code-reviewer",
+      status: "waiting",
+      waiting: { reason: "Permission prompt: Bash pnpm lint", since: "2026-10-18T12:04:40Z" },
+    });
+    const finished = liveAgent({
+      agent_id: "a9",
+      agent_type: "explorer",
+      status: "done",
+      ended_at: "2026-10-18T12:03:00Z",
+    });
+    c1201.agents = [explorer!, asking, finished, runner!];
+    const ordered = links(treeOf(card(render(indexWithLive(live)), "SES-20261018-1201")));
+    expect(ordered.map(([to]) => to)).toEqual([
+      "#/agents/c1201/a1",
+      "#/agents/c1201/a8",
+      "#/agents/c1201/a2",
+      "#/agents/c1201/a9",
+    ]);
   });
 
   it("S-015.2.6 shows a session without an SES, goal or work by its short ID", () => {

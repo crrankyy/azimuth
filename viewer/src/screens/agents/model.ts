@@ -186,6 +186,13 @@ export function plannedOverlaps(index: Index): Overlap[] {
   );
 }
 
+const TREE_RANK: Record<AgentStatus, number> = { running: 0, waiting: 1, done: 2 };
+
+/** A card's subagent rows: running, then waiting, then done, each status in first-seen order. */
+export function treeOrder(rows: AgentRow[]): AgentRow[] {
+  return [...rows].sort((a, b) => TREE_RANK[a.status] - TREE_RANK[b.status]);
+}
+
 /** Open permission waits of every agent of every session that isn't done, oldest first. */
 export function needsYou(live: LiveSession[]): WaitingAgent[] {
   return activeSessions(live)

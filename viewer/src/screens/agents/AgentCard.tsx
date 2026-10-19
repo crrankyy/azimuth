@@ -12,7 +12,7 @@ import {
 } from "../../data/agents";
 import { clock, elapsed, liveAgo } from "../../lib/format";
 import { href } from "../../lib/router";
-import { finishedSummary, workingOn } from "./model";
+import { finishedSummary, treeOrder, workingOn } from "./model";
 
 function Chevron() {
   return (
@@ -83,7 +83,8 @@ export function AgentCard({
   now: number;
   selected: boolean;
 }) {
-  const [main, ...subagents] = agentRows(session);
+  const [main, ...rest] = agentRows(session);
+  const subagents = treeOrder(rest);
   const work = workingOn(index, session);
   const waiting = session.status === "waiting" && session.waiting;
   const classes = ["az-card", "agent-card", session.status, selected ? "az-focus" : ""];
