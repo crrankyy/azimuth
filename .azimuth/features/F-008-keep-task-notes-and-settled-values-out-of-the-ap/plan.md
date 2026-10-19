@@ -58,7 +58,7 @@ tasks:
     note: null
   - id: T-008.8
     title: Agent instructions, docs and full verification
-    status: in-progress
+    status: done
     after: [T-008.2, T-008.4, T-008.5, T-008.6, T-008.7]
     covers: []
     files: [plugin/skills/spec/SKILL.md, plugin/skills/build/SKILL.md, plugin/skills/azimuth/SKILL.md, src/core/protocol.ts, docs/cli.md, docs/concepts.md, docs/file-format.md, docs/viewer.md]

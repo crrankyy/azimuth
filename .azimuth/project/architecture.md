@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-20
-reconciled_at: c088d7c
+reconciled_at: 9f08102
 modules:
   - name: core
     path: src/core
@@ -72,8 +72,8 @@ frontmatter, Vitest, ESLint and Prettier. pnpm only.
 - Verify commands and the prebuild run through `runShell` (`src/core/shell.ts`) as a detached
   process group; a timeout, or SIGINT/SIGTERM to `azimuth verify`, kills the whole group (SIGTERM,
   then SIGKILL after 2 s).
-- `src/core/flows.ts`, `glob.ts`, `ids.ts`, `next.ts` and `types.ts` import no Node modules, so the
-  viewer can use them.
+- `src/core/flows.ts`, `glob.ts`, `ids.ts`, `next.ts`, `placeholders.ts` and `types.ts` import no
+  Node modules, so the viewer can use them.
 - An agent answers a question only under `autonomy.questions: proceed`, and only a new,
   non-blocking one it raised with exactly one recommended option (`answer.by: agent`).
   `azimuth answer` stays yours, and your answer replaces an agent's.
@@ -115,6 +115,14 @@ prints and the server pushes to the viewer over SSE.
   `notes.md`, which the index carries and the As-built tab shows; `azimuth settle`
   (`src/core/settle.ts`, `placeholders.ts`) replaces a `{?}` with `{=value}` and logs it. The done
   gate waits while any `{?}` remains, and `inbox.ts` lists settles made after `review_ack_at`.
+  `settle` writes stories.md and its `Settled <S-ID>: {=value}` agent note in one locked step. The
+  Review item covers features you approved too, and `azimuth ack F-…` (`acknowledge`) clears it.
+  The Stories tab renders values through `placeholderParts`.
+- Sessions: within one Claude Code session, `session start` (`src/core/session.ts`) reuses the
+  open SES and adds its goal to a Goals list; `session note` appends to Notes; SessionEnd closes
+  the SES from its own file. The sidecar `live/<claude-session>.meta.json` (`readLiveMeta`,
+  `updateLiveMeta` in `live.ts`) keeps `started_at`, `ses` and `transcript_path`, so they survive
+  the live log's 64 KB tail.
 - Viewer: each issue has a page at `#/issues/<id>/page` (`viewer/src/screens/issues/`), whose
   related work (`related.ts`) and history (`history.ts`) are derived from the index on every
   render.

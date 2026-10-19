@@ -2,7 +2,7 @@
 id: F-008
 title: Keep task notes and settled values out of the approval
 summary: azimuth note writes what a task taught to the feature's notes.md, and azimuth settle fills a {?} placeholder in a THEN line with the value a test proved; neither makes the approval stale.
-status: in-progress
+status: verifying
 priority: P1
 size: M
 mode: brownfield
