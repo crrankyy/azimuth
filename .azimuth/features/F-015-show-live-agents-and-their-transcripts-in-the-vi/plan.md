@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-015.6
     title: Loading transcript pages with the token (red → green)
-    status: in-progress
+    status: done
     after: [T-015.1]
     covers: [S-015.5.1, S-015.5.2, S-015.5.3, S-015.5.4, S-015.5.5, S-015.5.6, S-015.5.7]
     files: [viewer/src/data/transcript.ts, viewer/src/data/transcript.test.ts]

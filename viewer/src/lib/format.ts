@@ -110,16 +110,28 @@ export function dayHeading(iso: string, now: number): string {
  * A duration: "45s" under a minute; "4m 01s" under ten minutes ("5m" when the seconds are 0);
  * "25m" under an hour; "1h 05m" after ("2h" when the minutes are 0). Negative input → "0s".
  */
-export function elapsed(_ms: number): string {
-  return "";
+export function elapsed(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 10) return s % 60 === 0 ? `${m}m` : `${m}m ${pad(s % 60)}s`;
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  return m % 60 === 0 ? `${h}h` : `${h}h ${pad(m % 60)}m`;
 }
 
 /** "just now" under 5 s, "48s ago" under a minute, else ago(iso, now); "" for null. */
-export function liveAgo(_iso: string | null | undefined, _now: number): string {
-  return "";
+export function liveAgo(iso: string | null | undefined, now: number): string {
+  if (!iso) return "";
+  const s = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
+  if (s < 5) return "just now";
+  if (s < 60) return `${s}s ago`;
+  return ago(iso, now);
 }
 
 /** "12:01:04" in local time; "" for null. */
-export function clockSeconds(_iso: string | null | undefined): string {
-  return "";
+export function clockSeconds(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
