@@ -9,8 +9,10 @@ import {
   type FinishOptions,
   type FinishResult,
 } from "../../src/core/finish";
+import { acquireVerifyLock } from "../../src/core/lock";
 import { loadProject } from "../../src/core/model";
 import { parseLog } from "../../src/core/parse/log";
+import { moveTask } from "../../src/core/transitions";
 import { commitAll, git, gitEnv, initRepo } from "../helpers/git";
 import { featureFiles, type TaskSpec } from "../helpers/project";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
@@ -460,5 +462,66 @@ describe("finishTask against real git", () => {
       expect(read(`${DIR}log.md`)).toBe(logBefore);
       expect((await killError(pid)).code).toBe("ESRCH");
     });
+  });
+
+  describe("BUG-0074 a rerun after a verify that failed outside the task", () => {
+    it("BUG-0074 skips the commit, verifies and moves the task to done", async () => {
+      repo({ tasks: [{ ...T1, verify: "grep -q fixed src/other.ts && echo S-001.1.1 ok" }] });
+      changeTaskFiles();
+      const first = await finish();
+      const sha = head();
+      expect([first.ok, step(first, "verify")?.status]).toEqual([false, "failed"]);
+      // Another lane's fix, committed with the pending records (the failed run's log note).
+      write("src/other.ts", "export const other = 'fixed';\n");
+      const fixed = commitAll(root, "fix: repair the other lane");
+      const result = await finish("T-001.1", { message: "feat(F-001): add a again" });
+      expect(result.ok).toBe(true);
+      expect(steps(result)).toBe(
+        "check done, stage done, commit done, verify done, done done, log done",
+      );
+      expect(step(result, "stage")?.detail).toBe(
+        "nothing left to stage: none of T-001.1's files and none of F-001's records changed",
+      );
+      expect(step(result, "commit")).toEqual({
+        step: "commit",
+        status: "done",
+        detail: `skipped: ${sha} feat(F-001): add a already commits T-001.1`,
+        output: "--commit message ignored: feat(F-001): add a again",
+      });
+      expect([result.commit, result.staged, result.run]).toEqual([sha, [], "R-0002"]);
+      expect(head()).toBe(fixed);
+      expect(runJson("R-0002").ok).toBe(true);
+      expect(taskStatus("T-001.1")).toBe("done");
+      expect(lastLogBody()).toBe(`T-001.1: in-progress → done. Committed ${sha}; R-0002 passed.`);
+    });
+
+    it("BUG-0074 has nothing to commit when the task's commit predates its move to in-progress", async () => {
+      repo({ tasks: [{ ...T1, status: "todo" }] });
+      changeTaskFiles();
+      commitAll(root, "feat(F-001): add a\n\nRefs: T-001.1");
+      moveTask(root, "T-001.1", "in-progress", { actor: "agent" });
+      const before = commitAll(root, "chore(azimuth): start T-001.1");
+      const result = await finish();
+      expect(steps(result)).toBe(
+        "check done, stage failed, commit not-run, verify not-run, done not-run, log not-run",
+      );
+      expect(step(result, "stage")?.detail).toBe(
+        "Nothing to commit: none of T-001.1's files and none of F-001's records changed.",
+      );
+      expect([head(), result.commit, taskStatus("T-001.1")]).toEqual([before, null, "in-progress"]);
+    });
+  });
+
+  it("BUG-0075 says in the verify step's output that it waited for another verify", async () => {
+    repo();
+    changeTaskFiles();
+    const held = await acquireVerifyLock(root);
+    // finishTask runs synchronously up to its first wait for the lock, so it is waiting now.
+    const running = finish();
+    held?.release();
+    const result = await running;
+    expect(result.ok).toBe(true);
+    expect(step(result, "verify")?.detail).toMatch(/^R-0001 passed in \d+\.\ds$/);
+    expect(step(result, "verify")?.output).toMatch(/^waited \d+s for another verify$/);
   });
 });

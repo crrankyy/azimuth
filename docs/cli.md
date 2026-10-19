@@ -277,7 +277,12 @@ project. Ctrl-C or SIGTERM during the verify step kills the running command as i
 To rerun after a failure, fix what the `✗` line names and run `task finish` again; leave out
 `--note` when the note step already ran, since the note stays in `notes.md`. After a failed
 commit the paths stay staged. After a failed verify the commit stays and the task stays in
-progress: the next finish commits the fix with the failure's log entry and verifies again.
+progress: the next finish commits the fix with the failure's log entry and verifies again. When
+the failure lay outside the task (another lane's broken file) and nothing is left to stage, the
+next finish finds the task's commit since it moved to in-progress and skips the commit step
+(`✓ commit: skipped: <sha> <subject> already commits T-…`, with the ignored `--commit` message
+noted), then verifies and moves the task to done. While another `azimuth verify` holds the
+verify lock, the verify step's output starts with `waited Ns for another verify`.
 
 ## Sessions
 

@@ -1,14 +1,14 @@
 import { spawnSync } from "node:child_process";
 import { analyzeProject } from "./build-index";
 import { AzimuthError, isAzimuthError } from "./errors";
-import { headSha, isGitRepo } from "./git";
+import { headSha, isGitRepo, readBlobs, readCommits } from "./git";
 import { featureOf, idKind } from "./ids";
 import type { FeatureEntity } from "./model";
 import { addNote } from "./notes";
-import type { TaskRaw } from "./parse/feature";
+import { parsePlan, type TaskRaw } from "./parse/feature";
 import { inScope, runScope } from "./run-scope";
 import { addLogEntry, moveTask, type Who } from "./transitions";
-import type { Id, Problem } from "./types";
+import type { Commit, Id, Problem } from "./types";
 import { verifyBatch, verifyTargets, type VerifyBatchResult } from "./verify";
 
 export type FinishStepName = "check" | "note" | "stage" | "commit" | "verify" | "done" | "log";
@@ -156,6 +156,39 @@ function tail(text: string, lines: number): string {
 
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
+/** The line `azimuth verify` prints for a wait (cli/verify-report.ts), rounded up; "" for none. */
+const waitedLine = (ms: number) =>
+  ms > 0 ? `waited ${Math.ceil(ms / 1000)}s for another verify` : "";
+
+/**
+ * The newest commit whose Refs name the task, made since the task last moved to in-progress:
+ * every commit from HEAD back to it must show the task in progress in plan.md. Moves to
+ * in-progress aren't logged, so plan.md's history is the only record of when one happened.
+ */
+function taskCommit(
+  root: string,
+  feature: FeatureEntity,
+  taskId: string,
+  depth: number,
+): Commit | null {
+  const commits = readCommits(root, depth);
+  const index = commits.findIndex((c) => c.refs.includes(taskId));
+  if (index === -1) return null;
+  const since = commits.slice(0, index + 1);
+  const plan = feature.files.plan ?? `${feature.dir}plan.md`;
+  const blobs = readBlobs(
+    root,
+    since.map((c) => `${c.sha}:${plan}`),
+  );
+  const inProgress = (c: Commit) => {
+    const text = blobs.get(`${c.sha}:${plan}`);
+    if (!text) return false;
+    const found = parsePlan(text, plan, feature.id).tasks.find((t) => t.id === taskId);
+    return found?.status === "in-progress";
+  };
+  return since.every(inProgress) ? (commits[index] ?? null) : null;
+}
+
 /** The rule `azimuth check F-NNN` uses: the feature's own problems, its parts' and its folder's. */
 function relatedTo(p: Problem, featureId: string): boolean {
   return (
@@ -172,7 +205,7 @@ const moveFirst = (id: string, status: string) =>
   `${id} is ${status}. Move it to in-progress first (\`azimuth move ${id} in-progress\`).`;
 
 type Checked =
-  | { ok: true; feature: FeatureEntity; task: TaskRaw; tailLines: number }
+  | { ok: true; feature: FeatureEntity; task: TaskRaw; tailLines: number; logDepth: number }
   | { ok: false; detail: string; output: string };
 
 const refuse = (detail: string, output = ""): Checked => ({ ok: false, detail, output });
@@ -212,7 +245,7 @@ function check(root: string, taskId: string, featureId: string, now: Date): Chec
       `Already staged, but not ${taskId}'s files or ${featureId}'s records: ${outside.join(", ")}. Unstage them (git restore --staged <path>) or commit them first.`,
     );
   }
-  return { ok: true, feature, task, tailLines };
+  return { ok: true, feature, task, tailLines, logDepth: model.config.git.log_depth };
 }
 
 interface VerifyOutcome {
@@ -309,7 +342,7 @@ export async function finishTask(
     return result;
   }
   mark("check", "done", `${featureId} has no errors`);
-  const { feature, task, tailLines } = checked;
+  const { feature, task, tailLines, logDepth } = checked;
 
   if (hasNote && !attempt("note", () => addNote(root, taskId, opts.note ?? "", who).message)) {
     return result;
@@ -327,57 +360,78 @@ export async function finishTask(
   }
   const selection = selectPaths(porcelainPaths(status.stdout), task, feature.dir);
   result.not_staged = selection.not_staged;
+  const unchanged = `none of ${taskId}'s files and none of ${featureId}'s records changed`;
+  let sha: string;
   if (selection.staged.length === 0) {
-    mark(
-      "stage",
-      "failed",
-      `Nothing to commit: none of ${taskId}'s files and none of ${featureId}'s records changed.`,
-    );
-    return result;
-  }
-  // Literal pathspecs: a path holding `*` or `[` must stage that file, never what it matches.
-  const add = runGit(root, ["--literal-pathspecs", "add", "-A", "--", ...selection.staged]);
-  if (add.code !== 0) {
-    mark("stage", "failed", `git add failed (exit ${add.code})`, tail(add.output, tailLines));
-    return result;
-  }
-  result.staged = selection.staged;
-  mark("stage", "done", selection.staged.join(", "));
-
-  const message = withRefsTrailer(opts.message, taskId);
-  const commit = runGit(root, ["commit", "-F", "-"], message);
-  if (commit.code !== 0) {
+    // A rerun after a verify that failed for a reason outside the task finds its work committed.
+    const committed = taskCommit(root, feature, taskId, logDepth);
+    if (!committed) {
+      mark("stage", "failed", `Nothing to commit: ${unchanged}.`);
+      return result;
+    }
+    sha = committed.sha;
+    mark("stage", "done", `nothing left to stage: ${unchanged}`);
+    const given = opts.message.trim().split("\n")[0] ?? "";
     mark(
       "commit",
-      "failed",
-      `git commit failed (exit ${commit.code})`,
-      tail(commit.output, tailLines),
+      "done",
+      `skipped: ${sha} ${committed.subject} already commits ${taskId}`,
+      given ? `--commit message ignored: ${given}` : "",
     );
-    return result;
+  } else {
+    // Literal pathspecs: a path holding `*` or `[` must stage that file, never what it matches.
+    const add = runGit(root, ["--literal-pathspecs", "add", "-A", "--", ...selection.staged]);
+    if (add.code !== 0) {
+      mark("stage", "failed", `git add failed (exit ${add.code})`, tail(add.output, tailLines));
+      return result;
+    }
+    result.staged = selection.staged;
+    mark("stage", "done", selection.staged.join(", "));
+
+    const message = withRefsTrailer(opts.message, taskId);
+    const commit = runGit(root, ["commit", "-F", "-"], message);
+    if (commit.code !== 0) {
+      mark(
+        "commit",
+        "failed",
+        `git commit failed (exit ${commit.code})`,
+        tail(commit.output, tailLines),
+      );
+      return result;
+    }
+    sha = headSha(root) ?? "";
+    mark("commit", "done", `${sha} ${message.split("\n")[0] ?? ""}`);
   }
-  const sha = headSha(root) ?? "";
   result.commit = sha;
-  mark("commit", "done", `${sha} ${message.split("\n")[0] ?? ""}`);
 
   let batch: VerifyBatchResult;
+  let waited = "";
   try {
     batch = await verifyBatch(root, verifyTargets(root, [taskId]), {
       ses: opts.session ?? null,
       signal: opts.signal,
+      onProgress: (event) => {
+        if (event.kind === "waited") waited = waitedLine(event.waited_ms);
+      },
     });
   } catch (e) {
     if (!isAzimuthError(e)) throw e;
-    mark("verify", "failed", e.message);
+    mark("verify", "failed", e.message, waited);
     return result;
   }
   if (batch.interrupted) {
     result.interrupted = true;
-    mark("verify", "failed", "interrupted");
+    mark("verify", "failed", "interrupted", waited);
     return result;
   }
   const outcome = verifyOutcome(batch);
   result.run = batch.runs[0]?.id ?? null;
-  mark("verify", outcome.passed ? "done" : "failed", outcome.detail, outcome.output);
+  mark(
+    "verify",
+    outcome.passed ? "done" : "failed",
+    outcome.detail,
+    [waited, outcome.output].filter(Boolean).join("\n"),
+  );
   const logged = `Committed ${sha}; ${outcome.logged}`;
 
   if (!outcome.passed) {

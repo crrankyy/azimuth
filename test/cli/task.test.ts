@@ -150,6 +150,34 @@ describe("ST-009.6 azimuth task finish on the command line", () => {
     expect(notTask.err.startsWith("F-001 is not a task ID.")).toBe(true);
     expect(unknownAction.err.startsWith('Unknown task action "close". Use finish.')).toBe(true);
   });
+
+  it("BUG-0074 prints the skipped commit and the ignored message on a rerun", async () => {
+    repo({ ...T1, verify: "grep -q fixed src/other.ts && echo S-001.1.1 ok" });
+    changeTaskFiles();
+    const first = await runCli(root, ["task", "finish", "T-001.1", ...COMMIT]);
+    const sha = head();
+    expect(first.code).toBe(1);
+    // Another lane's fix, committed with the pending records (the failed run's log note).
+    write("src/other.ts", "export const other = 'fixed';\n");
+    commitAll(root, "fix: repair the other lane");
+    const r = await runCli(root, [
+      "task",
+      "finish",
+      "T-001.1",
+      "--commit",
+      "feat(F-001): add a again",
+    ]);
+    expect(r.code).toBe(0);
+    expect(lines(r.out)).toEqual([
+      "✓ check: F-001 has no errors",
+      "✓ stage: nothing left to stage: none of T-001.1's files and none of F-001's records changed",
+      `✓ commit: skipped: ${sha} feat(F-001): add a already commits T-001.1`,
+      "    --commit message ignored: feat(F-001): add a again",
+      "✓ verify: R-0002 passed in <n>s",
+      "✓ done: T-001.1: in-progress → done",
+      `✓ log: Committed ${sha}; R-0002 passed.`,
+    ]);
+  });
 });
 
 /** contract.md's "Brief example" project, plus the impact.md that gives the model a spec. */
