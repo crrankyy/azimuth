@@ -13,8 +13,9 @@
 
 Read commands, write commands, `init` and `view --detach` accept `--json`. Who is acting comes from `AZIMUTH_ACTOR` (`agent` or
 `you`; Claude Code sessions set `agent`), else `CLAUDECODE=1` means an agent, else you. The
-current session comes from `AZIMUTH_SESSION`, or from the last `session start` in this Claude Code
-session.
+current session comes from `AZIMUTH_SESSION`, or from the Azimuth session of this Claude Code
+session, which its sidecar (`cache/live/<claude-session>.meta.json`) keeps however long the
+session runs.
 
 ## Set up
 
@@ -188,11 +189,24 @@ scenario ID or function name too. `$AZIMUTH_TASK` holds the task ID.
 
 ## Sessions
 
-| Command                                                               | Effect                                                                                                                  |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `azimuth session start --skill <name> --goal "…" [--touch IDs]`       | Creates `sessions/SES-YYYYMMDD-HHMM.md` and prints its ID; later commands in the same Claude Code session use it.       |
-| `azimuth session handoff "<next steps>" [--summary "…"] [--id SES-…]` | Writes the Handoff (and Summary) section of the current session, or of `--id`.                                          |
-| `azimuth session close [--stale] [--id SES-…]`                        | Sets `ended_at` and collects the commits made since the start (`--stale`: closes sessions left open for over 12 hours). |
+| Command                                                               | Effect                                                                                                               |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `azimuth session start --skill <name> --goal "…" [--touch IDs]`       | Creates `sessions/SES-YYYYMMDD-HHMM.md` and prints its ID; later commands in the same Claude Code session use it.    |
+| `azimuth session note "<text>" [--id SES-…]`                          | Appends `- HH:MM · <text>` (UTC) to the Notes section of the current session, or of `--id`.                          |
+| `azimuth session handoff "<next steps>" [--summary "…"] [--id SES-…]` | Writes the Handoff (and Summary) section of the current session, or of `--id`, replacing what was there.             |
+| `azimuth session close [--stale] [--id SES-…]`                        | Sets `ended_at` and collects the commits made since the start (`--stale`: closes the sessions left open, see below). |
+
+Inside a Claude Code session, `session start` keeps one Azimuth session: when the Claude Code
+session's Azimuth session is still open, it prints that session's ID again, adds
+`- HH:MM · <skill> · <goal>` (UTC) to its Goals section and adds `--touch` to its `touched`. It
+never reopens a closed session or changes the first `skill`, `goal` and `started_at`. Outside
+Claude Code every `session start` creates a session. The plugin closes the session when the Claude
+Code session ends, so agents don't run `session close`.
+
+`session close --stale` closes each open session that started more than 12 hours ago and whose
+Claude Code session hasn't written to its live log in the last hour (or is unknown), ending it at
+the later of 12 hours after its start and that last write, but never after now. `azimuth check`
+reports the same sessions as `W-SESSION-OPEN`.
 
 ## Viewer
 

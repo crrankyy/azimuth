@@ -34,5 +34,6 @@ Target: $ARGUMENTS
    commit to files under `.azimuth/`: commits that only change Azimuth's records don't make the
    verify runs stale or put the architecture behind, but a code change can.
 7. `azimuth move <F-ID> done`. If a check still fails, fix what it names.
-8. Hand off and close the session, commit the pending `.azimuth/` changes, and tell the user the
+8. Hand off with `azimuth session handoff "<next steps>"` (the plugin closes the session when the
+   Claude Code session ends), commit the pending `.azimuth/` changes, and tell the user the
    feature is done and mention follow-ups.

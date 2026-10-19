@@ -38,7 +38,9 @@ passes to hooks: `$AZIMUTH_NODE`, then the path it remembered last time
    session's environment, records Claude Code's process ID (`CLAUDE_PID`) so the viewer stays up
    while the session is open, makes sure this project's viewer is running (unless
    `viewer.autostart` is `false` or `AZIMUTH_NO_VIEWER=1` is set), and gives Claude the project status (with your answers and change requests not yet applied), the last
-   handoff and the viewer URL. After a compaction it gives a short re-grounding note instead (current session, feature and
+   handoff and the viewer URL. It also records the Claude Code session's start time and transcript
+   path in a sidecar next to the live log (`azimuth session start` adds the Azimuth session to
+   it). After a compaction it gives a short re-grounding note instead (current session, feature and
    task).
 2. **Work.** Every tool call is appended to `.azimuth/cache/live/<session>.jsonl`; the viewer shows
    what the agent is doing within about a second. Edits to `.azimuth/` files are validated
@@ -52,7 +54,10 @@ passes to hooks: `$AZIMUTH_NODE`, then the path it remembered last time
    waiting for it.
 4. **Turn end.** If the session left validation errors in `.azimuth/` files it edited, Claude is
    asked to fix them before stopping (once; never in a loop).
-5. **Session end.** The live log records the end.
+5. **Session end.** The live log records the end, and the hook closes the Claude Code session's
+   Azimuth session (setting `ended_at` and collecting its commits), so skills never run
+   `azimuth session close`. Claude Code gives SessionEnd hooks 1.5 seconds; a session the hook
+   couldn't close in time stays open until `azimuth session close --stale`.
 
 ## Skills
 
@@ -82,14 +87,14 @@ immediately (before starting Node) in repositories without `.azimuth/`.
 
 | Event                                | Mode                   | What it does                                                                             |
 | ------------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------- |
-| SessionStart                         | sync                   | Environment exports, live log, viewer autostart, status and handoff context.             |
+| SessionStart                         | sync                   | Environment exports, live log and sidecar, viewer autostart, status and handoff context. |
 | PreToolUse (Agent)                   | sync                   | Records what a subagent is asked to do and the task or feature it names.                 |
 | PostToolUse (all tools)              | async, can wake Claude | Records the tool call; wakes Claude when you act on a feature it or a subagent works on. |
 | PostToolUse (Edit, Write, MultiEdit) | sync                   | Validates edited `.azimuth/` files and reports errors to Claude.                         |
 | UserPromptSubmit                     | sync                   | Adds what you did in the viewer since Claude's last turn; restarts a stopped viewer.     |
 | SubagentStart, SubagentStop          | sync, async            | Records each subagent starting and finishing.                                            |
 | Stop                                 | sync                   | Asks Claude to fix errors it left in `.azimuth/` files (once).                           |
-| SessionEnd                           | sync                   | Records the end of the session.                                                          |
+| SessionEnd                           | sync                   | Records the end of the session and closes its Azimuth session.                           |
 
 Subagents run inside their parent's Claude Code session, so their steps land in the same live log.
 The Agent tool's hooks record which task each subagent was given: exactly once the Agent tool

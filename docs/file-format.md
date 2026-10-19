@@ -504,40 +504,46 @@ move` adds it to a `Status notes` section, created at the end of the body:
 
 ## Sessions
 
-`sessions/SES-YYYYMMDD-HHMM.md`, one per unit of agent work (usually one skill run).
+`sessions/SES-YYYYMMDD-HHMM.md`, one per Claude Code session (outside Claude Code, one per
+`azimuth session start`).
 
 ```yaml
 id: SES-20261018-1100
 agent: claude-code
 skill: build # or null
 started_at: 2026-10-18T11:00:00Z
-ended_at: 2026-10-18T11:58:00Z # set by `azimuth session close`
+ended_at: 2026-10-18T11:58:00Z # set when the Claude Code session ends, or by `session close`
 goal: Build F-005 tasks T-005.2 to T-005.4
 touched: [F-005, T-005.2, T-005.3, T-005.4]
-commits: [a41f2b9, 6c0e3d8, 9f3c2e1] # filled by `session close`
+commits: [a41f2b9, 6c0e3d8, 9f3c2e1] # filled when the session closes
 raised: [Q-0002, ADR-0004]
 ```
 
-Body sections: `## Summary` and `## Handoff` (next steps for whoever continues).
+Body sections: `## Summary` and `## Handoff` (next steps for whoever continues), and, once they
+have entries, `## Goals` and `## Notes`. Goals holds one `- HH:MM · <skill> · <goal>` bullet
+(`- HH:MM · <goal>` without a skill) for each later `session start` that continued the session;
+the first goal stays in `goal`. Notes holds one `- HH:MM · <text>` bullet per `session note`.
+Bullet times are UTC, and each goal or note is kept to one line.
 
 ## Cache
 
 `.azimuth/cache/` is local state and is gitignored. In a linked git worktree, the write and verify
 locks, ID marks, live logs, viewer files and hook log are kept in the main worktree's
-`.azimuth/cache/`, so every worktree of a repository shares them; live logs untouched for 24 hours
-are deleted.
+`.azimuth/cache/`, so every worktree of a repository shares them; live logs and their sidecars
+untouched for 24 hours are deleted.
 
-| Path                          | Contents                                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------------------- |
-| `index.json`                  | The last built index.                                                                       |
-| `runs/R-NNNN.json`            | One verify run (see below).                                                                 |
-| `live/<claude-session>.jsonl` | Live agent activity recorded by the Claude Code hooks, one JSON event per line.             |
-| `ids.json`                    | High-water marks for allocated IDs, so deleted IDs are never reissued.                      |
-| `viewer.json`                 | The running viewer server: `pid`, `port`, `instance`, `version`, `root`.                    |
-| `write.lock`                  | Held while a command writes files.                                                          |
-| `verify.lock`                 | Held while `azimuth verify` runs; another verify waits unless the holder has exited.        |
-| `viewer.lock`                 | Held briefly while a session starts the viewer.                                             |
-| `hooks.log`                   | Errors from Claude Code hooks (hooks never block a session; `azimuth doctor` reports them). |
+| Path                              | Contents                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------- |
+| `index.json`                      | The last built index.                                                                       |
+| `runs/R-NNNN.json`                | One verify run (see below).                                                                 |
+| `live/<claude-session>.jsonl`     | Live agent activity recorded by the Claude Code hooks, one JSON event per line.             |
+| `live/<claude-session>.meta.json` | Its sidecar, rewritten whole: `started_at`, `ses` (the Azimuth session), `transcript_path`. |
+| `ids.json`                        | High-water marks for allocated IDs, so deleted IDs are never reissued.                      |
+| `viewer.json`                     | The running viewer server: `pid`, `port`, `instance`, `version`, `root`.                    |
+| `write.lock`                      | Held while a command writes files.                                                          |
+| `verify.lock`                     | Held while `azimuth verify` runs; another verify waits unless the holder has exited.        |
+| `viewer.lock`                     | Held briefly while a session starts the viewer.                                             |
+| `hooks.log`                       | Errors from Claude Code hooks (hooks never block a session; `azimuth doctor` reports them). |
 
 A verify run (`scenarios` comes from a JUnit report the command wrote to `$AZIMUTH_JUNIT`, or else from the run's outcome):
 

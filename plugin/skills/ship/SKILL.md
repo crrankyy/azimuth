@@ -23,6 +23,7 @@ following its instructions in full; don't read the skills' files from the plugin
 4. **Close out** (`/azimuth:verify`): verify at HEAD, as-built, architecture, done.
 
 Between stages, re-read `azimuth show <F-ID> --brief`; act on change requests and answers the
-user left in the meantime before moving on. Keep one Azimuth session per stage (each skill
-starts and closes its own). Finish with a short report: what shipped, commits, follow-ups, and
-anything waiting for the user.
+user left in the meantime before moving on. Every stage runs in this Claude Code session's one
+Azimuth session: each skill's `azimuth session start` adds its goal to it, and the plugin closes
+it when the Claude Code session ends. Finish with a short report: what shipped, commits,
+follow-ups, and anything waiting for the user.

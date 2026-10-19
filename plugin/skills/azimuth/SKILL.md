@@ -64,4 +64,4 @@ sessions in `.azimuth/`, validates them and shows them live in a local viewer. F
 | `azimuth settle <S-ID> "<value>"`                                                                               | Fill a scenario's first `{?}` with the value a passing test proved     |
 | `azimuth verify <T-ID\|F-ID>`                                                                                   | Run verify commands and record the result                              |
 | `azimuth trace [F-ID]`                                                                                          | Scenario → test coverage                                               |
-| `azimuth session start --skill <name> --goal "…"` · `session handoff "<next steps>"` · `session close`          | Record a unit of work                                                  |
+| `azimuth session start --skill <name> --goal "…"` · `session note "…"` · `session handoff "<next steps>"`       | Record work: one session per Claude Code session, closed by the plugin |

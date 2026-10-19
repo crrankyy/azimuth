@@ -97,5 +97,7 @@ Run `azimuth new spec <F-ID>` to scaffold missing files, then replace the placeh
 
 ## 5. Hand off
 
-`azimuth session handoff "<what's next: open questions, approval state, suggested /azimuth:build>"`
-then `azimuth session close`. Report the feature's state and any questions waiting for the user.
+`azimuth session handoff "<what's next: open questions, approval state, suggested /azimuth:build>"`.
+Leave the session open: the plugin closes it when the Claude Code session ends, and a later skill
+in this Claude Code session continues it. Report the feature's state and any questions waiting for
+the user.

@@ -27,7 +27,7 @@ lifecycles; the viewer shows it live.
 | Decision         | `ADR-0003`                           | An architecture decision record.                                                                                    |
 | Question         | `Q-0003`                             | Something an agent couldn't safely decide, with options and a recommendation.                                       |
 | Issue            | `BUG-0001`, `DEBT-0001`, `RISK-0001` | Bugs and tech debt (with severity) and risks (with likelihood and impact).                                          |
-| Session          | `SES-20261018-1100`                  | One unit of agent work (usually one skill run) with a summary and a handoff.                                        |
+| Session          | `SES-20261018-1100`                  | The agent work of one Claude Code session: its goals, progress notes, summary and handoff.                          |
 | Verify run       | `R-0142`                             | The recorded result of running a task's verify command.                                                             |
 
 The [file format reference](file-format.md) describes every field.
@@ -197,9 +197,19 @@ What needs you, grouped by urgency:
 
 ## Sessions and live activity
 
-Agents record each unit of work as a session: `azimuth session start`, progress notes with
-`azimuth log`, a handoff with `azimuth session handoff`, and `azimuth session close`, which
-collects the commits made meanwhile. The next session starts from the last handoff.
+Agents record their work as sessions, one per Claude Code session. The first
+`azimuth session start` creates it; each later start in the same Claude Code session (the next
+skill, or an orchestrator moving from spec to build to verify) continues it and adds its goal.
+Progress goes into `azimuth session note` (and `azimuth log` on the work items), and
+`azimuth session handoff` writes the handoff, replacing the previous one. When the Claude Code
+session ends (an exit, `/clear`, a resume of another session, a logout), the plugin closes the
+Azimuth session and collects the commits made meanwhile; without the plugin,
+`azimuth session close` does. The next session starts from the last handoff. Outside Claude Code,
+each `session start` creates a session.
+
+A session still open 12 hours after its start is reported as `W-SESSION-OPEN` and closed by
+`azimuth session close --stale`, unless its Claude Code session wrote to its live log in the last
+hour: a long session that is still working is left alone.
 
 Independently, the Claude Code hooks record every tool call to a live log, so the viewer shows
 what each agent is doing right now, and tell a running agent when you answer, review or move its

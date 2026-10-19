@@ -51,13 +51,16 @@ connection drops, a banner says so, actions are disabled, and the page reconnect
 | Questions    | `#/questions/Q-0003`           | Open (blocking first) and answered questions; answer with an option and/or text. An agent's answer is labelled "Answered by an agent with its recommendation", with "Answer differently" to give yours. |
 | Issues       | `#/issues/BUG-0001`            | Bugs, debt and risks; risk matrix; triage severity and status. A row, its ID or title, Enter or the preview's "Open full page" opens the issue's page.                                                  |
 | Issue        | `#/issues/BUG-0001/page`       | One issue: header with its age, Triage card, description, related work and history (both derived from the index), facts, linked features, files with the changes planned for them, and its source file. |
-| Activity     | `#/activity/SES-…`             | Live agents (a lane per subagent with its task, and every feature in flight), then sessions with handoffs, commits and verify runs by day.                                                              |
+| Activity     | `#/activity/SES-…`             | Live agents (a lane per subagent with its task, and every feature in flight), then sessions with handoffs, goals, notes, commits and verify runs by day.                                                |
 | Verification | `#/verification/R-0142`        | Scenario coverage matrix and verify runs with output.                                                                                                                                                   |
 | Knowledge    | `#/knowledge/architecture`     | Vision, architecture with the module map, conventions, glossary.                                                                                                                                        |
 
 On a feature's Stories tab, a value settled with `azimuth settle` carries a ✓ titled "settled by
 test", and an open `{?}` reads "to be settled". The As-built tab shows the feature's notes after
 the close-out record, and opens as soon as the feature has notes.
+
+An expanded session card lists, after its handoff and summary, the goals later skills added to
+the session and its progress notes, with their times in local time like the rest of the card.
 
 Hovering any ID shows a summary card. The problems panel lists `azimuth check` results with
 "Copy path" and, when `viewer.editor_url` is set (schemes `vscode:`, `cursor:`, `zed:`, `idea:`,

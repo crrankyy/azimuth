@@ -31,9 +31,14 @@ Azimuth viewer. Follow this protocol whenever you work in this repository.
 
 ## Sessions and progress
 
-- Start each unit of work with \`azimuth session start --skill <skill> --goal "<goal>"\` and
-  finish it with \`azimuth session handoff "<what the next session should do>"\` and
-  \`azimuth session close\`.
+- Start each unit of work with \`azimuth session start --skill <skill> --goal "<goal>"\`. Inside
+  one Claude Code session every start continues the same Azimuth session and adds its goal, so
+  start again whenever you take up a new skill or goal.
+- Record progress as you go with \`azimuth session note "<progress>"\`, and end each unit of work
+  with \`azimuth session handoff "<what the next session should do>"\`, which replaces the
+  previous handoff.
+- The Azimuth plugin closes the session when the Claude Code session ends. Without the plugin,
+  finish with \`azimuth session close\`.
 - Keep the viewer current during long work: move a task to \`in-progress\` when you start it
   and to \`done\` when its verify passes, and add \`azimuth log <ID> "<progress>"\` notes at
   meaningful points.

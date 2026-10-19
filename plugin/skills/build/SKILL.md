@@ -35,7 +35,8 @@ Target: $ARGUMENTS
       `verify.prebuild`, which each verify call runs once, under its own timeout. If another
       `azimuth verify` is running, the call waits its turn (`waited 40s for another verify`).
    6. After each task, or every few significant steps in a long one, add
-      `azimuth log <T-ID> "<what changed, what's next>"` so the viewer shows progress. Record
+      `azimuth log <T-ID> "<what changed, what's next>"` so the viewer shows progress (and
+      `azimuth session note "<progress>"` for the session's own record). Record
       what the task taught (a constraint the code revealed, a choice the spec left open) with
       `azimuth note <T-ID> "<text>"`, which writes the feature's notes.md; never add it to
       feature.md.
@@ -45,7 +46,8 @@ Target: $ARGUMENTS
    - the same fix has failed twice: log what you learned and ask the user;
    - the work needs a decision record: use `/azimuth:adr`.
 6. When every task is done or skipped, `azimuth move <F-ID> verifying`.
-7. `azimuth session handoff "<next steps>"`, `azimuth session close`, and report progress.
+7. `azimuth session handoff "<next steps>"` and report progress. Leave the session open: the
+   plugin closes it when the Claude Code session ends, and the next skill you run continues it.
 
 ## Notes, settled values and the approval
 
@@ -57,11 +59,12 @@ the inbox, and the feature can't reach done while a `{?}` is left.
 
 ## Delegating to subagents
 
-Subagents run inside your Claude Code session, so Azimuth sees one session: theirs is yours.
+Subagents run inside your Claude Code session, so they share your Azimuth session: their work is
+recorded in yours.
 
 - **You run every `azimuth` command and every `git` commit; subagents never do.** A subagent's
-  `azimuth session start` would replace your session, and parallel commits in one working tree
-  pick up each other's files.
+  `azimuth session start` would add its goal to your session, and parallel commits in one working
+  tree pick up each other's files.
 - **Hand each subagent one ready task** from `azimuth next <F-ID>`, after
   `azimuth move <T-ID> in-progress`. Give it the task's title, the scenarios it covers with their
   GIVEN/WHEN/THEN, the contract and invariants it must keep, the files it may change (the task's
