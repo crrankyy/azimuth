@@ -33,6 +33,8 @@ function usePageKeys(issues: Issue[], id: string): void {
       if (to) navigate(to);
     },
     onBack: () => navigate(targets.back),
+    // The page is long; ↑/↓ scroll it as usual.
+    arrows: false,
     enabled: position >= 0,
   });
 }

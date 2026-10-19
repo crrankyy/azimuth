@@ -107,6 +107,8 @@ describe("F-017 the issue page's aside", () => {
       /<a [^>]*href="vscode:\/\/file\/\/work\/hookline\/\.azimuth\/issues\/BUG-0001-double-send-on-busy\.md:1"[^>]*>Open in editor<\/a>/,
     );
     expect(buttons(source)).toEqual(["Copy ID"]);
+    expect(source).toContain('<a class="lc-btn lc-btn-secondary" href="vscode:');
+    expect(source).toContain('class="lc-btn lc-btn-tertiary">Copy ID</button>');
   });
 
   it("S-017.5.6 has no editor link without a root", () => {

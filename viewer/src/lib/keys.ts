@@ -94,6 +94,8 @@ export function useListKeys(opts: {
   onPrimary?: (index: number) => void;
   /** Esc: leave the view (an issue's page goes back to the list). Paused like the other keys. */
   onBack?: () => void;
+  /** False leaves ↑/↓ to scroll the page, so only `j`/`k` move. */
+  arrows?: boolean;
   enabled?: boolean;
   /** The list itself is in an overlay (the problems panel), so overlays don't pause it. */
   insideOverlay?: boolean;
@@ -116,10 +118,11 @@ export function useListKeys(opts: {
         (!o.insideOverlay && overlayOpen())
       )
         return;
-      if (e.key === "j" || e.key === "ArrowDown") {
+      const arrows = o.arrows !== false;
+      if (e.key === "j" || (arrows && e.key === "ArrowDown")) {
         e.preventDefault();
         o.onSelect(Math.min(o.count - 1, o.selected + 1));
-      } else if (e.key === "k" || e.key === "ArrowUp") {
+      } else if (e.key === "k" || (arrows && e.key === "ArrowUp")) {
         e.preventDefault();
         o.onSelect(Math.max(0, o.selected - 1));
       } else if (e.key === "Enter") {

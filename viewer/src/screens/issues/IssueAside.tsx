@@ -1,8 +1,8 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import type { Index, Issue, Level } from "../../../../src/core/types";
-import { CopyButton } from "../../components/CodeBlock";
+import { copyText, CopyButton } from "../../components/CodeBlock";
 import { IdChip } from "../../components/IdChip";
-import { Eyebrow, FlagBadge } from "../../components/primitives";
+import { Button, Eyebrow, FlagBadge } from "../../components/primitives";
 import { editorLink } from "../../components/ProblemsPanel";
 import { StatusPill } from "../../components/Status";
 import { describe } from "../../data/selectors";
@@ -106,6 +106,24 @@ function Files({ index, files }: { index: Index; files: string[] }) {
   );
 }
 
+/** "Copy ID" as the design's tertiary Button; CopyButton keeps the small inline style. */
+function CopyIdButton({ id }: { id: string }) {
+  const [done, setDone] = useState(false);
+  const copy = () =>
+    copyText(id).then(
+      () => {
+        setDone(true);
+        window.setTimeout(() => setDone(false), 1_500);
+      },
+      () => undefined,
+    );
+  return (
+    <Button variant="tertiary" onClick={() => void copy()}>
+      {done ? "Copied" : "Copy ID"}
+    </Button>
+  );
+}
+
 function Source({ index, issue }: { index: Index; issue: Issue }) {
   const link = editorLink(index.project.editor_url, index.project.root, {
     file: issue.file,
@@ -117,11 +135,11 @@ function Source({ index, issue }: { index: Index; issue: Issue }) {
       <span className="az-mono ip-path ip-source">{issue.file}</span>
       <div className="ip-source-actions">
         {link && (
-          <a className="lc-btn lc-btn-secondary sm" href={link}>
+          <a className="lc-btn lc-btn-secondary" href={link}>
             Open in editor
           </a>
         )}
-        <CopyButton text={issue.id} label="Copy ID" />
+        <CopyIdButton id={issue.id} />
       </div>
     </section>
   );

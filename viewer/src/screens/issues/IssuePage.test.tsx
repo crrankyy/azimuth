@@ -1,12 +1,22 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Index, Issue } from "../../../../src/core/types";
 import { expectedIndex } from "../../../../test/fixtures/hookline/expected-index";
 import { Screen } from "../../App";
 import { UiProvider } from "../../components/Ui";
 import { IndexContext, type Connection } from "../../data/IndexProvider";
+import { useListKeys } from "../../lib/keys";
 import { parseRoute } from "../../lib/router";
 import { issuePageTargets } from "./model";
+
+// Effects don't run under renderToStaticMarkup, so record what each screen asks of its keys.
+vi.mock("../../lib/keys", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/keys")>()),
+  useListKeys: vi.fn(),
+}));
+
+/** The options the last rendered screen passed to useListKeys. */
+const listKeys = () => vi.mocked(useListKeys).mock.calls.at(-1)?.[0];
 
 const NOW = Date.parse("2026-10-18T12:00:00Z");
 
@@ -85,6 +95,13 @@ describe("F-017 an issue's page", () => {
       next: "#/issues/RISK-0001/page",
       back: "#/issues/DEBT-0001",
     });
+  });
+
+  it("S-017.2.3 leaves Up and Down to scroll the page; only j and k step between issues", () => {
+    render("#/issues/DEBT-0001/page");
+    expect(listKeys()?.arrows).toBe(false);
+    render("#/issues/DEBT-0001");
+    expect(listKeys()?.arrows).not.toBe(false);
   });
 
   it("S-017.2.4 stops j and k at either end of the list", () => {

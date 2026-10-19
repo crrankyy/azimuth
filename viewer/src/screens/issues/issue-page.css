@@ -330,8 +330,10 @@
   align-items: center;
   gap: 8px;
 }
+/* The design's 32px Button: base .lc-btn's padding and line height add up to about 35px. */
 .ip-source-actions .lc-btn {
-  text-decoration: none;
+  height: var(--tap-min);
+  padding-block: 0;
 }
 
 /* Below this width the 300px aside no longer fits beside a readable column; stack it. */
