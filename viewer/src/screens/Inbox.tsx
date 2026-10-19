@@ -6,6 +6,7 @@ import type {
   InboxKind,
   Urgency,
 } from "../../../src/core/types";
+import { idKind } from "../../../src/core/ids";
 import { AnswerComposer } from "../components/AnswerComposer";
 import { Hint, Page, useCanAct } from "../components/AppShell";
 import { Icon } from "../components/Icon";
@@ -221,16 +222,19 @@ function Inbox({ index }: { index: Index }) {
     if (item.ref) navigate(routeForId(item.ref));
   };
 
+  /** Opens (or closes) an item's inline answer form. */
+  const toggleAnswer = (item: Item) => {
+    const key = itemKey(item);
+    setAutoFocus(true);
+    setExpanded((current) => (current === key ? null : key));
+  };
+
   const primary = (item: Item) => {
     const ref = item.ref;
     if (KINDS[item.kind].writes && !canAct) return;
     switch (item.kind) {
-      case "answer-question": {
-        const key = itemKey(item);
-        setAutoFocus(true);
-        setExpanded((current) => (current === key ? null : key));
-        return;
-      }
+      case "answer-question":
+        return toggleAnswer(item);
       case "approve-spec":
         if (ref) setDialog({ kind: "approve", ref });
         return;
@@ -322,6 +326,7 @@ function Inbox({ index }: { index: Index }) {
                         flash={item.ref !== null && changed.has(item.ref)}
                         onSelect={() => setSelection({ key, at })}
                         onPrimary={() => primary(item)}
+                        onAnswer={() => toggleAnswer(item)}
                         onSendBack={() =>
                           item.ref && setDialog({ kind: "send-back", ref: item.ref })
                         }
@@ -368,6 +373,7 @@ function InboxItem({
   flash,
   onSelect,
   onPrimary,
+  onAnswer,
   onSendBack,
   onCollapse,
 }: {
@@ -382,12 +388,14 @@ function InboxItem({
   flash: boolean;
   onSelect: () => void;
   onPrimary: () => void;
+  onAnswer: () => void;
   onSendBack: () => void;
   onCollapse: () => void;
 }) {
   const look = KINDS[item.kind];
+  // An open question, or an agent's answer you are answering differently.
   const question =
-    expanded && item.kind === "answer-question" && item.ref
+    expanded && item.ref && (item.kind === "answer-question" || isAgentAnswer(item))
       ? questionById(index, item.ref)
       : undefined;
   const open = Boolean(question);
@@ -420,7 +428,14 @@ function InboxItem({
         <span className="inbox-age" title={dateTime(item.since)}>
           {age(item.since, now)}
         </span>
-        {!open && <ItemActions item={item} onPrimary={onPrimary} onSendBack={onSendBack} />}
+        {!open && (
+          <ItemActions
+            item={item}
+            onPrimary={onPrimary}
+            onAnswer={onAnswer}
+            onSendBack={onSendBack}
+          />
+        )}
       </div>
       {question && (
         <div className="inbox-answer">
@@ -438,13 +453,19 @@ function InboxItem({
   );
 }
 
+/** A Review item for a question: an agent answered it with its own recommendation. */
+const isAgentAnswer = (item: Item) =>
+  item.kind === "review-auto" && item.ref !== null && idKind(item.ref) === "question";
+
 function ItemActions({
   item,
   onPrimary,
+  onAnswer,
   onSendBack,
 }: {
   item: Item;
   onPrimary: () => void;
+  onAnswer: () => void;
   onSendBack: () => void;
 }) {
   const { canAct, reason } = useCanAct();
@@ -457,11 +478,19 @@ function ItemActions({
     </Button>
   );
   if (item.kind !== "review-auto") return primary;
+  // Features and ADRs go back for another look; a question gets your own answer instead.
+  const secondary = isAgentAnswer(item) ? (
+    <Button variant="tertiary" disabled={!canAct} title={title} onClick={onAnswer}>
+      Answer differently
+    </Button>
+  ) : (
+    <Button variant="tertiary" disabled={!canAct} title={title} onClick={onSendBack}>
+      Send back…
+    </Button>
+  );
   return (
     <div className="inbox-actions">
-      <Button variant="tertiary" disabled={!canAct} title={title} onClick={onSendBack}>
-        Send back…
-      </Button>
+      {secondary}
       {primary}
     </div>
   );
@@ -569,8 +598,9 @@ function recentlyCleared(index: Index): Cleared[] {
       return [{ at: e.at, verb: "moved", id: f.id, tail: `to ${label}` }];
     }),
   );
+  // Only answers you gave; an agent's answer waits in the Review group instead.
   const answers = index.questions.flatMap((q): Cleared[] =>
-    q.answer ? [{ at: q.answer.answered_at, verb: "answered", id: q.id }] : [],
+    q.answer?.by === "you" ? [{ at: q.answer.answered_at, verb: "answered", id: q.id }] : [],
   );
   return [...moves, ...answers].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, 5);
 }

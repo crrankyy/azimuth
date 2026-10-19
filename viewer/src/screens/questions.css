@@ -203,6 +203,10 @@
   font-size: 13px;
   color: var(--ink-muted);
 }
+.q-overrule {
+  display: flex;
+  justify-content: flex-end;
+}
 
 /* Aside */
 .q-aside {

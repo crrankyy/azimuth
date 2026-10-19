@@ -1,8 +1,9 @@
+import { useState } from "react";
 import type { Index, Question } from "../../../src/core/types";
 import { AnswerComposer, QuestionCard } from "../components/AnswerComposer";
 import { Page } from "../components/AppShell";
 import { IdChip } from "../components/IdChip";
-import { EmptyState, FlagBadge } from "../components/primitives";
+import { Button, EmptyState, FlagBadge } from "../components/primitives";
 import { StatusGlyph, StatusPill } from "../components/Status";
 import { useUi } from "../components/Ui";
 import { useIndexState } from "../data/IndexProvider";
@@ -241,9 +242,16 @@ function QuestionDetail({ index, q, now }: { index: Index; q: Question; now: num
   );
 }
 
-/** An answered (or obsolete) question: the options as they were, your answer, and its state. */
+/**
+ * An answered (or obsolete) question: the options as they were, the answer, and its state. An
+ * agent's answer offers "Answer differently", which opens the full answer form below it.
+ */
 function AnsweredView({ q, now }: { q: Question; now: number }) {
   const answer = q.answer;
+  const byAgent = answer?.by === "agent";
+  // An obsolete question needs no answer, not even a different one.
+  const overrulable = byAgent && q.status === "answered";
+  const [overruling, setOverruling] = useState(false);
   return (
     <>
       {q.options.length > 0 && (
@@ -259,7 +267,7 @@ function AnsweredView({ q, now }: { q: Question; now: number }) {
                 readOnly
                 badge={
                   answer?.option === o.key ? (
-                    <span className="qcard-tag">Your answer</span>
+                    <span className="qcard-tag">{byAgent ? "Agent's answer" : "Your answer"}</span>
                   ) : undefined
                 }
               />
@@ -271,7 +279,9 @@ function AnsweredView({ q, now }: { q: Question; now: number }) {
         {answer ? (
           <>
             <div className="q-answered-head">
-              <span className="answer-label">Your answer</span>
+              <span className="answer-label">
+                {byAgent ? "Answered by an agent with its recommendation" : "Your answer"}
+              </span>
               <span className="q-answered-when" title={dateTime(answer.answered_at)}>
                 {when(answer.answered_at, now)}
               </span>
@@ -282,6 +292,11 @@ function AnsweredView({ q, now }: { q: Question; now: number }) {
               <div className="q-answered-text muted">No note; the chosen option is the answer.</div>
             )}
             <ResolutionState q={q} />
+            {overrulable && !overruling && (
+              <div className="q-overrule">
+                <Button onClick={() => setOverruling(true)}>Answer differently</Button>
+              </div>
+            )}
           </>
         ) : (
           <div className="q-state">
@@ -290,6 +305,14 @@ function AnsweredView({ q, now }: { q: Question; now: number }) {
           </div>
         )}
       </section>
+      {overrulable && overruling && (
+        <AnswerComposer
+          question={q}
+          autoFocus
+          onCancel={() => setOverruling(false)}
+          onSent={() => setOverruling(false)}
+        />
+      )}
     </>
   );
 }

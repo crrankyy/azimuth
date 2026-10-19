@@ -68,7 +68,7 @@ export function recentActivity(index: Index, limit: number): ActivityLine[] {
       lines.push({
         at: q.answer.answered_at,
         glyph: "s-verifying",
-        lead: "You answered",
+        lead: q.answer.by === "agent" ? "Agent answered" : "You answered",
         id: q.id,
         rest: q.title,
         kind: "question",
