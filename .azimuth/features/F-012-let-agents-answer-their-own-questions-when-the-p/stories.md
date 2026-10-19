@@ -59,7 +59,7 @@ In the scenarios below, "the proceed project" is a project whose config has
 ### S-012.3.2 · The CLI says the question was answered {happy}
 - **GIVEN** a project with `autonomy.questions: proceed`, feature F-001 and no questions
 - **WHEN** an agent (`AZIMUTH_ACTOR=agent`) runs `azimuth new question "Which lock?" --feature F-001 --option a="Lockfile: Simple" --option b="Advisory lock: Faster" --recommend a`
-- **THEN** it exits 0 and prints exactly three lines: `Q-0001 created: .azimuth/questions/Q-0001.md`, `Q-0001: answered automatically with its recommendation (a: Lockfile)` and `Proceed with it and record it with azimuth resolve Q-0001. The user can overrule it in the viewer.`
+- **THEN** it exits 0, prints only `Q-0001` on stdout, and prints exactly three lines on stderr: `created .azimuth/questions/Q-0001.md`, `Q-0001: answered automatically with its recommendation (a: Lockfile)` and `Proceed with it and record it with azimuth resolve Q-0001. The user can overrule it in the viewer.`
 
 ### S-012.3.3 · A blocking question waits for you {negative}
 - **GIVEN** the proceed project with Q-0001 open and `blocking: true`
@@ -74,7 +74,7 @@ In the scenarios below, "the proceed project" is a project whose config has
 ### S-012.3.5 · Under ask nothing is answered {edge}
 - **GIVEN** the project of S-012.3.2 without the `autonomy.questions` key
 - **WHEN** an agent runs the same `azimuth new question "Which lock?" … --recommend a`
-- **THEN** it exits 0 and prints only `Q-0001 created: .azimuth/questions/Q-0001.md`, and Q-0001 is `open` with `answer: null`
+- **THEN** it exits 0, prints only `Q-0001` on stdout and only `created .azimuth/questions/Q-0001.md` on stderr, and Q-0001 is `open` with `answer: null`
 
 ### S-012.3.6 · A question you create waits for you {edge}
 - **GIVEN** the proceed project with Q-0001 open
