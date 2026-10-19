@@ -2,7 +2,7 @@
 tasks:
   - id: T-015.1
     title: Scaffolding (routes, shared signatures, CSS port and the live fixture)
-    status: todo
+    status: done
     after: []
     covers: []
     files: [viewer/src/lib/router.ts, viewer/src/App.tsx, viewer/src/components/CommandPalette.tsx, viewer/src/components/Icon.tsx, viewer/src/styles/azimuth.css, viewer/src/lib/status.ts, viewer/src/lib/format.ts, viewer/src/components/Status.tsx, viewer/src/data/IndexProvider.tsx, viewer/src/data/agents.ts, viewer/src/data/transcript.ts, viewer/src/screens/Agents.tsx, viewer/src/screens/agents/model.ts, viewer/src/screens/agents/transcript.ts, viewer/src/screens/agents/AgentTranscript.tsx, test/fixtures/live/agents.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-015.2
     title: Shared formats, status marks and agent rows (red → green)
-    status: todo
+    status: in-progress
     after: [T-015.1]
     covers: [S-015.6.1, S-015.6.2, S-015.6.3, S-015.6.4, S-015.6.5, S-015.6.6, S-015.6.7, S-015.6.8]
     files: [viewer/src/lib/format.ts, viewer/src/lib/format.test.ts, viewer/src/components/Status.tsx, viewer/src/components/Status.test.tsx, viewer/src/data/agents.ts, viewer/src/data/agents.test.ts, viewer/src/styles/base.css]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-015.3
     title: Agents in the sidebar, go-to keys and the palette (red → green)
-    status: todo
+    status: in-progress
     after: [T-015.2]
     covers: [S-015.1.1, S-015.1.2, S-015.1.3, S-015.1.4, S-015.1.5, S-015.1.6, S-015.1.7]
     files: [viewer/src/components/AppShell.tsx, viewer/src/components/AppShell.test.tsx, viewer/src/lib/keys.ts, viewer/src/lib/keys.test.ts, viewer/src/components/CommandPalette.test.tsx, viewer/src/styles/base.css]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-015.4
     title: Agents model (filters, edited files, overlaps, permission waits) (red → green)
-    status: todo
+    status: in-progress
     after: [T-015.2]
     covers: [S-015.2.9, S-015.3.3, S-015.3.4, S-015.3.9]
     files: [viewer/src/screens/agents/model.ts, viewer/src/screens/agents/model.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-015.5
     title: The Agents screen with its cards, groups and side panel (red → green)
-    status: todo
+    status: in-progress
     after: [T-015.4]
     covers: [S-015.2.1, S-015.2.2, S-015.2.3, S-015.2.4, S-015.2.5, S-015.2.6, S-015.2.7, S-015.2.8, S-015.2.10, S-015.3.1, S-015.3.2, S-015.3.5, S-015.3.6, S-015.3.7, S-015.3.8]
     files: [viewer/src/screens/Agents.tsx, viewer/src/screens/agents/AgentCard.tsx, viewer/src/screens/agents/AgentsAside.tsx, viewer/src/screens/agents/agents.css, viewer/src/screens/Agents.test.tsx]
@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-015.6
     title: Loading transcript pages with the token (red → green)
-    status: todo
+    status: in-progress
     after: [T-015.1]
     covers: [S-015.5.1, S-015.5.2, S-015.5.3, S-015.5.4, S-015.5.5, S-015.5.6, S-015.5.7]
     files: [viewer/src/data/transcript.ts, viewer/src/data/transcript.test.ts]
@@ -50,7 +50,7 @@ tasks:
     note: null
   - id: T-015.7
     title: Transcript tabs, keys and the now line (red → green)
-    status: todo
+    status: in-progress
     after: [T-015.2]
     covers: [S-015.4.3, S-015.4.7, S-015.4.8]
     files: [viewer/src/screens/agents/transcript.ts, viewer/src/screens/agents/transcript.test.ts]
@@ -58,7 +58,7 @@ tasks:
     note: null
   - id: T-015.8
     title: The live transcript page (red → green)
-    status: todo
+    status: in-progress
     after: [T-015.3, T-015.6, T-015.7]
     covers: [S-015.4.1, S-015.4.2, S-015.4.4, S-015.4.5, S-015.4.6, S-015.4.9, S-015.4.10, S-015.4.11, S-015.4.12, S-015.4.13, S-015.4.14, S-015.4.15]
     files: [viewer/src/screens/agents/AgentTranscript.tsx, viewer/src/screens/agents/TranscriptEntries.tsx, viewer/src/screens/agents/TranscriptAside.tsx, viewer/src/screens/agents/transcript.css, viewer/src/screens/agents/AgentTranscript.test.tsx]
@@ -66,7 +66,7 @@ tasks:
     note: null
   - id: T-015.9
     title: The Inbox's agent line follows the status (red → green)
-    status: todo
+    status: in-progress
     after: [T-015.2]
     covers: [S-015.7.1, S-015.7.2, S-015.7.3]
     files: [viewer/src/screens/Inbox.tsx, viewer/src/screens/Inbox.test.tsx]
@@ -74,7 +74,7 @@ tasks:
     note: null
   - id: T-015.10
     title: Docs, screenshots, live check and full verification
-    status: todo
+    status: in-progress
     after: [T-015.5, T-015.8, T-015.9]
     covers: []
     files: [docs/viewer.md, docs/getting-started.md]
