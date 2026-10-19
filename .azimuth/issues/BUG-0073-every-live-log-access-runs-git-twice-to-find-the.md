@@ -2,7 +2,7 @@
 id: BUG-0073
 type: bug
 title: Every live log access runs git twice to find the shared cache directory
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: [F-011]
 files: [src/core/lock.ts, src/core/live.ts]
 found_by: SES-20261019-2021
 created: 2026-10-19
-resolved_at: null
+resolved_at: 2026-10-19
 ---
 ## Repro
 Run any hook or index build in a project with a few Claude Code sessions in the last day, and
