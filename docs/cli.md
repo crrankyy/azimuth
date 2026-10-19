@@ -35,21 +35,27 @@ be on your PATH).
 
 ## Read
 
-| Command                                 | Output                                                                                                                                                                          |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `azimuth status [--brief \| --json]`    | What needs you, work in flight, open high and critical issues, what's next, problem counts. `--json` prints the whole index. Outside a project, `--brief` says so and exits 0.  |
-| `azimuth show <ID> [--brief \| --json]` | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log.                                            |
-| `azimuth next [F-ID] [--json]`          | The highest-priority unblocked work across the project (critical bugs and debt, then feature work by status and priority, then high-severity ones), or a feature's ready tasks. |
-| `azimuth check [ID…] [--json]`          | Validation problems (all, or those concerning the given IDs). Exit 1 when there are errors.                                                                                     |
-| `azimuth trace [F-ID] [--json]`         | Scenario → test coverage.                                                                                                                                                       |
-| `azimuth docs [formats\|concepts\|cli]` | Prints this reference: the file formats, the concepts, or this page. It is bundled into the CLI, so agents read it instead of Azimuth's code.                                   |
-| `azimuth index [--out <file>]`          | Writes the index JSON (default `.azimuth/cache/index.json`).                                                                                                                    |
+| Command                                     | Output                                                                                                                                                                                                                         |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `azimuth status [--brief \| --json]`        | What needs you, work in flight, open high and critical issues, what's next, problem counts. `--json` prints the whole index. Outside a project, `--brief` says so and exits 0.                                                 |
+| `azimuth show <ID> [--brief \| --json]`     | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log.                                                                                           |
+| `azimuth next [F-ID] [--json]`              | The highest-priority unblocked work across the project (critical bugs and debt, then feature work by status and priority, then high-severity ones), or a feature's ready tasks.                                                |
+| `azimuth check [ID…] [--warnings] [--json]` | Validation problems (all, or those concerning the given IDs). Every error is listed; without an ID or `--warnings`, warnings are only counted by code on one line. `--json` lists every problem. Exit 1 when there are errors. |
+| `azimuth trace [F-ID] [--all] [--json]`     | Scenario → test coverage. References that only mention a scenario ID (outside a test name or marker) are hidden and counted on the last line; `--all` shows them, marked `(mention)`, and `--json` keeps them.                 |
+| `azimuth docs [formats\|concepts\|cli]`     | Prints this reference: the file formats, the concepts, or this page. It is bundled into the CLI, so agents read it instead of Azimuth's code.                                                                                  |
+| `azimuth index [--out <file>]`              | Writes the index JSON (default `.azimuth/cache/index.json`).                                                                                                                                                                   |
 
 ## Create
 
 `azimuth new <kind> "<title>" [options]` allocates the next ID under a lock and writes the file
 from the project's templates. In a session, new features (and `new spec`) are added to the
 session's `touched` list, and new questions, ADRs and issues to its `raised` list.
+
+`new` prints only the new ID on stdout, so `id=$(azimuth new question "…")` captures it, and the
+files it wrote on stderr (`created <path>, <path>`, or `nothing new` when `new spec` had nothing to
+add). The ID is printed as soon as its files exist: if recording it in the session fails afterwards,
+the command reports the error and exits 1, but the ID and its file stay. `--json` prints
+`{id, files}` instead.
 
 | Kind          | Options                                                                                                                                                                                                               |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
