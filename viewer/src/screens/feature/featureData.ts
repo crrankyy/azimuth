@@ -40,6 +40,11 @@ export function ownsId(f: Feature, id: string): boolean {
   );
 }
 
+/** The As-built tab opens once the feature has an as-built or notes. */
+export function asBuiltOpen(f: Feature): boolean {
+  return Boolean(f.detail?.as_built || f.detail?.notes);
+}
+
 export const scenariosOf = (f: Feature): Scenario[] =>
   f.detail?.stories.flatMap((s) => s.scenarios) ?? [];
 

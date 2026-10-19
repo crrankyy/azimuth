@@ -12,7 +12,7 @@ import { ContextSection } from "./ContextTab";
 import { ContractTab } from "./ContractTab";
 import { FeatureHeader } from "./FeatureHeader";
 import { FeatureRail } from "./FeatureRail";
-import { activityFeed, isTabId, scenariosOf, type TabId } from "./featureData";
+import { activityFeed, asBuiltOpen, isTabId, scenariosOf, type TabId } from "./featureData";
 import { ImpactTree } from "./ImpactTree";
 import { LifecycleCard } from "./Lifecycle";
 import { PlanTab } from "./PlanTab";
@@ -76,14 +76,15 @@ const AS_BUILT_HINT = "Available at close-out, once the feature reaches verifyin
 
 function resolveTab(f: Feature, tab: string | null): TabId {
   if (!isTabId(tab)) return "stories";
-  if (tab === "as-built" && !f.detail?.as_built) return "stories";
+  if (tab === "as-built" && !asBuiltOpen(f)) return "stories";
   return tab;
 }
 
 function tabItems(f: Feature, index: Index): TabItem[] {
   const d = f.detail;
   const progress = f.derived.progress;
-  const lock = d?.as_built ? undefined : <Icon name="lock" size={12} />;
+  const open = asBuiltOpen(f);
+  const lock = open ? undefined : <Icon name="lock" size={12} />;
   return [
     { id: "context", label: "Context" },
     { id: "impact", label: "Impact", count: d?.impact.length },
@@ -98,8 +99,8 @@ function tabItems(f: Feature, index: Index): TabItem[] {
     {
       id: "as-built",
       label: "As-built",
-      disabled: !d?.as_built,
-      title: d?.as_built ? undefined : AS_BUILT_HINT,
+      disabled: !open,
+      title: open ? undefined : AS_BUILT_HINT,
       icon: lock,
     },
   ];

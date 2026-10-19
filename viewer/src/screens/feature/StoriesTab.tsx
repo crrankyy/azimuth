@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { placeholderParts } from "../../../../src/core/placeholders";
 import type {
   CoverageStatus,
   Feature,
@@ -28,17 +29,41 @@ type KindFilter = "all" | ScenarioKind;
 type CoverageFilter = "all" | CoverageStatus;
 
 /**
- * Scenario text with `code` spans. Kept apart from the Markdown renderer on purpose:
- * GIVEN/WHEN/THEN lines are full of snake_case names that must not turn into emphasis.
+ * Placeholder values in scenario text. Marked by text as well as colour: a settled value carries
+ * a ✓ and a title, an open one reads "to be settled".
+ */
+function placeholders(text: string): ReactNode[] {
+  return placeholderParts(text).map((part, i) =>
+    part.kind === "text" ? (
+      part.text
+    ) : part.kind === "settled" ? (
+      <span key={i} className="fd-ph settled" title="settled by test">
+        {part.value}
+        <span className="fd-ph-mark" aria-hidden="true">
+          ✓
+        </span>
+        <span className="sr-only"> (settled by test)</span>
+      </span>
+    ) : (
+      <span key={i} className="fd-ph open" title="to be settled by the first passing test">
+        to be settled
+      </span>
+    ),
+  );
+}
+
+/**
+ * Scenario text with `code` spans and placeholder values. Kept apart from the Markdown renderer on
+ * purpose: GIVEN/WHEN/THEN lines are full of snake_case names that must not turn into emphasis.
  */
 function gwt(text: string): ReactNode[] {
   return text.split(/(`[^`]+`)/).map((part, i) =>
     part.startsWith("`") && part.endsWith("`") && part.length > 1 ? (
       <code key={i} className="az-c">
-        {part.slice(1, -1)}
+        {placeholders(part.slice(1, -1))}
       </code>
     ) : (
-      part
+      placeholders(part)
     ),
   );
 }

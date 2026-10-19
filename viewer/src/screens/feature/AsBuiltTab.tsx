@@ -5,15 +5,30 @@ import { useIndexState } from "../../data/IndexProvider";
 import { shortDate } from "../../lib/format";
 import { Prose } from "../../lib/markdown";
 
-/** Files changed against the plan, deviations, follow-ups and the close-out notes. */
+/** What each task taught, recorded with `azimuth note` while the feature is built. */
+function NotesSection({ notes }: { notes: string }) {
+  return (
+    <section className="fd-ctx-sec">
+      <h2 className="fd-sec-title">Notes</h2>
+      <Prose text={notes} />
+    </section>
+  );
+}
+
+/** Files changed against the plan, deviations, follow-ups, the close-out notes and task notes. */
 export function AsBuiltTab({ f }: { f: Feature }) {
   const { index } = useIndexState();
   const asBuilt = f.detail?.as_built;
+  const notes = f.detail?.notes ?? null;
   if (!asBuilt || !index) {
+    // One string, so the sentence renders as one text node.
+    const pending = `As-built is written at close-out, once ${f.id} reaches verifying.`;
+    if (!notes) return <EmptyState title="Not written yet">{pending}</EmptyState>;
     return (
-      <EmptyState title="Not written yet">
-        As-built is written at close-out, once {f.id} reaches verifying.
-      </EmptyState>
+      <div className="fd-asbuilt">
+        <div className="fd-asbuilt-meta">{pending}</div>
+        <NotesSection notes={notes} />
+      </div>
     );
   }
   const planned = new Map((f.detail?.impact ?? []).map((e) => [e.path, e.change]));
@@ -80,6 +95,7 @@ export function AsBuiltTab({ f }: { f: Feature }) {
       {asBuilt.body.trim() && (
         <Prose text={asBuilt.body} options={{ terms: index.knowledge.glossary }} />
       )}
+      {notes && <NotesSection notes={notes} />}
     </div>
   );
 }

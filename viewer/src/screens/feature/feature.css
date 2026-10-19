@@ -563,6 +563,23 @@
 .fd-gwt .az-c {
   color: var(--ink);
 }
+/* Placeholder values: settled by a test (✓) or still open ("to be settled"). */
+.fd-ph.settled {
+  color: var(--ink);
+}
+.fd-ph-mark {
+  margin-left: 2px;
+  font-size: 0.85em;
+  color: var(--st-success);
+}
+.fd-ph.open {
+  padding: 0 4px;
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-text);
+  font-style: italic;
+  color: var(--ink-subtle);
+}
 .fd-tests {
   padding: 10px 16px 12px;
   border-top: 1px solid var(--hairline);
