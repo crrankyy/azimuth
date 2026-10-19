@@ -109,6 +109,8 @@ verify:
   # Files every verify run depends on (globs); replaces the default list, [] turns it off
   shared_paths:
     [package.json, pnpm-lock.yaml, Cargo.toml, Cargo.lock, go.mod, go.sum, pyproject.toml, uv.lock]
+  prebuild: null # e.g. "cargo test --workspace --no-run"; null or blank: none
+  build_timeout_seconds: 1800
 viewer:
   port: 4319
   autostart: true
@@ -121,6 +123,11 @@ Every key except `project.name` has a default. Unknown keys produce `W-UNKNOWN-K
 runs stale for the done gate. The globs use the `tests.globs` syntax without `!` and match
 repo-relative paths, so `Cargo.toml` matches the root file only and `crates/*/Cargo.toml` the
 manifest of each crate. The example shows the default.
+
+`verify.prebuild` is a command `azimuth verify` runs once per call, from the project root, before
+the first task's verify command, so a build every command needs runs once instead of in each.
+`verify.build_timeout_seconds` is its timeout; `verify.timeout_seconds` applies to each task's
+command alone.
 
 ## Project knowledge
 
@@ -434,9 +441,10 @@ Body sections: `## Summary` and `## Handoff` (next steps for whoever continues).
 
 ## Cache
 
-`.azimuth/cache/` is local state and is gitignored. In a linked git worktree, the write lock, ID
-marks, live logs, viewer files and hook log are kept in the main worktree's `.azimuth/cache/`, so
-every worktree of a repository shares them; live logs untouched for 24 hours are deleted.
+`.azimuth/cache/` is local state and is gitignored. In a linked git worktree, the write and verify
+locks, ID marks, live logs, viewer files and hook log are kept in the main worktree's
+`.azimuth/cache/`, so every worktree of a repository shares them; live logs untouched for 24 hours
+are deleted.
 
 | Path                          | Contents                                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------------------- |
@@ -446,6 +454,7 @@ every worktree of a repository shares them; live logs untouched for 24 hours are
 | `ids.json`                    | High-water marks for allocated IDs, so deleted IDs are never reissued.                      |
 | `viewer.json`                 | The running viewer server: `pid`, `port`, `instance`, `version`, `root`.                    |
 | `write.lock`                  | Held while a command writes files.                                                          |
+| `verify.lock`                 | Held while `azimuth verify` runs; another verify waits unless the holder has exited.        |
 | `viewer.lock`                 | Held briefly while a session starts the viewer.                                             |
 | `hooks.log`                   | Errors from Claude Code hooks (hooks never block a session; `azimuth doctor` reports them). |
 
@@ -463,6 +472,12 @@ A verify run (`scenarios` comes from a JUnit report the command wrote to `$AZIMU
   "commit": "9f3c2e1",
   "output_tail": "FAIL src/retry/policy.test.ts > S-005.2.1 …",
   "scenarios": [{ "id": "S-005.2.1", "status": "failing" }],
-  "junit": { "tests": 3, "failures": 1, "errors": 0, "skipped": 0 }
+  "junit": { "tests": 3, "failures": 1, "errors": 0, "skipped": 0 },
+  "waited_ms": 0,
+  "ses": "SES-20261018-1100"
 }
 ```
+
+`waited_ms` is how long the `azimuth verify` call waited for another one before it started, and
+`ses` the session current when the run was made (`null` outside a session). Runs recorded before
+Azimuth wrote these keys don't have them.

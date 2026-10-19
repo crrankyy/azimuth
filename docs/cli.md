@@ -82,12 +82,36 @@ Refused moves print the failing gate checks and exit 1.
 
 ## Verify
 
-`azimuth verify [T-ID | F-ID]` runs verify commands from the project root with `/bin/sh` (default:
-every task of in-progress and verifying features), records each run in
-`.azimuth/cache/runs/R-NNNN.json` with the output tail, and exits 1 if any failed. A command can
-write a JUnit report to the path in `$AZIMUTH_JUNIT` for exact per-scenario results. Otherwise
-verify reads the output. A passing run passes a covered scenario only when the output shows one of
-its tests ran (so a typecheck passes nothing):
+`azimuth verify [T-ID | F-ID …] [--no-prebuild] [--summary] [--json]` runs the verify commands of
+the tasks and features named, one after another in the order named and each task once (default:
+every task of in-progress and verifying features). It records each run in
+`.azimuth/cache/runs/R-NNNN.json` with the output tail, and exits 1 if any failed. An unknown ID,
+or one with no verify command, exits 1 before anything runs.
+
+When `verify.prebuild` is set, verify runs it once before the first command, under
+`verify.build_timeout_seconds`, so a build the commands share doesn't count against each command's
+`verify.timeout_seconds`. A prebuild that fails or times out prints its output tail, records no
+runs and exits 1. `--no-prebuild` skips it.
+
+One `azimuth verify` runs at a time in a repository and its worktrees: another call waits until
+the running one ends, then prints `waited 40s for another verify` and starts. Each run records
+that wait in `waited_ms` and the current session in `ses`.
+
+Commands run from the project root with `/bin/sh`. A command that outlasts its timeout is killed
+together with every process it started, and its run fails with exit code 124. Ctrl-C or SIGTERM
+stops verify the same way: the running command is killed and not recorded, the rest don't run,
+and verify exits 130 or 143.
+
+Verify prints each command before running it, the prebuild's too, then a result line:
+`prebuild passed in 41.2s`, `R-0142 T-005.4 passed in 1.2s`, or
+`R-0142 T-005.4 failed (exit 1) in 2.1s` followed by the output tail. `--summary` leaves out the
+commands and a passing prebuild's line, so a batch prints one line per run plus the output of
+failures. `--json` prints only the JSON array of runs on stdout (`[]` after a failed prebuild,
+whose lines go to stderr).
+
+A command can write a JUnit report to the path in `$AZIMUTH_JUNIT` for exact per-scenario results.
+Otherwise verify reads the output. A passing run passes a covered scenario only when the output
+shows one of its tests ran (so a typecheck passes nothing):
 
 - the scenario ID appears, as in Vitest or Jest test titles;
 - the function name of a test marked with `// scenario:` or `@pytest.mark.scenario` appears on a

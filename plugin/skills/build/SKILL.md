@@ -28,7 +28,10 @@ Target: $ARGUMENTS
       Run them and confirm they fail for the right reason.
    3. Implement until the task's verify command passes. Respect the contract and invariants.
    4. Commit: `feat(<F-ID>): <what>` with `Refs: <T-ID>`.
-   5. `azimuth verify <T-ID>` to record the run, then `azimuth move <T-ID> done`.
+   5. `azimuth verify <T-ID> --summary` to record the run, then `azimuth move <T-ID> done`.
+      Don't build by hand first: a build every verify command needs belongs in
+      `verify.prebuild`, which each verify call runs once, under its own timeout. If another
+      `azimuth verify` is running, the call waits its turn (`waited 40s for another verify`).
    6. After each task, or every few significant steps in a long one, add
       `azimuth log <T-ID> "<what changed, what's next>"` so the viewer shows progress.
 5. Stop and report instead of pushing on when:
@@ -55,6 +58,8 @@ Subagents run inside your Claude Code session, so Azimuth sees one session: thei
 - **Parallel only when independent:** run several subagents at once only for ready tasks whose
   `files` don't overlap; otherwise one at a time. Wait for the whole batch to report before
   verifying, since a half-finished change elsewhere can break the build.
-- **Then, one task at a time:** review the change, stage only that task's files, and do steps
-  4.4–4.6 yourself (commit with `Refs: <T-ID>`, `azimuth verify <T-ID>`,
-  `azimuth move <T-ID> done`, `azimuth log`).
+- **Then commit one task at a time:** review the change, stage only that task's files and commit
+  with `Refs: <T-ID>` (step 4.4).
+- **Verify the batch in one call:** `azimuth verify <T-ID> <T-ID> … --summary` prints one line per
+  run and the output of failures only. Then `azimuth move <T-ID> done` and `azimuth log` for each
+  task that passed; fix a failed one, commit it and verify it again.

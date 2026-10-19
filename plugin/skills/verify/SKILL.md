@@ -14,8 +14,9 @@ Target: $ARGUMENTS
 
 1. `azimuth session start --skill verify --goal "Close out <F-ID>" --touch <F-ID>` and
    `azimuth show <F-ID> --brief` (the "Next gate → done" checks are your checklist).
-2. Rerun only the runs that "Latest verify run of every task passed at HEAD" names:
-   `azimuth verify <T-ID>` for each task in its detail. A passing run stays current until a later
+2. Rerun only the runs that "Latest verify run of every task passed at HEAD" names, in one call:
+   `azimuth verify <T-ID> <T-ID> … --summary` with the tasks in its detail (`verify.prebuild`, if
+   set, builds once first; don't build by hand). A passing run stays current until a later
    commit changes a path the task depends on, and the detail names that commit and path
    (`T-006.2 last passed at abc1234; def5678 changed src/core/gates.ts`). When the check passes,
    rerun nothing. If a run fails, fix it (`azimuth move <F-ID> in-progress --reason "…"` first if
