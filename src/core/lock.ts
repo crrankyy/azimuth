@@ -9,16 +9,30 @@ import {
   unlinkSync,
   writeSync,
 } from "node:fs";
-import { basename, dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { AzimuthError } from "./errors";
 import { gitCommonDir, gitTopLevel } from "./git";
 import { AZ_DIR } from "./paths";
 
+// By resolved root. A repository's git dir doesn't move under a running process, and asking git
+// costs two processes per call, which hooks on a 1.5 s budget and every viewer push can't afford.
+const sharedCacheDirs = new Map<string, string>();
+
 /**
  * The cache shared by every worktree of a repository: `.azimuth/cache` in the main worktree.
  * Locks and ID high-water marks live here so parallel agents in worktrees don't collide.
+ * Worked out once per root and process.
  */
 export function sharedCacheDir(root: string): string {
+  const key = resolve(root);
+  const known = sharedCacheDirs.get(key);
+  if (known) return known;
+  const dir = findSharedCacheDir(key);
+  sharedCacheDirs.set(key, dir);
+  return dir;
+}
+
+function findSharedCacheDir(root: string): string {
   const common = gitCommonDir(root);
   const top = gitTopLevel(root);
   if (common && top && basename(common) === ".git") {
