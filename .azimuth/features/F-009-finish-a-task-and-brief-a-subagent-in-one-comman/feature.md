@@ -2,7 +2,7 @@
 id: F-009
 title: Finish a task and brief a subagent in one command
 summary: azimuth task finish checks the feature, adds an optional note, stages the task's files and the feature's records, commits with a Refs trailer, verifies and moves the task to done in one call; azimuth brief prints a subagent's prompt built from the records.
-status: verifying
+status: done
 priority: P1
 size: M
 mode: brownfield
