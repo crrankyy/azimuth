@@ -58,7 +58,7 @@ tasks:
     note: null
   - id: T-011.8
     title: Skills, protocol, docs and full verification
-    status: in-progress
+    status: done
     after: [T-011.4, T-011.5, T-011.6, T-011.7]
     covers: []
     files: [plugin/skills/build/SKILL.md, plugin/skills/spec/SKILL.md, plugin/skills/verify/SKILL.md, plugin/skills/ship/SKILL.md, plugin/skills/azimuth/SKILL.md, src/core/protocol.ts, docs/cli.md, docs/concepts.md, docs/file-format.md, docs/claude-code.md, docs/viewer.md]

@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-20
-reconciled_at: 9f08102
+reconciled_at: 2317d73
 modules:
   - name: core
     path: src/core
@@ -123,6 +123,10 @@ prints and the server pushes to the viewer over SSE.
   the SES from its own file. The sidecar `live/<claude-session>.meta.json` (`readLiveMeta`,
   `updateLiveMeta` in `live.ts`) keeps `started_at`, `ses` and `transcript_path`, so they survive
   the live log's 64 KB tail.
+- Finishing tasks: `azimuth task finish` (`src/core/finish.ts`) checks the feature, adds the
+  note, stages the task's changed files and the feature's records, commits with a `Refs:`
+  trailer, runs `verifyBatch` and moves the task to done, stopping at the first failure;
+  `azimuth brief` (`src/core/task-brief.ts`) prints a subagent prompt from the records.
 - Viewer: each issue has a page at `#/issues/<id>/page` (`viewer/src/screens/issues/`), whose
   related work (`related.ts`) and history (`history.ts`) are derived from the index on every
   render.
