@@ -2,7 +2,7 @@
 id: F-014
 title: Record what each agent is doing and waiting for
 summary: Hooks record permission waits, failed tools, edit sizes and subagent transcript paths; each live session and agent in the index carries a status (running, waiting, done), its wait, current action, recent edits and wait spans; a token-guarded endpoint serves normalised Claude Code transcripts to the live viewer only.
-status: draft
+status: approved
 priority: P1
 size: L
 mode: brownfield
@@ -12,6 +12,11 @@ superseded_by: null
 tags: []
 created: 2026-10-19
 updated: 2026-10-19
+approved_at: 2026-10-19
+approved_by: agent
+approved_hash: sha256:17e80e93ff3ba975ca6850e62f176223b87d7f87ca8e8a3eef1c35ba5a5c6c11
+approved_commit: 745f055
+review_ack_at: null
 ---
 # F-014: Record what each agent is doing and waiting for
 
