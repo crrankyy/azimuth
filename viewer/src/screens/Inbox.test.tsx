@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Index, InboxItem, Question } from "../../../src/core/types";
 import { expectedIndex } from "../../../test/fixtures/hookline/expected-index";
+import { AGENTS_NOW, agentsLive, indexWithLive } from "../../../test/fixtures/live/agents";
 import { UiProvider } from "../components/Ui";
 import { IndexContext } from "../data/IndexProvider";
 import { parseRoute } from "../lib/router";
@@ -31,14 +32,14 @@ function indexWith(inbox: InboxItem[]): Index {
   return index;
 }
 
-function render(index: Index): string {
+function render(index: Index, now = NOW): string {
   const value = {
     index,
     connection: "live" as const,
     attempts: 0,
-    lastUpdate: NOW,
+    lastUpdate: now,
     changed: new Set<string>(),
-    now: NOW,
+    now,
     act: async () => ({ ok: true, status: 200 }),
   };
   return renderToStaticMarkup(
@@ -110,5 +111,41 @@ describe("F-012 Review items in the inbox", () => {
     const f = row(html, "F-005");
     expect(buttons(f)).toEqual(expect.arrayContaining(["Send back…", "Acknowledge"]));
     expect(buttons(f)).not.toContain("Answer differently");
+  });
+});
+
+describe("F-015 The empty Inbox's agent line", () => {
+  const zone = process.env.TZ;
+  beforeAll(() => {
+    process.env.TZ = "UTC";
+  });
+  afterAll(() => {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  });
+
+  /** The empty Inbox's line for the fixture's sessions with these Claude Code session IDs, else all six. */
+  const agentLine = (...ids: string[]) => {
+    const live = agentsLive().filter((s) => ids.length === 0 || ids.includes(s.claude_session));
+    const html = render(indexWithLive(live, { inbox: [] }), AGENTS_NOW);
+    return text(/<h3>Nothing needs you<\/h3><div>(.*?)<\/div>/.exec(html)?.[1] ?? "");
+  };
+
+  it("S-015.7.1 names the first running agent's task and current action", () => {
+    expect(agentLine()).toBe(
+      "An agent is working on T-005.4: pnpm vitest run src/retry/policy.test.ts",
+    );
+  });
+
+  it("S-015.7.2 says when the first agent not done is waiting for you", () => {
+    expect(agentLine("c1140", "c1100", "c0930")).toBe(
+      "An agent on F-010 is waiting for you: Permission prompt: WebFetch prometheus.io.",
+    );
+  });
+
+  it("S-015.7.3 doesn't name a done session that has no end", () => {
+    const line = agentLine("c0930");
+    expect(line).toMatch(/^The last agent session ended /);
+    expect(line).not.toContain("An agent");
   });
 });

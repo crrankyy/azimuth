@@ -14,6 +14,7 @@ import { IdChip } from "../components/IdChip";
 import { Button, EmptyState } from "../components/primitives";
 import { StatusGlyph } from "../components/Status";
 import { Dialog, useAction, useUi } from "../components/Ui";
+import { activeSessions } from "../data/agents";
 import { useIndexState } from "../data/IndexProvider";
 import { decisionById, featureById, questionById } from "../data/selectors";
 import { age, ago, dateTime, plural, shortDate } from "../lib/format";
@@ -348,9 +349,12 @@ function Inbox({ index }: { index: Index }) {
 
 /** The empty state's line on what agents are doing. */
 function agentLine(index: Index, now: number): string {
-  const live = index.live.find((s) => !s.ended_at);
+  const live = activeSessions(index.live)[0];
   if (live) {
     const on = live.task ?? live.feature;
+    if (live.status === "waiting") {
+      return `An agent${on ? ` on ${on}` : ""} is waiting for you${live.waiting ? `: ${live.waiting.reason}.` : "."}`;
+    }
     return `An agent is working${on ? ` on ${on}` : ""}${live.current ? `: ${live.current.summary}` : "."}`;
   }
   const last = index.sessions[0];

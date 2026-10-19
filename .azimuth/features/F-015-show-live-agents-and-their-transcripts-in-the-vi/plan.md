@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-015.3
     title: Agents in the sidebar, go-to keys and the palette (red → green)
-    status: in-progress
+    status: done
     after: [T-015.2]
     covers: [S-015.1.1, S-015.1.2, S-015.1.3, S-015.1.4, S-015.1.5, S-015.1.6, S-015.1.7]
     files: [viewer/src/components/AppShell.tsx, viewer/src/components/AppShell.test.tsx, viewer/src/lib/keys.ts, viewer/src/lib/keys.test.ts, viewer/src/components/CommandPalette.test.tsx, viewer/src/styles/base.css]
