@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-015.4
     title: Agents model (filters, edited files, overlaps, permission waits) (red → green)
-    status: in-progress
+    status: done
     after: [T-015.2]
     covers: [S-015.2.9, S-015.3.3, S-015.3.4, S-015.3.9]
     files: [viewer/src/screens/agents/model.ts, viewer/src/screens/agents/model.test.ts]
