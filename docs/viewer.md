@@ -40,19 +40,20 @@ connection drops, a banner says so, actions are disabled, and the page reconnect
 
 ## Screens
 
-| Screen       | Route                          | Shows                                                                                                                                                                   |
-| ------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Inbox        | `#/inbox`                      | What needs you, grouped by urgency, with the action inline (answer, approve, re-approve, review, open run, show problems, acknowledge).                                 |
-| Overview     | `#/overview`                   | Status across features, the active milestone, coverage, questions, issues, verify runs, architecture freshness, recent activity.                                        |
-| Roadmap      | `#/roadmap`, `#/roadmap/graph` | Milestones on a timeline; the feature dependency graph.                                                                                                                 |
-| Features     | `#/features`                   | Table (filter, group, sort) or board by lifecycle.                                                                                                                      |
-| Feature      | `#/features/F-005/<tab>`       | Header, lifecycle and next gate with actions, and tabs: Context, Impact, Stories, Contract, Plan (task graph, runs; `plan/T-005.4` selects a task), Activity, As-built. |
-| Decisions    | `#/decisions/ADR-0004`         | ADRs with supersession chains; accept or reject proposed ones.                                                                                                          |
-| Questions    | `#/questions/Q-0003`           | Open (blocking first) and answered questions; answer with an option and/or text.                                                                                        |
-| Issues       | `#/issues/BUG-0001`            | Bugs, debt and risks; risk matrix; triage severity and status.                                                                                                          |
-| Activity     | `#/activity/SES-…`             | Live agents (a lane per subagent with its task, and every feature in flight), then sessions with handoffs, commits and verify runs by day.                              |
-| Verification | `#/verification/R-0142`        | Scenario coverage matrix and verify runs with output.                                                                                                                   |
-| Knowledge    | `#/knowledge/architecture`     | Vision, architecture with the module map, conventions, glossary.                                                                                                        |
+| Screen       | Route                          | Shows                                                                                                                                                                                                   |
+| ------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inbox        | `#/inbox`                      | What needs you, grouped by urgency, with the action inline (answer, approve, re-approve, review, open run, show problems, acknowledge).                                                                 |
+| Overview     | `#/overview`                   | Status across features, the active milestone, coverage, questions, issues, verify runs, architecture freshness, recent activity.                                                                        |
+| Roadmap      | `#/roadmap`, `#/roadmap/graph` | Milestones on a timeline; the feature dependency graph.                                                                                                                                                 |
+| Features     | `#/features`                   | Table (filter, group, sort) or board by lifecycle.                                                                                                                                                      |
+| Feature      | `#/features/F-005/<tab>`       | Header, lifecycle and next gate with actions, and tabs: Context, Impact, Stories, Contract, Plan (task graph, runs; `plan/T-005.4` selects a task), Activity, As-built.                                 |
+| Decisions    | `#/decisions/ADR-0004`         | ADRs with supersession chains; accept or reject proposed ones.                                                                                                                                          |
+| Questions    | `#/questions/Q-0003`           | Open (blocking first) and answered questions; answer with an option and/or text.                                                                                                                        |
+| Issues       | `#/issues/BUG-0001`            | Bugs, debt and risks; risk matrix; triage severity and status. A row, its ID or title, Enter or the preview's "Open full page" opens the issue's page.                                                  |
+| Issue        | `#/issues/BUG-0001/page`       | One issue: header with its age, Triage card, description, related work and history (both derived from the index), facts, linked features, files with the changes planned for them, and its source file. |
+| Activity     | `#/activity/SES-…`             | Live agents (a lane per subagent with its task, and every feature in flight), then sessions with handoffs, commits and verify runs by day.                                                              |
+| Verification | `#/verification/R-0142`        | Scenario coverage matrix and verify runs with output.                                                                                                                                                   |
+| Knowledge    | `#/knowledge/architecture`     | Vision, architecture with the module map, conventions, glossary.                                                                                                                                        |
 
 Hovering any ID shows a summary card. The problems panel lists `azimuth check` results with
 "Copy path" and, when `viewer.editor_url` is set (schemes `vscode:`, `cursor:`, `zed:`, `idea:`,
@@ -64,31 +65,31 @@ down to 1024, where side panels move under the main content.
 
 ## Keyboard
 
-| Keys                                             | Action                                                                                                    |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| ⌘K / Ctrl-K                                      | Command palette: jump to any ID or title, run what needs you, copy CLI commands (↑↓, ↵, ⌘C copies the ID) |
-| `g` then `i` `o` `r` `f` `d` `q` `s` `a` `v` `k` | Inbox, Overview, Roadmap, Features, Decisions, Questions, Issues (`s`), Activity, Verification, Knowledge |
-| `g p`                                            | Problems panel                                                                                            |
-| `j` / `k`                                        | Next / previous item in lists (features on a feature page, tasks on its Plan tab)                         |
-| `Enter`                                          | Open the selected item                                                                                    |
-| `a`                                              | The selected Inbox item's primary action                                                                  |
-| ⌘↵                                               | Send an answer                                                                                            |
-| `Esc`                                            | Close dialogs, the palette and the problems panel                                                         |
+| Keys                                             | Action                                                                                                                     |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| ⌘K / Ctrl-K                                      | Command palette: jump to any ID or title, run what needs you, copy CLI commands (↑↓, ↵, ⌘C copies the ID)                  |
+| `g` then `i` `o` `r` `f` `d` `q` `s` `a` `v` `k` | Inbox, Overview, Roadmap, Features, Decisions, Questions, Issues (`s`), Activity, Verification, Knowledge                  |
+| `g p`                                            | Problems panel                                                                                                             |
+| `j` / `k`                                        | Next / previous item in lists (features on a feature page, tasks on its Plan tab, issues in list order on an issue's page) |
+| `Enter`                                          | Open the selected item (in Issues, the issue's page)                                                                       |
+| `a`                                              | The selected Inbox item's primary action                                                                                   |
+| ⌘↵                                               | Send an answer                                                                                                             |
+| `Esc`                                            | Close dialogs, the palette and the problems panel; on an issue's page, go back to the list                                 |
 
 ## Write actions
 
 Every action goes through the same gated transitions as the CLI and is recorded as yours.
 
-| Action                                      | Where                                              | Effect                                                                                                                |
-| ------------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Approve / re-approve spec                   | Feature, Inbox (approve also from the palette)     | Moves to approved (re-approve keeps the status), recording the spec hash and commit. A failing gate shows its checks. |
-| Request changes                             | Feature                                            | Adds a review note the agent must address.                                                                            |
-| Defer, cancel, resume                       | Feature                                            | Moves the feature (defer and cancel need a reason).                                                                   |
-| Answer                                      | Questions, Inbox                                   | Writes your answer; the agent applies it.                                                                             |
-| Accept / reject                             | Decisions (the Inbox's Review opens it)            | Decides a proposed ADR, with an optional note for the agent.                                                          |
-| Acknowledge / send back                     | Inbox, Decisions; Feature (acknowledge only)       | Reviews an automatic approval, acceptance or rejection.                                                               |
-| Priority, milestone, severity, issue status | Feature header, Features table (`p` / `m`), Issues | Sets the field.                                                                                                       |
-| Release                                     | Roadmap                                            | Releases a milestone.                                                                                                 |
+| Action                                      | Where                                                               | Effect                                                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Approve / re-approve spec                   | Feature, Inbox (approve also from the palette)                      | Moves to approved (re-approve keeps the status), recording the spec hash and commit. A failing gate shows its checks. |
+| Request changes                             | Feature                                                             | Adds a review note the agent must address.                                                                            |
+| Defer, cancel, resume                       | Feature                                                             | Moves the feature (defer and cancel need a reason).                                                                   |
+| Answer                                      | Questions, Inbox                                                    | Writes your answer; the agent applies it.                                                                             |
+| Accept / reject                             | Decisions (the Inbox's Review opens it)                             | Decides a proposed ADR, with an optional note for the agent.                                                          |
+| Acknowledge / send back                     | Inbox, Decisions; Feature (acknowledge only)                        | Reviews an automatic approval, acceptance or rejection.                                                               |
+| Priority, milestone, severity, issue status | Feature header, Features table (`p` / `m`), Issues, an issue's page | Sets the field.                                                                                                       |
+| Release                                     | Roadmap                                                             | Releases a milestone.                                                                                                 |
 
 Status changes (approve, re-approve, answer, decide, revert, move) send the status you saw; if it
 changed in the meantime the action is refused rather than applied to something you didn't see. Writes change frontmatter fields or append log entries;
