@@ -2,7 +2,7 @@
 id: F-013
 title: Keep check, trace and new output short
 summary: check summarises warnings by code unless asked for them, trace hides mention-only rows, and new prints only the ID on stdout even when a later step fails.
-status: draft
+status: approved
 priority: P2
 size: M
 mode: brownfield
@@ -12,6 +12,11 @@ superseded_by: null
 tags: []
 created: 2026-10-19
 updated: 2026-10-19
+approved_at: 2026-10-19
+approved_by: agent
+approved_hash: sha256:5af8a6ab71b3721530aa08e9f70fb38f3ab108c1497d1faf2f3bd92e675983e7
+approved_commit: d36d0f2
+review_ack_at: null
 ---
 # F-013: Keep check, trace and new output short
 
