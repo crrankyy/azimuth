@@ -4,13 +4,14 @@ import { href, navigate, type Section } from "./router";
 /** `g` + letter jumps between sections (documented in docs/viewer.md). */
 export const GOTO: Record<string, Section> = {
   i: "inbox",
+  a: "agents",
   o: "overview",
   r: "roadmap",
   f: "features",
   d: "decisions",
   q: "questions",
   s: "issues",
-  a: "activity",
+  t: "activity",
   v: "verification",
   k: "knowledge",
 };
@@ -79,6 +80,39 @@ export function useGlobalKeys(handlers: { palette: () => void; problems: () => v
       window.removeEventListener("keydown", record, true);
       window.removeEventListener("keydown", onKey);
     };
+  }, []);
+}
+
+/**
+ * Single-key shortcuts for one screen ("[", "]", "f", "Escape"…), keyed by KeyboardEvent.key.
+ * Ignored while typing, with a modifier, right after a `g`, while an overlay has the keyboard,
+ * or when `enabled` is false. The latest handlers are used on each key press.
+ */
+export function useScreenKeys(handlers: Record<string, () => void>, enabled = true): void {
+  const latest = useRef({ handlers, enabled });
+  useEffect(() => {
+    latest.current = { handlers, enabled };
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const { handlers: keys, enabled: on } = latest.current;
+      const handler = keys[e.key];
+      if (
+        !handler ||
+        !on ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey ||
+        isTyping(e.target) ||
+        recent.afterG(e.timeStamp) ||
+        overlayOpen()
+      )
+        return;
+      e.preventDefault();
+      handler();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 }
 

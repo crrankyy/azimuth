@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-015.2
     title: Shared formats, status marks and agent rows (red → green)
-    status: in-progress
+    status: done
     after: [T-015.1]
     covers: [S-015.6.1, S-015.6.2, S-015.6.3, S-015.6.4, S-015.6.5, S-015.6.6, S-015.6.7, S-015.6.8]
     files: [viewer/src/lib/format.ts, viewer/src/lib/format.test.ts, viewer/src/components/Status.tsx, viewer/src/components/Status.test.tsx, viewer/src/data/agents.ts, viewer/src/data/agents.test.ts, viewer/src/styles/base.css]

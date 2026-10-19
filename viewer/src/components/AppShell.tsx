@@ -1,14 +1,17 @@
 import { useState, type ReactNode } from "react";
+import type { LiveSession } from "../../../src/core/types";
+import { activeSessions } from "../data/agents";
 import { useIndexState } from "../data/IndexProvider";
 import { dateTime } from "../lib/format";
 import { href, type Section } from "../lib/router";
 import { CompassMark, Icon, type IconName } from "./Icon";
 import { Kbd } from "./primitives";
-import { StatusGlyph } from "./Status";
+import { AgentStatusMark, StatusGlyph } from "./Status";
 import { useUi } from "./Ui";
 
 const NAV: { section: Section; label: string; icon: IconName }[] = [
   { section: "inbox", label: "Inbox", icon: "inbox" },
+  { section: "agents", label: "Agents", icon: "agents" },
   { section: "overview", label: "Overview", icon: "overview" },
   { section: "roadmap", label: "Roadmap", icon: "roadmap" },
   { section: "features", label: "Features", icon: "features" },
@@ -20,8 +23,18 @@ const NAV: { section: Section; label: string; icon: IconName }[] = [
   { section: "knowledge", label: "Knowledge", icon: "knowledge" },
 ];
 
+/** The footer strip's text: what the session works on, then what it's doing or waiting for. */
+function liveText(session: LiveSession): string {
+  const work = session.task ?? session.feature ?? "Agent";
+  const doing =
+    session.status === "waiting" && session.waiting
+      ? session.waiting.reason
+      : (session.current?.summary ?? "working");
+  return `${work} · ${doing}`;
+}
+
 export function Sidebar({ current }: { current: Section }) {
-  const { index, connection, now } = useIndexState();
+  const { index, connection } = useIndexState();
   const { setProblemsOpen } = useUi();
   const [collapsed, setCollapsed] = useState(false);
   if (!index) return null;
@@ -33,9 +46,8 @@ export function Sidebar({ current }: { current: Section }) {
     ) || index.inbox.some((i) => i.kind === "failing-verify");
   const errors = index.problems.filter((p) => p.severity === "error").length;
   const warnings = index.problems.length - errors;
-  const liveAgent = index.live.find(
-    (s) => !s.ended_at && now - Date.parse(s.last_seen_at) < 120_000,
-  );
+  const active = activeSessions(index.live);
+  const liveAgent = active[0];
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`.trim()} aria-label="Azimuth">
       <div className="brand">
@@ -64,6 +76,12 @@ export function Sidebar({ current }: { current: Section }) {
             {!collapsed && item.section === "inbox" && inbox > 0 && (
               <span className="badge primary">{inbox}</span>
             )}
+            {!collapsed && item.section === "agents" && active.length > 0 && (
+              <span className="live-count">
+                <span className="az-live" />
+                {active.length}
+              </span>
+            )}
             {!collapsed && item.section === "features" && (
               <span className="count">{index.features.length}</span>
             )}
@@ -80,12 +98,9 @@ export function Sidebar({ current }: { current: Section }) {
       {!collapsed && (
         <div className="sidebar-foot">
           {liveAgent && (
-            <a className="live-strip" href={href("activity")} title="Agent activity">
-              <span className="az-live" />
-              <span className="live-text">
-                {liveAgent.task ?? liveAgent.feature ?? "Agent"} ·{" "}
-                {liveAgent.current?.summary ?? "working"}
-              </span>
+            <a className="live-strip" href={href("agents")} title="Agents">
+              <AgentStatusMark status={liveAgent.status} hideLabel />
+              <span className="live-text">{liveText(liveAgent)}</span>
             </a>
           )}
           <div className="row">
