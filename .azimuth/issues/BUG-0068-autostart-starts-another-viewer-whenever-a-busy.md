@@ -2,7 +2,7 @@
 id: BUG-0068
 type: bug
 title: Autostart starts another viewer whenever a busy viewer misses the 500 ms health check
-status: open
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/server/autostart.ts, src/server/server.ts]
 found_by: SES-20261019-2021
 created: 2026-10-19
-resolved_at: null
+resolved_at: 2026-10-19
 ---
 ## Repro
 1. Work in a large project (ZenithMD: 73 features, 500+ commits) with a Claude Code session
