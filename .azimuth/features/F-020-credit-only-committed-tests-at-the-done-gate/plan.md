@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-020.4
     title: The analysis marks its refs and the done gate counts committed tests (red → green)
-    status: in-progress
+    status: done
     after: [T-020.2, T-020.3]
     covers: [S-020.4.1, S-020.4.2, S-020.4.3, S-020.4.4, S-020.4.5, S-020.4.6, S-020.4.7, S-020.4.8]
     files: [src/core/build-index.ts, src/core/gates.ts, test/core/committed-tests.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-020.5
     title: trace marks a test only in the working tree (red → green)
-    status: todo
+    status: in-progress
     after: [T-020.4]
     covers: [S-020.3.1, S-020.3.2, S-020.3.3, S-020.3.4, S-020.3.5]
     files: [src/cli/commands/read.ts, test/cli/trace.test.ts]

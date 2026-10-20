@@ -15,3 +15,7 @@ changed lists every non-ignored path git reports, .azimuth/ files included: test
 ### T-020.4 · 2026-10-20
 
 markCommitted treats null and [] alike (nothing read, all committed); analyzeProject passes null without git to state the intent. T-020.5: trace can read ScenarioTest.committed from the index; for a #2 repository in its tests, copy closeOut/runFile from test/core/committed-tests.test.ts (it has a repo: false mode for the no-git case).
+
+### T-020.5 · 2026-10-20
+
+Docs (T-020.7): both marks can appear in a fixed order, '<file>: <name> (mention) (uncommitted)'; a mention still shows only with --all, committed or not.

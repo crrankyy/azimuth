@@ -222,7 +222,8 @@ export const trace: Command = {
           hidden++;
           continue;
         }
-        print(color.dim(`    ${t.file}: ${t.name}${mention ? " (mention)" : ""}`));
+        const marks = `${mention ? " (mention)" : ""}${t.committed ? "" : " (uncommitted)"}`;
+        print(color.dim(`    ${t.file}: ${t.name}${marks}`));
       }
     }
     if (hidden > 0) print(`${hidden} mention-only references hidden (--all shows them)`);
