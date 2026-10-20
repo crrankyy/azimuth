@@ -92,12 +92,19 @@ every test carries `committed`, `false` for one marked `(uncommitted)`.
 `azimuth brief <T-ID>` prints, in this order: the task's title, its feature and the status of its
 `after` tasks; the lines of each scenario it covers, as written in `stories.md`, with settled
 values filled in and `{?}` kept; `contract.md`, its headings one level deeper; the feature's
-invariants; the files it may change; its verify command; the feature's `notes.md`; and the rules
-(the test-naming form for the project's `stack.languages`, tests first, only the listed files, no
-`git` or `azimuth` and nothing under `.azimuth/`, what to report, and how to report a `{?}` value
-when a covered scenario holds one). A part with nothing to show is left out, except the files,
-the verify command and the rules. It writes nothing and runs no git, and the same records give
-the same text. An unknown feature or task exits 1.
+invariants; the files it may change; its verify command; the feature's `notes.md`; the project's
+`conventions.md`, its headings one level deeper (left out while it is missing, empty or still the
+template `init` wrote; above 1,500 words, one line pointing to the file); and the rules (the
+test-naming form for the project's `stack.languages`, tests first, only the listed files, no `git`
+or `azimuth` and nothing under `.azimuth/`; for each listed file that matches
+`parallel.shared_files`, one complete insertion to it (a whole enum variant, match arm, registry
+entry or module line), no edit or reordering of another task's insertion and no formatter over a
+shared file or its package; what `{?}` means when a covered scenario holds one; and last, what to
+report: the files changed, the verify result, what the task taught that later tasks should know,
+each file changed outside "Files you may change" and why, and, when a covered scenario holds a
+`{?}`, the value each `{?}` took in a passing test, as `<scenario ID>: <value>`). A part with
+nothing to show is left out, except the files, the verify command and the rules. It writes nothing
+and runs no git, and the same records give the same text. An unknown feature or task exits 1.
 
 ## Create
 

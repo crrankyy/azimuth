@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-022.2
     title: The Conventions section and the full brief (red → green)
-    status: in-progress
+    status: done
     after: [T-022.1]
     covers: [S-022.2.1, S-022.2.2, S-022.2.3, S-022.2.4, S-022.2.5, S-022.2.6, S-022.4.1, S-022.4.2]
     files: [src/core/task-brief.ts, src/core/init.ts, test/core/task-brief.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-022.3
     title: Build skill, docs and full verification
-    status: todo
+    status: in-progress
     after: [T-022.2]
     covers: []
     files: [docs/cli.md, plugin/skills/build/SKILL.md]

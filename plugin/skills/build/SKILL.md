@@ -86,19 +86,25 @@ recorded in yours.
 - **Hand each subagent one ready task** from `azimuth next <F-ID>`, after
   `azimuth move <T-ID> in-progress`. Its prompt is the output of `azimuth brief <T-ID>`: the
   task, the scenarios it covers, the contract and invariants, the files it may change, the
-  verify command, the feature's notes and the rules (tests first, test names, no git or
-  azimuth, report the files changed, the verify result and the value a test proved for each
-  `{?}`). Add only what the records don't hold, such as asking it to report what the task
-  taught. You settle those values and pass the lesson to `task finish --note`.
+  verify command, the feature's notes, the project's conventions and the rules (tests first,
+  test names, no git or azimuth, the shared-file rules below, and last a request to report the
+  files changed, the verify result, what the task taught, each file changed outside its list
+  and why, and the value a test proved for each `{?}`). Add only what the records don't hold:
+  which other tasks in the batch add to which shared file, and which files the other lanes are
+  editing right now. You settle those values with `azimuth settle`, pass the lesson to
+  `task finish --note`, and check each file changed outside the list (step 4.4 says when to
+  `--adopt` it).
 - **Parallel only when independent:** run several subagents at once only for ready tasks whose
   `files` overlap in no file outside `parallel.shared_files` (config.yaml); otherwise one at a
   time. `azimuth next <F-ID>` ends with the groups that can run together
   (`Can run together: T-005.2, T-005.3 (shared: src/registry.ts)`, `On its own: T-005.4`). Wait
   for the whole batch to report before finishing any of its tasks, since a half-finished change
   elsewhere can break the build.
-- **Shared files take insertions only:** tell each subagent whose task lists a shared file to
-  add one complete insertion to it (a whole enum variant, match arm or registry entry) and never
-  to edit another task's insertion.
+- **Shared files take insertions only:** the brief of a task that lists a file matching
+  `parallel.shared_files` tells the subagent to add one complete insertion to it (a whole enum
+  variant, match arm, registry entry or module line), never to edit or reorder another task's
+  insertion, and not to run a formatter over a shared file or its package. You add which other
+  tasks in the batch add to that file.
 - **Then finish the batch one task at a time:** once the whole batch has reported, review each
   change and run `azimuth task finish` (step 4.4) for its tasks one after another, never in
   parallel. Each commits only its task's files and the feature's records. A shared file is
