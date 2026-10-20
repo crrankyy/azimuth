@@ -2,7 +2,7 @@
 id: F-016
 title: Show agent sessions on an Activity timeline
 summary: Activity opens with an agent timeline (a row per session and its subagents, spans by status with striped waits on you, markers for commits, verify runs and raised questions and ADRs), then cards for the sessions running or waiting on you, then finished sessions as threads grouped by Today, Yesterday and Earlier.
-status: verifying
+status: done
 priority: P2
 size: L
 mode: brownfield
