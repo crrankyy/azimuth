@@ -1,4 +1,5 @@
 import { constants } from "node:os";
+import { diskSpace, diskWarning } from "../../core/disk";
 import { finishTask, type FinishResult } from "../../core/finish";
 import { featureOf, idKind } from "../../core/ids";
 import { loadProject } from "../../core/model";
@@ -74,6 +75,9 @@ export const task: Command = {
     if (!message?.trim()) throw new UsageError('task finish needs --commit "<message>".');
     const adopt = adoptOption(values.adopt as string | undefined);
     const rt = runtime(values);
+    // stderr only, never the exit code: a full disk is worth a warning, not a refusal.
+    const warning = diskWarning(diskSpace(rt.root));
+    if (warning) process.stderr.write(`${warning}\n`);
     const interrupt = abortOnSignals();
     try {
       const result = await finishTask(rt.root, id, {

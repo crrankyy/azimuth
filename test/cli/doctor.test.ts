@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { hooksCheck, pluginCheck } from "../../src/cli/commands/harness";
+import { diskCheck, hooksCheck, pluginCheck } from "../../src/cli/commands/harness";
 import { appendLive } from "../../src/core/live";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
 
@@ -27,6 +27,32 @@ describe("doctor's plugin check", () => {
   it("reports a missing plugin and an unreadable list", () => {
     expect(pluginCheck("[]").ok).toBe(false);
     expect(pluginCheck("not json").ok).toBeNull();
+  });
+});
+
+describe("doctor's disk check", () => {
+  it("S-018.7.8 shows the free space when there is room", () => {
+    expect(diskCheck({ state: "ok", free_bytes: 120_500_000_000, min_free_gb: 10 })).toEqual({
+      ok: true,
+      text: "120.5 GB free on the project's disk (verify.min_free_gb: 10)",
+    });
+  });
+
+  it("S-018.7.9 flags a low disk with a line that doesn't fail doctor", () => {
+    expect(diskCheck({ state: "low", free_bytes: 4_200_000_000, min_free_gb: 10 })).toEqual({
+      ok: null,
+      text: "Low disk space: 4.2 GB free on the project's disk, below verify.min_free_gb (10)",
+    });
+  });
+
+  it("S-018.7.10 leaves the line out with the guard off and flags an unreadable disk", () => {
+    expect(diskCheck({ state: "off" })).toBeNull();
+    expect(
+      diskCheck({ state: "unknown", error: "ENOSYS: function not implemented, statfs" }),
+    ).toEqual({
+      ok: null,
+      text: "Could not read the free space on the project's disk: ENOSYS: function not implemented, statfs",
+    });
   });
 });
 

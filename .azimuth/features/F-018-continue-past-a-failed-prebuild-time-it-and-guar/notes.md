@@ -7,3 +7,7 @@ T-018.3: verifyBatch still stops on any failed prebuild and passes neither prebu
 ### T-018.2 · 2026-10-20
 
 T-018.5: run files written without a prebuild key read as null; { ok: false, duration_ms: N } reads as written. Docs (T-018.8): a malformed value is anything but an object with a boolean ok and a number duration_ms ≥ 0; the init comments are S-018.1.4's exact text.
+
+### T-018.7 · 2026-10-20
+
+Docs (T-018.8): doctor also checks free disk space now, though its summary string ('Check that Node, the plugin, hooks and the viewer are wired up') wasn't changed. verify warns only when it has targets; task finish warns after its argument checks, before finishTask.

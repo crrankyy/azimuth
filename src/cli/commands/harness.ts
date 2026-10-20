@@ -10,6 +10,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildIndex } from "../../core/build-index";
+import { diskSpace, formatGb, type DiskSpace } from "../../core/disk";
 import { sharedCacheDir } from "../../core/lock";
 import { HOOKS_MISSING, hooksRan, readLiveSessions } from "../../core/live";
 import { ACTIVE_CLAUDE_MS, claudeSessionFromEnv } from "../../core/session";
@@ -153,6 +154,32 @@ export function hooksCheck(
     : { ok: null, text: "No hook activity yet (start a Claude Code session here)" };
 }
 
+/**
+ * doctor's disk line: ok true when there is room, ok null (a `?` line, which doesn't fail doctor)
+ * when the disk is low or unreadable; null (no line) when the guard is off.
+ */
+export function diskCheck(space: DiskSpace): { ok: boolean | null; text: string } | null {
+  switch (space.state) {
+    case "off":
+      return null;
+    case "unknown":
+      return {
+        ok: null,
+        text: `Could not read the free space on the project's disk: ${space.error}`,
+      };
+    case "low":
+      return {
+        ok: null,
+        text: `Low disk space: ${formatGb(space.free_bytes)} free on the project's disk, below verify.min_free_gb (${space.min_free_gb})`,
+      };
+    case "ok":
+      return {
+        ok: true,
+        text: `${formatGb(space.free_bytes)} free on the project's disk (verify.min_free_gb: ${space.min_free_gb})`,
+      };
+  }
+}
+
 export const doctor: Command = {
   usage: "doctor [--print-path]",
   summary: "Check that Node, the plugin, hooks and the viewer are wired up",
@@ -202,6 +229,8 @@ export const doctor: Command = {
     line(hooks.ok, hooks.text);
     const url = viewerUrl(root);
     line(url ? true : null, url ? `Viewer running at ${url}` : "Viewer not running (azimuth view)");
+    const disk = diskCheck(diskSpace(root));
+    if (disk) line(disk.ok, disk.text);
     const hookLog = join(sharedCacheDir(root), "hooks.log");
     if (existsSync(hookLog) && Date.now() - statSync(hookLog).mtimeMs < 86_400_000) {
       line(false, `Hooks reported errors in the last day: see ${hookLog}`);

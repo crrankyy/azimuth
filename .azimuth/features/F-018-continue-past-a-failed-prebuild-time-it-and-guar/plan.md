@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-018.2
     title: Config keys, init template and the run file's prebuild (red → green)
-    status: in-progress
+    status: done
     after: [T-018.1]
     covers: [S-018.1.1, S-018.1.2, S-018.1.3, S-018.1.4, S-018.2.1, S-018.2.2, S-018.2.3]
     files: [src/core/parse/run.ts, src/core/init.ts, test/core/verify-config.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-018.5
     title: The done gate asks for a rerun after a failed prebuild (red → green)
-    status: todo
+    status: in-progress
     after: [T-018.2]
     covers: [S-018.5.1, S-018.5.2, S-018.5.3, S-018.5.4]
     files: [src/core/gates.ts, test/core/prebuild-gate.test.ts]

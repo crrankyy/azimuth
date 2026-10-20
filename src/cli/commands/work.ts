@@ -1,6 +1,7 @@
 import { constants } from "node:os";
 import { autostartEnabled, recordSessionAfterInit } from "../../hooks/handlers";
 import { ensureViewer } from "../../server/autostart";
+import { diskSpace, diskWarning } from "../../core/disk";
 import { initProject } from "../../core/init";
 import { HOOKS_MISSING, hooksRan } from "../../core/live";
 import {
@@ -150,6 +151,9 @@ export const verify: Command = {
   async run({ values, positionals }) {
     const rt = runtime(values);
     const targets = verifyTargets(rt.root, positionals);
+    // stderr only, never the exit code: a full disk is worth a warning, not a refusal.
+    const warning = targets.length > 0 ? diskWarning(diskSpace(rt.root)) : null;
+    if (warning) process.stderr.write(`${warning}\n`);
     const mode: ReportMode = values.summary ? "summary" : "full";
     const onProgress = (event: VerifyProgress) => {
       if (!rt.json) {
