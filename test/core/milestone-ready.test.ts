@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { statusBrief } from "../../src/core/brief";
 import { buildIndex } from "../../src/core/build-index";
-import { derive, milestoneReady } from "../../src/core/derive";
+import { derive } from "../../src/core/derive";
+import { milestoneReady } from "../../src/core/flows";
 import { nextWork } from "../../src/core/next";
 import { validate } from "../../src/core/validate";
 import { featureFiles, loadTree, makeFacts } from "../helpers/project";

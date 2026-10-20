@@ -1,4 +1,4 @@
-import { milestoneReady } from "./derive";
+import { milestoneReady } from "./flows";
 import { globToRegExp, matchesAny } from "./glob";
 import {
   PRIORITIES,

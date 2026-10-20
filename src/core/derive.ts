@@ -281,13 +281,3 @@ export function milestoneProgress(
     },
   };
 }
-
-/**
- * A planned or active milestone with at least one counted feature, every one of them done.
- * Counting follows milestoneProgress: cancelled and superseded features don't count; a
- * deferred feature counts and isn't done.
- */
-export function milestoneReady(m: Pick<Milestone, "status" | "progress">): boolean {
-  if (m.status !== "planned" && m.status !== "active") return false;
-  return m.progress.total > 0 && m.progress.done === m.progress.total;
-}

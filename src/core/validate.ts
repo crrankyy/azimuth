@@ -1,5 +1,5 @@
-import { codeCommitsAfter, milestoneProgress, milestoneReady, type Derived } from "./derive";
-import { ACTIVE_STATUSES } from "./flows";
+import { codeCommitsAfter, milestoneProgress, type Derived } from "./derive";
+import { ACTIVE_STATUSES, milestoneReady } from "./flows";
 import type { Facts } from "./facts";
 import { globToRegExp, inModule, matchesAny } from "./glob";
 import { idKind } from "./ids";

@@ -2,6 +2,7 @@ import type {
   DecisionStatus,
   FeatureStatus,
   IssueStatus,
+  Milestone,
   MilestoneStatus,
   TaskStatus,
 } from "./types";
@@ -46,6 +47,17 @@ export const MILESTONE_FLOW: Record<MilestoneStatus, MilestoneStatus[]> = {
   active: ["released", "planned"],
   released: [],
 };
+
+/**
+ * A planned or active milestone with at least one counted feature, every one of them done.
+ * Counting follows milestoneProgress (derive.ts): cancelled and superseded features don't count;
+ * a deferred feature counts and isn't done. Here rather than in derive.ts so that next.ts, which
+ * the viewer can use, stays free of Node imports.
+ */
+export function milestoneReady(m: Pick<Milestone, "status" | "progress">): boolean {
+  if (m.status !== "planned" && m.status !== "active") return false;
+  return m.progress.total > 0 && m.progress.done === m.progress.total;
+}
 
 export const ISSUE_FLOW: Record<IssueStatus, IssueStatus[]> = {
   open: ["in-progress", "resolved", "wontfix"],
