@@ -11,3 +11,7 @@ T-024.4: call crossFeatureGroups on the same index nextWork uses, only with no I
 ### T-024.5 · 2026-10-20
 
 Not built in this task: the bundled server writes records without config_port until the next pnpm build. After it, running viewers are stale and their records lack config_port, so the first replacement starts on the configured viewer.port (ZenithMD's config says 4319 while its viewer runs on 4321: set viewer.port there at rollout). The prompt hook's ensureViewer(root, 0) can take up to 1 s longer that one time.
+
+### T-024.4 · 2026-10-20
+
+Docs (T-024.6): the section is a plain 'Across F-001, F-002:' line, then at most six groupLine lines (the next F-NNN form), then '… and <n> more' (ellipsis as in status --brief); it shows only when at least two in-progress features no question holds have ready tasks, after every item (high issues and the milestone item included). next --json stays an array.

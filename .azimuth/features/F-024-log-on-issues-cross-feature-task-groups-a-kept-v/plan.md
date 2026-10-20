@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-024.4
     title: azimuth next prints the cross-feature groups (red → green)
-    status: todo
+    status: in-progress
     after: [T-024.3]
     covers: [S-024.4.1, S-024.4.2, S-024.4.3, S-024.4.4, S-024.4.5, S-024.4.6]
     files: [src/cli/commands/read.ts, test/cli/parallel.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-024.5
     title: A replaced viewer keeps its port (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-024.5.1, S-024.5.2, S-024.5.3, S-024.5.4, S-024.5.5, S-024.5.6, S-024.5.7, S-024.5.8]
     files: [src/server/autostart.ts, src/server/registry.ts, src/server/server.ts, test/server/autostart.test.ts]

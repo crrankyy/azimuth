@@ -5,7 +5,14 @@ import formatsDoc from "../../../docs/file-format.md?raw";
 import { buildIndex } from "../../core/build-index";
 import { showBrief, statusBrief } from "../../core/brief";
 import { featureOf } from "../../core/ids";
-import { nextForFeature, nextWork, taskGroups, type TaskGroup } from "../../core/next";
+import {
+  crossFeatureGroups,
+  nextForFeature,
+  nextWork,
+  taskGroups,
+  type CrossFeatureGroups,
+  type TaskGroup,
+} from "../../core/next";
 import { azPath } from "../../core/paths";
 import type { Index, Problem } from "../../core/types";
 import { viewerUrl } from "../../server/registry";
@@ -151,6 +158,23 @@ function groupLine(g: TaskGroup): string {
   return `Can run together: ${g.tasks.join(", ")}${shared}`;
 }
 
+/** Group lines printed after `Across …:`; more groups are counted on one line. */
+const MAX_CROSS_GROUP_LINES = 6;
+
+/**
+ * `Across <features joined by ", ">:`, then groupLine(g) for the first MAX_CROSS_GROUP_LINES
+ * groups, then `… and <n> more` (status --brief's wording) when n further groups exist.
+ */
+function crossFeatureLines(cross: CrossFeatureGroups): string[] {
+  const shown = cross.groups.slice(0, MAX_CROSS_GROUP_LINES).map(groupLine);
+  const more = cross.groups.length - shown.length;
+  return [
+    `Across ${cross.features.join(", ")}:`,
+    ...shown,
+    ...(more > 0 ? [`… and ${more} more`] : []),
+  ];
+}
+
 export const next: Command = {
   usage: "next [F-ID] [--json]",
   summary: "The highest-priority unblocked work (or the ready tasks of one feature)",
@@ -176,6 +200,10 @@ export const next: Command = {
       // With a single ready task there is nothing to run beside it.
       if (groups && groups.flatMap((g) => g.tasks).length >= 2)
         for (const g of groups) print(groupLine(g));
+      // Without an ID the orchestrator picks across features, so it needs to know which of
+      // their ready tasks can run side by side; next F-NNN already shows its own groups.
+      const cross = featureId ? null : crossFeatureGroups(index);
+      if (cross) for (const line of crossFeatureLines(cross)) print(line);
     }
   },
 };
