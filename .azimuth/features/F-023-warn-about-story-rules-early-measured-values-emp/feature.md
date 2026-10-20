@@ -2,7 +2,7 @@
 id: F-023
 title: Warn about story rules early, measured values, empty covers and finished milestones
 summary: check runs the story rule for ideas with stories, hints at {?} for offsets and ranges and at tasks covering nothing in drafts (hints don't count for strict), and warns when every feature of an open milestone is done.
-status: draft
+status: approved
 priority: P1
 size: M
 mode: brownfield
@@ -12,6 +12,11 @@ superseded_by: null
 tags: []
 created: 2026-10-20
 updated: 2026-10-20
+approved_at: 2026-10-20
+approved_by: agent
+approved_hash: sha256:92ea2a6fab1830d0bfa1bb188f6c7c72afbb62d1d364c4032a8d5d9f98a147e3
+approved_commit: 833d58d
+review_ack_at: null
 ---
 # F-023: Warn about story rules early, measured values, empty covers and finished milestones
 
