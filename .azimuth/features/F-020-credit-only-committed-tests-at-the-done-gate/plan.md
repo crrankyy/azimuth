@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-020.2
     title: One status call lists the changed paths (red → green)
-    status: in-progress
+    status: done
     after: [T-020.1]
     covers: [S-020.1.1, S-020.1.2, S-020.1.3, S-020.1.4]
     files: [src/core/git.ts, test/core/git-trace.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-020.4
     title: The analysis marks its refs and the done gate counts committed tests (red → green)
-    status: todo
+    status: in-progress
     after: [T-020.2, T-020.3]
     covers: [S-020.4.1, S-020.4.2, S-020.4.3, S-020.4.4, S-020.4.5, S-020.4.6, S-020.4.7, S-020.4.8]
     files: [src/core/build-index.ts, src/core/gates.ts, test/core/committed-tests.test.ts]

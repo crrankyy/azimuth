@@ -9,7 +9,7 @@ import { buildInbox } from "./inbox";
 import { compareIds } from "./ids";
 import { readLiveSessions, sessionsLastSeen } from "./live";
 import { loadProject, type FeatureEntity, type Model } from "./model";
-import { traceTests } from "./trace";
+import { markCommitted, traceTests } from "./trace";
 import type { Feature, FeatureDetail, Index, LiveSession, Problem, VerifyRun } from "./types";
 import { sortProblems, validate } from "./validate";
 
@@ -32,10 +32,16 @@ export interface BuildResult {
 /** Everything a command needs to reason about the project: model, facts and analysis. */
 export function analyzeProject(root: string, now = new Date()): Omit<BuildResult, "index"> {
   const model = loadProject(root);
+  const git = gitFacts(root, model);
   const facts: Facts = {
     now,
-    git: gitFacts(root, model),
-    tests: traceTests(root, model.config.tests.globs),
+    git,
+    // null: without git there is no HEAD to compare with, so every ref counts as committed.
+    tests: markCommitted(
+      root,
+      traceTests(root, model.config.tests.globs),
+      git.available ? git.changed : null,
+    ),
     exists: (path) => existsSync(join(root, path)),
     sesLastSeen: sessionsLastSeen(root),
   };

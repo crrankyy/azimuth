@@ -259,6 +259,36 @@ function staleRun(
   return passed;
 }
 
+/**
+ * Counts a passing scenario only when one of the tests that count for it is committed: its marked
+ * tests when it has any, else its mentions, so a committed mention can't stand in for a marked
+ * test that is only in the working tree.
+ */
+function scenariosPassing(ctx: GateContext, f: FeatureEntity): GateCheck {
+  const scenarios = f.stories.flatMap((s) => s.scenarios);
+  const left: string[] = [];
+  let counted = 0;
+  for (const sc of scenarios) {
+    const cov = ctx.derived.coverage.get(sc.id);
+    if (cov?.status !== "passing") continue;
+    const marked = cov.tests.filter((t) => t.confidence === "marker");
+    const counting = marked.length > 0 ? marked : cov.tests;
+    if (counting.some((t) => t.committed)) {
+      counted++;
+      continue;
+    }
+    const files = [...new Set(counting.map((t) => t.file))].sort();
+    left.push(`; ${sc.id} only in uncommitted ${files.join(", ")}`);
+  }
+  const total = scenarios.length;
+  return {
+    id: "done.scenarios-passing",
+    rule: "Every scenario has a passing test",
+    ok: total > 0 && counted === total,
+    detail: `${counted} of ${total}${left.join("")}`,
+  };
+}
+
 function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
   const head = ctx.facts.git.head;
   const failed: string[] = [];
@@ -274,8 +304,6 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
     }
   }
   const verifyDetail = (failed.length > 0 ? failed : stale).join("; ");
-  const info = ctx.derived.info.get(f.id);
-  const cov = info?.coverage;
   const reconciled = ctx.model.knowledge.architecture.reconciled_at;
   // The close-out commit (as-built, reconciliation) only changes records, so it doesn't count.
   const lastCommit =
@@ -294,12 +322,7 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
       failed.length + stale.length === 0,
       verifyDetail,
     ),
-    {
-      id: "done.scenarios-passing",
-      rule: "Every scenario has a passing test",
-      ok: cov !== undefined && cov.total > 0 && cov.passing === cov.total,
-      detail: `${cov?.passing ?? 0} of ${cov?.total ?? 0}`,
-    },
+    scenariosPassing(ctx, f),
     check(
       "done.placeholders-settled",
       "Every placeholder value settled",

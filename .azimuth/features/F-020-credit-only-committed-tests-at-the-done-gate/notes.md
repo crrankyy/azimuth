@@ -11,3 +11,7 @@ markCommitted trusts changed as given: analyzeProject must pass git.available ? 
 ### T-020.2 · 2026-10-20
 
 changed lists every non-ignored path git reports, .azimuth/ files included: test repos need a .gitignore with .azimuth/cache/ or run files appear in changed (harmless, they aren't test files). Pass git.available ? git.changed : null to markCommitted. git.ts's parseStatus duplicates finish.ts's private porcelainPaths (it skips a rename's source and tracks XY for dirty); merging them is a later cleanup.
+
+### T-020.4 · 2026-10-20
+
+markCommitted treats null and [] alike (nothing read, all committed); analyzeProject passes null without git to state the intent. T-020.5: trace can read ScenarioTest.committed from the index; for a #2 repository in its tests, copy closeOut/runFile from test/core/committed-tests.test.ts (it has a repo: false mode for the no-git case).
