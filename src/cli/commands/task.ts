@@ -14,6 +14,34 @@ function requireTaskId(positionals: string[], index: number): string {
   return id;
 }
 
+/** --adopt's comma-separated paths; undefined when it wasn't given. */
+function adoptOption(value: string | undefined): string[] | undefined {
+  if (value === undefined) return undefined;
+  const paths = value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (paths.length === 0) {
+    throw new UsageError("task finish --adopt needs a path: --adopt <path,…>.");
+  }
+  return paths;
+}
+
+/** The paths left out of the commit by owner, then a warning per shared file another lane holds. */
+function notStagedLines(result: FinishResult): string[] {
+  const listed = (label: string, paths: string[]) =>
+    paths.length > 0 ? [`  ${label}: ${paths.join(", ")}`] : [];
+  return [
+    ...listed("not staged", result.not_staged_outside),
+    ...listed("not staged, other in-progress tasks", result.not_staged_other_tasks),
+    ...listed("not staged, records", result.not_staged_records),
+    ...result.shared.map(
+      ({ path, tasks }) =>
+        `  warning: ${path} carries ${tasks.map((t) => `${t}'s`).join(" and ")} work in progress; this commit may not build on its own.`,
+    ),
+  ];
+}
+
 /** One line per step, its output indented below it, and the paths left out after the stage step. */
 function finishLines(result: FinishResult): string[] {
   const lines: string[] = [];
@@ -24,29 +52,34 @@ function finishLines(result: FinishResult): string[] {
       lines.push(`${mark} ${s.step}: ${s.detail}`);
       if (s.output) lines.push(...s.output.split("\n").map((line) => color.dim(`    ${line}`)));
     }
-    if (s.step === "stage" && result.not_staged.length > 0) {
-      lines.push(`  not staged: ${result.not_staged.join(", ")}`);
-    }
+    if (s.step === "stage") lines.push(...notStagedLines(result));
   }
   return lines;
 }
 
 export const task: Command = {
-  usage: 'task finish <T-ID> --commit "<message>" [--note "<text>"] [--json]',
+  usage: 'task finish <T-ID> --commit "<message>" [--note "<text>"] [--adopt <path,…>] [--json]',
   summary: "Finish a task: commit its files with Refs, verify it and move it to done",
-  options: { commit: { type: "string" }, note: { type: "string" }, json: { type: "boolean" } },
+  options: {
+    commit: { type: "string" },
+    note: { type: "string" },
+    adopt: { type: "string" },
+    json: { type: "boolean" },
+  },
   async run({ values, positionals }) {
     const action = requirePositional(positionals, 0, "action");
     if (action !== "finish") throw new UsageError(`Unknown task action "${action}". Use finish.`);
     const id = requireTaskId(positionals, 1);
     const message = values.commit as string | undefined;
     if (!message?.trim()) throw new UsageError('task finish needs --commit "<message>".');
+    const adopt = adoptOption(values.adopt as string | undefined);
     const rt = runtime(values);
     const interrupt = abortOnSignals();
     try {
       const result = await finishTask(rt.root, id, {
         message,
         note: values.note as string | undefined,
+        adopt,
         actor: rt.actor,
         session: rt.session,
         signal: interrupt.signal,

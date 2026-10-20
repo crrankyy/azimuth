@@ -11,3 +11,7 @@ T-019.3 (adopt): validate --adopt between the changed read and the 'Already stag
 ### T-019.3 · 2026-10-20
 
 T-019.4: pass --adopt to finishTask as adopt: string[] after splitting on commas; core trims, removes ./ and a trailing /, and drops duplicates (repoPath), so the CLI only raises the UsageError when nothing is left. The adopt step's text is in step.detail (output empty) and prints like the note step; steps has no adopt entry without --adopt. run-scope.ts's repoPath is now exported (F-021's T-021.1 can use it as is).
+
+### T-019.4 · 2026-10-20
+
+Docs (T-019.5): --adopt takes one comma-separated value (parseArgs keeps only the last when the flag repeats), so document it as comma-separated, not repeatable. --adopt ./ passes the CLI's empty check and core then reduces it to nothing, so finish runs with no adopt step: don't promise a usage error for it. runCli runs main() from the sources in-process, so CLI tests need no build.

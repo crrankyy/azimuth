@@ -1,4 +1,5 @@
-import { writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadProject } from "../../src/core/model";
@@ -36,16 +37,26 @@ const T1: TaskSpec = {
   verify: "echo S-001.1.1 ok",
 };
 
+interface RepoOptions {
+  /** Further files at HEAD, a second feature's included. */
+  files?: Record<string, string>;
+  /** F-001's impact.md entries; featureFiles' default (src/app.ts, modify) when absent. */
+  impact?: { path: string; change: string }[];
+  /** Appended to config.yaml after MINIMAL_CONFIG. */
+  config?: string;
+}
+
 /** A git repository whose HEAD holds F-001 in progress with T-001.1 and an open session. */
-function repo(task: TaskSpec = T1): string {
+function repo(task: TaskSpec = T1, options: RepoOptions = {}): string {
   const tree = writeTree({
-    ".azimuth/config.yaml": MINIMAL_CONFIG,
+    ".azimuth/config.yaml": `${MINIMAL_CONFIG}${options.config ?? ""}`,
     ".gitignore": ".azimuth/cache/\n",
     "src/a.ts": "export const a = 0;\n",
     "test/a.test.ts": 'it("S-001.1.1 works", () => {});\n',
     "src/other.ts": "export const other = 0;\n",
-    ...featureFiles({ id: "F-001", status: "in-progress", tasks: [task] }),
+    ...featureFiles({ id: "F-001", status: "in-progress", tasks: [task], impact: options.impact }),
     [`.azimuth/sessions/${SES}.md`]: `---\nid: ${SES}\nstarted_at: 2026-10-20T09:00:00Z\ntouched: []\n---\n## Summary\n`,
+    ...options.files,
   });
   cleanup = tree.cleanup;
   root = tree.root;
@@ -177,6 +188,150 @@ describe("ST-009.6 azimuth task finish on the command line", () => {
       "✓ done: T-001.1: in-progress → done",
       `✓ log: Committed ${sha}; R-0002 passed.`,
     ]);
+  });
+});
+
+const PLAN = `${DIR}plan.md`;
+const F002_LOG = ".azimuth/features/F-002-more/log.md";
+const KEYMAP = 'it("S-001.1.1 maps the default keys", () => {});\n';
+
+/** A file's bytes at HEAD, read raw (the git helper trims), to compare with the working copy. */
+const atHead = (path: string) =>
+  execFileSync("git", ["show", `HEAD:${path}`], { cwd: root, env: gitEnv(), encoding: "utf8" });
+
+/**
+ * The project of F-019's stories: HEAD also holds src/c.ts and test/keymap.test.ts, and F-001's
+ * impact.md modifies src/c.ts.
+ */
+function repo019(task: TaskSpec = T1, options: RepoOptions = {}): string {
+  return repo(task, {
+    impact: [{ path: "src/c.ts", change: "modify" }],
+    ...options,
+    files: { "src/c.ts": "export const c = 0;\n", "test/keymap.test.ts": KEYMAP, ...options.files },
+  });
+}
+
+/** The stray test (#2's repro): a marker for S-001.1.2, which T-001.1 covers, outside its files. */
+const addStrayTest = () =>
+  write("test/keymap.test.ts", `${KEYMAP}it("S-001.1.2 maps the palette keys", () => {});\n`);
+
+/**
+ * S-019.5.3's project and changes: T-001.1 and F-002's T-002.1, both in progress, list the shared
+ * src/registry.ts, which holds a new line from each lane.
+ */
+function sharedRegistryChanged(): void {
+  const t002: TaskSpec = {
+    id: "T-002.1",
+    status: "in-progress",
+    covers: ["S-002.1.1", "S-002.1.2"],
+    files: ["src/registry.ts", "src/b.ts"],
+  };
+  repo019(
+    { ...T1, files: ["src/a.ts", "test/a.test.ts", "src/registry.ts"] },
+    {
+      config: "parallel:\n  shared_files: [src/registry.ts]\n",
+      files: {
+        "src/registry.ts": "export const all = [\n];\n",
+        "src/b.ts": "export const b = 0;\n",
+        ...featureFiles({ id: "F-002", slug: "more", status: "in-progress", tasks: [t002] }),
+      },
+    },
+  );
+  changeTaskFiles();
+  write("src/registry.ts", "export const all = [\n  a,\n  b,\n];\n");
+  write("src/b.ts", "export const b = 1;\n");
+  write("src/other.ts", "export const other = 1;\n");
+  write(
+    F002_LOG,
+    `${readFileSync(join(root, F002_LOG), "utf8")}\n## 2026-10-20T09:00:00Z · agent · note\nLane note.\n`,
+  );
+}
+
+describe("ST-019.5 task finish on the command line", () => {
+  it("S-019.5.1 prints the adopt step's line and exits 0 with --adopt", async () => {
+    repo019();
+    changeTaskFiles();
+    addStrayTest();
+    const r = await runCli(root, [
+      "task",
+      "finish",
+      "T-001.1",
+      ...COMMIT,
+      "--adopt",
+      "test/keymap.test.ts",
+    ]);
+    const sha = head();
+    expect(r.code).toBe(0);
+    expect(lines(r.out)).toEqual([
+      "✓ check: F-001 has no errors",
+      "✓ adopt: added to T-001.1's files: test/keymap.test.ts",
+      `✓ stage: ${PLAN}, src/a.ts, test/a.test.ts, test/keymap.test.ts`,
+      `✓ commit: ${sha} feat(F-001): add a`,
+      "✓ verify: R-0001 passed in <n>s",
+      "✓ done: T-001.1: in-progress → done",
+      `✓ log: Committed ${sha}; R-0001 passed.`,
+    ]);
+  });
+
+  it("S-019.5.2 prints the refused file with its reason and exits 1 without a commit", async () => {
+    repo019();
+    changeTaskFiles();
+    addStrayTest();
+    const before = head();
+    const r = await runCli(root, ["task", "finish", "T-001.1", ...COMMIT]);
+    expect(r.code).toBe(1);
+    expect(head()).toBe(before);
+    expect(lines(r.out)).toEqual([
+      "✗ check: Changed outside T-001.1's files: test/keymap.test.ts. Adopt each into the task whose lane changed it (task finish <T-ID> --adopt <path,…>), or commit or revert it.",
+      "    test/keymap.test.ts: adds a marker for S-001.1.2, which T-001.1 covers",
+      "- stage: not run",
+      "- commit: not run",
+      "- verify: not run",
+      "- done: not run",
+      "- log: not run",
+    ]);
+  });
+
+  it("S-019.5.3 prints the left-out paths by owner and warns about the shared file", async () => {
+    sharedRegistryChanged();
+    const r = await runCli(root, ["task", "finish", "T-001.1", ...COMMIT]);
+    const sha = head();
+    expect(r.code).toBe(0);
+    expect(lines(r.out).slice(0, 7)).toEqual([
+      "✓ check: F-001 has no errors",
+      "✓ stage: src/a.ts, src/registry.ts, test/a.test.ts",
+      "  not staged: src/other.ts",
+      "  not staged, other in-progress tasks: src/b.ts",
+      `  not staged, records: ${F002_LOG}`,
+      "  warning: src/registry.ts carries T-002.1's work in progress; this commit may not build on its own.",
+      `✓ commit: ${sha} feat(F-001): add a`,
+    ]);
+  });
+
+  it("S-019.5.4 adds the split not-staged lists and the shared files to --json", async () => {
+    sharedRegistryChanged();
+    const r = await runCli(root, ["task", "finish", "T-001.1", ...COMMIT, "--json"]);
+    expect(r.code).toBe(0);
+    expect(JSON.parse(r.out)).toMatchObject({
+      ok: true,
+      staged: ["src/a.ts", "src/registry.ts", "test/a.test.ts"],
+      not_staged: [F002_LOG, "src/b.ts", "src/other.ts"],
+      not_staged_outside: ["src/other.ts"],
+      not_staged_other_tasks: ["src/b.ts"],
+      not_staged_records: [F002_LOG],
+      shared: [{ path: "src/registry.ts", tasks: ["T-002.1"] }],
+    });
+  });
+
+  it("S-019.5.5 exits 2 for an --adopt that holds no path and writes nothing", async () => {
+    repo019();
+    changeTaskFiles();
+    const before = head();
+    const r = await runCli(root, ["task", "finish", "T-001.1", ...COMMIT, "--adopt", " , "]);
+    expect(r.code).toBe(2);
+    expect(head()).toBe(before);
+    expect(readFileSync(join(root, PLAN), "utf8")).toBe(atHead(PLAN));
+    expect(r.err.startsWith("task finish --adopt needs a path: --adopt <path,…>.")).toBe(true);
   });
 });
 

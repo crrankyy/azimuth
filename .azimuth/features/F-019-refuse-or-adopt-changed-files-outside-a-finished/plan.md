@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-019.3
     title: The adopt option and step (red → green)
-    status: in-progress
+    status: done
     after: [T-019.2]
     covers: [S-019.4.1, S-019.4.2, S-019.4.3, S-019.4.4, S-019.4.5, S-019.4.6]
     files: [src/core/finish.ts, test/core/finish.test.ts, src/core/run-scope.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-019.4
     title: task finish --adopt, the split lines and the warning on the command line (red → green)
-    status: todo
+    status: in-progress
     after: [T-019.3]
     covers: [S-019.5.1, S-019.5.2, S-019.5.3, S-019.5.4, S-019.5.5]
     files: [src/cli/commands/task.ts, test/cli/task.test.ts]
