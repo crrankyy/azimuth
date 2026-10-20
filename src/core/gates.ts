@@ -318,6 +318,8 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
     const run = ctx.derived.lastRun.get(task.id);
     if (!run) stale.push(`${task.id} has no run`);
     else if (!run.ok) failed.push(`${task.id} failed at ${run.commit ?? "an uncommitted tree"}`);
+    // A pass made while the workspace didn't build needs a rerun, so its staleness isn't checked.
+    else if (run.prebuild?.ok === false) stale.push(`${task.id} passed after a failed prebuild`);
     else if (head) {
       const why = staleRun(ctx, f, task, run.commit, head);
       if (why) stale.push(why);

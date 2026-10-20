@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-018.3
     title: verifyBatch stops or continues past a failed prebuild (red → green)
-    status: in-progress
+    status: done
     after: [T-018.1]
     covers: [S-018.3.1, S-018.3.2, S-018.3.3, S-018.3.4, S-018.3.5, S-018.3.6, S-018.3.7, S-018.3.8]
     files: [src/core/verify.ts, test/core/verify-batch.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-018.4
     title: verify prints the prebuild's time and marks runs after a failed one (red → green)
-    status: todo
+    status: in-progress
     after: [T-018.3]
     covers: [S-018.4.1, S-018.4.2, S-018.4.3]
     files: [src/cli/verify-report.ts, test/cli/verify-report.test.ts, test/cli/verify.test.ts]
@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-018.6
     title: task finish's verify line and log name the prebuild (red → green)
-    status: todo
+    status: in-progress
     after: [T-018.3]
     covers: [S-018.6.1, S-018.6.2, S-018.6.3, S-018.6.4]
     files: [src/core/finish.ts, test/core/finish.test.ts]

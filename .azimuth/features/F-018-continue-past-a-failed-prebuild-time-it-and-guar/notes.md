@@ -15,3 +15,7 @@ Docs (T-018.8): doctor also checks free disk space now, though its summary strin
 ### T-018.3 · 2026-10-20
 
 All runs of one call share one prebuild object, so run.prebuild?.ok === false means 'after a failed prebuild'. The run keeps only { ok, duration_ms }: T-018.6's '(exit 2, 3.1s)' must come from PrebuildResult. Under continue a failed prebuilt event is followed by target and run events (T-018.4). S-018.3.7 has 1 s of margin (2 s sleep, 3 s limit) and may flake under load.
+
+### T-018.5 · 2026-10-20
+
+The gate takes each task's last run from model.runs, sorted by at then ID, so a rerun replaces the old run only when its at is later (S-018.5.2).
