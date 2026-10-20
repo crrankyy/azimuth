@@ -182,7 +182,8 @@ export function diskCheck(space: DiskSpace): { ok: boolean | null; text: string 
 
 export const doctor: Command = {
   usage: "doctor [--print-path]",
-  summary: "Check that Node, the plugin, hooks and the viewer are wired up",
+  summary:
+    "Check that Node, the plugin, hooks and the viewer are wired up, and the free disk space",
   options: { "print-path": { type: "boolean" } },
   run({ values }) {
     const launcher = join(pluginDir(), "bin", "azimuth");

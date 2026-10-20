@@ -30,8 +30,13 @@ protocol, templates and the CLAUDE.md/AGENTS.md blocks.
 
 ### `azimuth doctor [--print-path]`
 
-Checks Node, the Claude Code plugin, validation errors, the CLAUDE.md import, hook activity and the
-viewer. Inside Claude Code the hook check is about that session: it fails when Azimuth's hooks
+Checks Node, the Claude Code plugin, validation errors, the CLAUDE.md import, hook activity, the
+viewer and the free space on the project's disk. The disk line reads
+`✓ 120.5 GB free on the project's disk (verify.min_free_gb: 10)`. When the free space is below
+`verify.min_free_gb` or can't be read, it is a `?` line, which doesn't make doctor exit 1:
+`? Low disk space: 4.2 GB free on the project's disk, below verify.min_free_gb (10)` or
+`? Could not read the free space on the project's disk: <error>`. With `min_free_gb: 0` it is
+left out. Inside Claude Code the hook check is about that session: it fails when Azimuth's hooks
 haven't run in it (it started before the plugin was enabled). Records that `azimuth session start`
 writes itself never count as hook activity. `--print-path` prints an `ln -s` line that links `azimuth` into `~/.local/bin` (which must
 be on your PATH).
@@ -240,8 +245,17 @@ or one with no verify command, exits 1 before anything runs.
 
 When `verify.prebuild` is set, verify runs it once before the first command, under
 `verify.build_timeout_seconds`, so a build the commands share doesn't count against each command's
-`verify.timeout_seconds`. A prebuild that fails or times out prints its output tail, records no
-runs and exits 1. `--no-prebuild` skips it.
+`verify.timeout_seconds`. By default, a prebuild that fails or times out prints its output tail,
+records no runs and exits 1. `--no-prebuild` skips it.
+
+With `verify.prebuild_failure: continue` (the default is `stop`), a prebuild that exits non-zero
+no longer stops the call. Each command still runs, under `verify.build_timeout_seconds` plus
+`verify.timeout_seconds` since it now builds what the prebuild would have
+(`[azimuth] timed out after 2400s` with the defaults), and its run line ends with
+` after a failed prebuild`. verify still exits 1, even when every run passed, and the done gate
+asks for those runs to be rerun with a working build. A prebuild that times out or is interrupted
+records no runs either way. Each run records the prebuild that served it as `prebuild`
+(see [Cache](file-format.md#cache)).
 
 One `azimuth verify` runs at a time in a repository and its worktrees: another call waits until
 the running one ends, then prints `waited 40s for another verify` and starts. Each run records
@@ -254,10 +268,17 @@ and verify exits 130 or 143.
 
 Verify prints each command before running it, the prebuild's too, then a result line:
 `prebuild passed in 41.2s`, `R-0142 T-005.4 passed in 1.2s`, or
-`R-0142 T-005.4 failed (exit 1) in 2.1s` followed by the output tail. `--summary` leaves out the
-commands and a passing prebuild's line, so a batch prints one line per run plus the output of
-failures. `--json` prints only the JSON array of runs on stdout (`[]` after a failed prebuild,
-whose lines go to stderr).
+`R-0142 T-005.4 failed (exit 1) in 2.1s` followed by the output tail. After a failed prebuild
+under `continue`, a run line reads `R-0142 T-005.4 passed in 1.2s after a failed prebuild`.
+`--summary` leaves out the commands, so a batch prints the prebuild's line, one line per run and
+the output of failures. `--json` prints only the JSON array of runs on stdout (`[]` after a
+prebuild that stopped the call); a failed prebuild's lines go to stderr.
+
+Before the first command, verify prints a warning on stderr when the project's disk has less free
+space than `verify.min_free_gb` (default 10, in GB; 0 turns the check off), `--json` included:
+`Low disk space: 4.2 GB free on the project's disk, below verify.min_free_gb (10). Builds fail when the disk fills up.`
+It never stops verify or changes its exit code, and nothing prints when the free space can't be
+read.
 
 A command can write a JUnit report to the path in `$AZIMUTH_JUNIT` for exact per-scenario results.
 Otherwise verify reads the output. A passing run passes a covered scenario only when the output
@@ -303,11 +324,21 @@ stops at the first that fails:
 5. **commit** makes one commit of exactly the staged paths. Hooks run; finish never passes
    `--no-verify`, amends, pushes or makes a second commit.
 6. **verify** runs `verify.prebuild` and the task's verify command and records the run, as
-   `azimuth verify <T-ID>` does, waiting for another running verify first.
+   `azimuth verify <T-ID>` does, waiting for another running verify first. Its line shows the
+   prebuild's time: `R-0142 passed in 1.2s (prebuild 41.2s)`. A failed prebuild fails the step
+   (`prebuild failed (exit 2) in 3.1s`), unless `verify.prebuild_failure` is `continue` and the
+   prebuild didn't time out: then the task's command still runs and decides the step,
+   `R-0142 passed in 1.2s after a failed prebuild (exit 2, 3.1s)`.
 7. **done** moves the task to done when the run passed. The move's log entry carries the result:
-   `T-005.4: in-progress → done. Committed 1a2b3c4; R-0142 passed.`
+   `T-005.4: in-progress → done. Committed 1a2b3c4; R-0142 passed.`, or
+   `… R-0142 passed after a failed prebuild.` under `continue`.
 8. **log**: after a failed run or prebuild, a log note records the result instead:
    `T-005.4: Committed 1a2b3c4; R-0142 failed (exit 1).`
+
+Under `continue`, a lane whose code builds can finish while another lane's code doesn't, and the
+done gate asks for a rerun of that task once the workspace builds
+(`T-005.4 passed after a failed prebuild`). Before its steps, finish prints the same low disk
+space warning on stderr as `azimuth verify`; it never fails a step or changes the exit code.
 
 The move and its log entry are written after the commit and stay uncommitted; the next
 `task finish` in the feature commits them with its records, and close-out commits the last ones.

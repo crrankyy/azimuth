@@ -60,7 +60,9 @@ without `files` in a feature without create, modify or test entries has no such 
 later code commit outside those ignored files makes its run stale. A run is also stale after a later commit
 whose changed files aren't known, and when its commit is older than the history the index reads
 (`git.log_depth`). The check names the commit and the path that made a run stale, so close-out
-reruns only those runs: `T-006.2 last passed at abc1234; def5678 changed src/core/gates.ts`.
+reruns only those runs: `T-006.2 last passed at abc1234; def5678 changed src/core/gates.ts`. A
+run that passed after a failed prebuild (`verify.prebuild_failure: continue`) needs a rerun with
+a working build, whatever changed since: `T-006.2 passed after a failed prebuild`.
 
 Moves that undo or park work (back to draft, deferred, cancelled, verifying → in-progress) need a
 reason, which goes into the feature's log. Approval records the spec hash and the commit it was
@@ -183,10 +185,11 @@ its files outside the shared list; otherwise the task starts a new group. Two ta
 same unshared file never share a group. A task without `files` gets a group of its own, since
 nothing says what it changes. Paths compare as written in `plan.md`.
 
-When the whole group has reported, the agent finishes its tasks one at a time with
-`azimuth task finish`. Each commits only its own task's files and the feature's records. A shared
-file is staged whole: the first task finished that lists it commits it with every task's
-insertions, and the next task's commit no longer sees it changed.
+The agent finishes each task with `azimuth task finish` as soon as its lane reports, unless a
+lane still running lists a shared file it lists or edits files in the same package or crate; then
+it waits for that lane. Finishes run one at a time. Each commits only its own task's files and the
+feature's records. A shared file is staged whole: the first task finished that lists it commits it
+with every task's insertions, and the next task's commit no longer sees it changed.
 
 ## The inbox
 

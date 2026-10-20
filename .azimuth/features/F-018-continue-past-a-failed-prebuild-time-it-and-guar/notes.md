@@ -27,3 +27,7 @@ Docs (T-018.8): docs/cli.md's --summary text says a passing prebuild's line is l
 ### T-018.6 · 2026-10-20
 
 verifyOutcome reads the prebuild's ok, duration and exit code from batch.prebuild (PrebuildResult), not run.prebuild; the no-run branch is now 'failed prebuild and no run', so a run under continue always reports the run itself.
+
+### T-018.8 · 2026-10-20
+
+A rerun with --no-prebuild records prebuild null, which also satisfies the done gate (an explicit choice to skip the build). concepts.md's 'Parallel tasks and shared files' now states the early-finish rule too.

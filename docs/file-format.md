@@ -113,6 +113,8 @@ verify:
   ignore_paths: [] # e.g. [README.md, "docs/guides/**"]
   prebuild: null # e.g. "cargo test --workspace --no-run"; null or blank: none
   build_timeout_seconds: 1800
+  prebuild_failure: stop # stop | continue: each task's command still runs after a failed prebuild
+  min_free_gb: 10 # verify, task finish and doctor warn below this much free disk (GB); 0: off
 parallel:
   # Files tasks extend additively (globs); tasks listing them may run in parallel
   shared_files: [] # e.g. [src/routes/index.ts, "keymaps/*.toml"]
@@ -139,6 +141,21 @@ change what the tests check.
 the first task's verify command, so a build every command needs runs once instead of in each.
 `verify.build_timeout_seconds` is its timeout; `verify.timeout_seconds` applies to each task's
 command alone.
+
+`verify.prebuild_failure` says what a prebuild that exits non-zero does. `stop`, the default,
+runs no command and records no run. `continue` runs each task's command anyway, under
+`verify.build_timeout_seconds` plus `verify.timeout_seconds`, since it now builds what the
+prebuild would have; each run records `"prebuild": { "ok": false, … }`, and the done gate asks
+for a rerun with a working build (`T-006.2 passed after a failed prebuild`). A prebuild that times
+out or is interrupted records no run under either. Any other value is an `E-SCHEMA` problem
+(`verify.prebuild_failure must be stop or continue.`) and keeps `stop`.
+
+`verify.min_free_gb` is the free space, in GB (10^9 bytes), below which `azimuth verify` and
+`azimuth task finish` print a warning on stderr before running and `azimuth doctor` shows a `?`
+line. It reads the free space an unprivileged user can write on the project root's filesystem,
+and never blocks anything or changes an exit code. `0` turns it off, so nothing reads the disk.
+It must be a whole number ≥ 0 (`verify.min_free_gb must be a whole number ≥ 0.`); the default is
+`10`.
 
 `parallel.shared_files` lists the files that tasks extend with one complete insertion each, such
 as an enum and its dispatch or a keymap. The globs use the `tests.globs` syntax without `!` and
@@ -625,13 +642,20 @@ A verify run (`scenarios` comes from a JUnit report the command wrote to `$AZIMU
   "scenarios": [{ "id": "S-005.2.1", "status": "failing" }],
   "junit": { "tests": 3, "failures": 1, "errors": 0, "skipped": 0 },
   "waited_ms": 0,
-  "ses": "SES-20261018-1100"
+  "ses": "SES-20261018-1100",
+  "prebuild": { "ok": true, "duration_ms": 41200 }
 }
 ```
 
 `waited_ms` is how long the `azimuth verify` call waited for another one before it started, and
 `ses` the session current when the run was made (`null` outside a session). Runs recorded before
 Azimuth wrote these keys don't have them.
+
+`prebuild` is the `verify.prebuild` that ran before the run in the same call: whether it passed
+and how long it took. `ok` is `false` only under `verify.prebuild_failure: continue`. It is `null`
+when no prebuild ran (none set, a blank command, `--no-prebuild`). A run file without the key, or
+with a value that isn't an object with a boolean `ok` and a number `duration_ms` ≥ 0, reads as
+`null`, with no problem.
 
 A live log is append-only: each line is one record with a `kind` and its time `at` (UTC, whole
 seconds). `agent_id` is a subagent's ID, or `null` for the main agent.

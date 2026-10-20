@@ -101,17 +101,26 @@ recorded in yours.
 - **Parallel only when independent:** run several subagents at once only for ready tasks whose
   `files` overlap in no file outside `parallel.shared_files` (config.yaml); otherwise one at a
   time. `azimuth next <F-ID>` ends with the groups that can run together
-  (`Can run together: T-005.2, T-005.3 (shared: src/registry.ts)`, `On its own: T-005.4`). Wait
-  for the whole batch to report before finishing any of its tasks, since a half-finished change
-  elsewhere can break the build.
+  (`Can run together: T-005.2, T-005.3 (shared: src/registry.ts)`, `On its own: T-005.4`).
+  `azimuth next` without an ID ends with the groups of ready tasks across in-progress features
+  that can run together, when two or more have ready tasks (`Across F-001, F-002:`). Finish a
+  lane as soon as it reports, unless a lane still running lists a shared file it lists, or edits
+  files in the same package or crate: its commit would take that lane's half-written insertion,
+  or its verify command would compile that lane's half-written code, so wait for that lane.
+  `verify.prebuild_failure: continue` (config.yaml) is what lets a finish pass while another
+  lane's code doesn't build: the task's own command still runs after a failed prebuild (under
+  the default `stop`, the verify step fails and the commit stays; finish again once the
+  workspace builds). The feature then needs those runs rerun with a working build before done:
+  the done gate names them (`T-005.2 passed after a failed prebuild`), and
+  `azimuth verify <T-ID> …` reruns them.
 - **Shared files take insertions only:** the brief of a task that lists a file matching
   `parallel.shared_files` tells the subagent to add one complete insertion to it (a whole enum
   variant, match arm, registry entry or module line), never to edit or reorder another task's
   insertion, and not to run a formatter over a shared file or its package. You add which other
   tasks in the batch add to that file.
-- **Then finish the batch one task at a time:** once the whole batch has reported, review each
-  change and run `azimuth task finish` (step 4.4) for its tasks one after another, never in
-  parallel. Each commits only its task's files and the feature's records. A shared file is
+- **Then finish one task at a time:** as the rule above allows each lane, review its change and
+  run `azimuth task finish` (step 4.4) for its task, one finish at a time, never two in parallel.
+  Each commits only its task's files and the feature's records. A shared file is
   staged whole, so the first finished task that lists it commits it with every task's
   insertions, and the next task's commit no longer sees it changed; finish's `warning:` line
   flags that commit and fails nothing. When finish refuses a file, the subagents' reports of the

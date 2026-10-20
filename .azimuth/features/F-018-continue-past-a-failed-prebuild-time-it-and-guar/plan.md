@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-018.6
     title: task finish's verify line and log name the prebuild (red → green)
-    status: in-progress
+    status: done
     after: [T-018.3]
     covers: [S-018.6.1, S-018.6.2, S-018.6.3, S-018.6.4]
     files: [src/core/finish.ts, test/core/finish.test.ts]
@@ -58,10 +58,10 @@ tasks:
     note: null
   - id: T-018.8
     title: Docs, the build skill's early-finish rule and full verification
-    status: todo
+    status: in-progress
     after: [T-018.2, T-018.4, T-018.5, T-018.6, T-018.7]
     covers: []
-    files: [docs/cli.md, docs/file-format.md, docs/concepts.md, plugin/skills/build/SKILL.md]
+    files: [docs/cli.md, docs/file-format.md, docs/concepts.md, plugin/skills/build/SKILL.md, src/cli/commands/harness.ts]
     verify: pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm exec vitest run
     note: null
 ---
