@@ -1,5 +1,5 @@
 import { featureOf } from "../../../../src/core/ids";
-import { localDay } from "../../lib/format";
+import { dayHeading, localDay } from "../../lib/format";
 import type {
   Commit,
   Feature,
@@ -9,7 +9,7 @@ import type {
   Session,
   VerifyRun,
 } from "../../../../src/core/types";
-import type { ActivityData } from "./sessions";
+import type { ActivityData, SessionStatus } from "./sessions";
 
 /** The kind chips: Sessions, Subagents, Commits, Verify runs, Your actions. */
 export type ActivityKind = "session" | "subagent" | "commit" | "run" | "action";
@@ -44,13 +44,18 @@ export interface PeriodGroup {
 const unique = (ids: (string | null)[]) => [...new Set(ids.filter((x): x is string => !!x))];
 
 /**
- * Everything that happened, newest first. A session's commits are shown inside its SessionCard,
- * so only commits outside any known session get their own row.
+ * Newest first. Leaves out persisted sessions whose activity status is running or waiting (they
+ * are cards) and commits and runs owned by a listed session (they are in its thread).
  */
-export function buildFeed(index: Index, _data: ActivityData): FeedItem[] {
-  const sessionIds = new Set(index.sessions.map((s) => s.id));
+export function buildFeed(index: Index, data: ActivityData): FeedItem[] {
+  const listed = index.sessions.filter((s) => !isCard(data.byKey.get(s.id)?.status));
+  const listedIds = new Set(listed.map((s) => s.id));
+  const inThread = (id: string) => {
+    const owner = data.attribution.owner.get(id);
+    return owner !== undefined && listedIds.has(owner);
+  };
   const items: FeedItem[] = [
-    ...index.sessions.map((session) => ({
+    ...listed.map((session) => ({
       kind: "session" as const,
       key: session.id,
       at: session.ended_at ?? session.started_at,
@@ -58,7 +63,7 @@ export function buildFeed(index: Index, _data: ActivityData): FeedItem[] {
       session,
     })),
     ...index.commits
-      .filter((c) => !c.session || !sessionIds.has(c.session))
+      .filter((c) => !inThread(c.sha))
       .map((commit) => ({
         kind: "commit" as const,
         key: commit.sha,
@@ -66,13 +71,15 @@ export function buildFeed(index: Index, _data: ActivityData): FeedItem[] {
         features: unique(commit.refs.map(featureOf)),
         commit,
       })),
-    ...index.runs.map((run) => ({
-      kind: "run" as const,
-      key: run.id,
-      at: run.at,
-      features: unique([featureOf(run.target)]),
-      run,
-    })),
+    ...index.runs
+      .filter((r) => !inThread(r.id))
+      .map((run) => ({
+        kind: "run" as const,
+        key: run.id,
+        at: run.at,
+        features: unique([featureOf(run.target)]),
+        run,
+      })),
     ...index.features.flatMap((feature) =>
       (feature.detail?.log ?? [])
         .filter((entry) => entry.actor === "you")
@@ -88,6 +95,9 @@ export function buildFeed(index: Index, _data: ActivityData): FeedItem[] {
   ];
   return items.sort((a, b) => b.at.localeCompare(a.at));
 }
+
+/** Running and waiting sessions are shown as cards above the feed. */
+const isCard = (status: SessionStatus | undefined) => status === "running" || status === "waiting";
 
 export function matchesFeature(item: FeedItem, filter: FeatureFilter): boolean {
   if (filter === "all") return true;
@@ -105,9 +115,27 @@ export function featureCounts(items: FeedItem[]): { id: string; count: number }[
     .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
 }
 
+const PERIODS: Period[] = ["today", "yesterday", "earlier"];
+
 /** Today and Yesterday by local day, everything older in Earlier; empty groups are left out. */
-export function byPeriod(_items: FeedItem[], _now: number): PeriodGroup[] {
-  return [];
+export function byPeriod(items: FeedItem[], now: number): PeriodGroup[] {
+  const today = localDay(new Date(now).toISOString());
+  const before = new Date(now);
+  before.setDate(before.getDate() - 1);
+  const yesterday = localDay(before.toISOString());
+  const periodOf = (item: FeedItem): Period => {
+    const day = localDay(item.at);
+    if (day === today) return "today";
+    if (day === yesterday) return "yesterday";
+    return "earlier";
+  };
+  return PERIODS.flatMap((period) => {
+    const grouped = items.filter((item) => periodOf(item) === period);
+    const [first] = grouped;
+    if (!first) return [];
+    const heading = period === "earlier" ? "Earlier" : dayHeading(first.at, now);
+    return [{ period, heading, items: grouped }];
+  });
 }
 
 /** Items grouped by local day, keeping the newest-first order. */

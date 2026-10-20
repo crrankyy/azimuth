@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-016.2
     title: Sessions joined and work attributed (red → green)
-    status: in-progress
+    status: done
     after: [T-016.1]
     covers: [S-016.1.1, S-016.1.2, S-016.1.3, S-016.1.4, S-016.1.5, S-016.1.6, S-016.1.7, S-016.1.8]
     files: [viewer/src/screens/activity/sessions.ts, viewer/src/screens/activity/sessions.test.ts]
