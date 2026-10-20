@@ -95,7 +95,8 @@ export function readFeatureCommits(root: string, featureId: Id): CommitChanges[]
 
 /**
  * Each path the commits (oldest first) changed, outside ".azimuth/", once, sorted by path:
- * "create" when its first change is A, else "delete" when its last change is D, else "modify"
+ * "delete" when its last change is D (a path created then deleted is a delete), else "create"
+ * when its first change is A, else "modify"
  * (M and T are modifications). Structural, so CommitChanges[] fits without importing git.ts.
  */
 export function filesChanged(commits: { changes: { status: string; path: string }[] }[]): FileChange[];

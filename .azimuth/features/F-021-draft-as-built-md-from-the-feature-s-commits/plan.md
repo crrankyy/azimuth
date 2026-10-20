@@ -2,7 +2,7 @@
 tasks:
   - id: T-021.1
     title: files_changed and deviation rules (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-021.1.1, S-021.1.2, S-021.1.3, S-021.3.1, S-021.3.2, S-021.3.3]
     files: [src/core/as-built.ts, src/core/run-scope.ts, test/core/as-built.test.ts]

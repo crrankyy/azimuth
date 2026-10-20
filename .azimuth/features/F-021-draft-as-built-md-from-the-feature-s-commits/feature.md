@@ -2,7 +2,7 @@
 id: F-021
 title: Draft as-built.md from the feature's commits
 summary: azimuth as-built F-NNN writes files_changed and deviations from the commits whose Refs name the feature, keeping reasons already written, and the done gate requires a reason on every deviation.
-status: approved
+status: in-progress
 priority: P1
 size: M
 mode: brownfield
