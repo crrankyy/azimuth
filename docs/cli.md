@@ -146,6 +146,7 @@ For a question, `--json` prints `{id, files, answered}`, where `answered` is tha
 | `azimuth log <ID> "<message>" [--review]`                                         | Adds a progress note to the feature's log (for a task, prefixed with its ID). `--review` (you only) records a change request the agent must address.                                                                                                                                                                                                                                                                                      |
 | `azimuth note <T-ID \| F-ID> "<text>"`                                            | Adds what a task taught to the feature's `notes.md` (below).                                                                                                                                                                                                                                                                                                                                                                              |
 | `azimuth settle <S-ID> "<value>"`                                                 | Replaces the scenario's first `{?}` with the value a passing test proved (below).                                                                                                                                                                                                                                                                                                                                                         |
+| `azimuth as-built <F-ID> [--json]`                                                | Drafts the feature's `as-built.md` from its commits: the files changed and the deviations from `impact.md` (below).                                                                                                                                                                                                                                                                                                                       |
 
 Refused moves print the failing gate checks and exit 1.
 
@@ -167,6 +168,41 @@ S-005.1.2: settled 30
 Both add the IDs to the current session's `touched` list. A refusal exits 1 and writes nothing:
 an unknown feature, task or scenario, a blank note, a value that can't be written, or a scenario
 with no `{?}` left (`S-005.1.2 has no {?} left to settle.`).
+
+`as-built` drafts the close-out record, [`as-built.md`](file-format.md#as-builtmd), of a feature
+in `verifying` or `done`. It reads every commit reachable from HEAD that names the feature or one
+of its stories, scenarios or tasks (the IDs in its `Refs:` trailer, else those in its Conventional
+Commits scope, as the index links commits), over the whole history: `git.log_depth` doesn't limit
+it. It writes:
+
+- `completed_at`: today's date (UTC).
+- `files_changed`: each path those commits changed outside `.azimuth/`, once: `delete` when its
+  last change deleted it, else `create` when its first change added it, else `modify`. A rename
+  counts as a delete of the old path and a create of the new one.
+- `deviations`: each changed path that no `create`, `modify` or `test` row of `impact.md` names
+  or contains, as `unplanned-create`, `unplanned-modify` or `unplanned-delete`, and each such row
+  that no commit changed, as `planned-unchanged`. Every reason is empty.
+
+Paths are compared as git prints them, relative to the repository, so the project folder is taken
+to be the repository root. A new file takes its body from the as-built template. A rerun, after a
+late commit for instance, recomputes the generated deviations and keeps the rest: the reason
+already written for the same path and kind, the deviations written by hand with other kinds,
+`follow_ups`, the body, and a `done` feature's `completed_at`. It prints the file, what it found
+and the deviations that still need a reason (the done gate refuses while one has none):
+
+```
+$ azimuth as-built F-005
+Wrote .azimuth/features/F-005-counts/as-built.md from 7 commits: 10 files changed, 1 deviation, 1 without a reason.
+Needs a reason: src/glob.ts (unplanned-modify)
+```
+
+`--json` prints the whole result instead,
+`{feature, file, created, commits, files_changed, deviations, unexplained, message}`. It writes
+only `as-built.md`, never stages or commits it, and adds the feature to the current session's
+`touched` list. A refusal exits 1 and writes nothing: an unknown feature, another status
+(`F-005 is in-progress: azimuth as-built takes a feature in verifying or done.`), a folder that
+isn't a git repository, an existing `as-built.md` whose frontmatter isn't valid YAML, or a failed
+`git log`. A missing ID, or one that isn't a feature's, exits 2.
 
 ## Verify
 

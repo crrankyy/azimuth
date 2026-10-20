@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-021.4
     title: azimuth as-built on the command line (red → green)
-    status: in-progress
+    status: done
     after: [T-021.3]
     covers: [S-021.5.1, S-021.5.2, S-021.5.3, S-021.5.4, S-021.5.5, S-021.5.6]
     files: [src/cli/commands/as-built.ts, src/cli/main.ts, test/cli/as-built.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-021.5
     title: Verify and azimuth skills, docs and full verification
-    status: todo
+    status: in-progress
     after: [T-021.2, T-021.4]
     covers: []
     files: [plugin/skills/verify/SKILL.md, plugin/skills/azimuth/SKILL.md, docs/cli.md, docs/file-format.md, docs/concepts.md]

@@ -389,18 +389,52 @@ detail's `notes`; `null` when the file is missing or holds nothing else.
 
 ### `as-built.md`
 
-Written at close-out.
+Written at close-out: [`azimuth as-built <F-ID>`](cli.md#change) drafts it from the feature's
+commits and `impact.md`, then the agent writes the reasons, the body and the follow-ups.
 
 ```yaml
 completed_at: 2026-10-20
 files_changed:
+  - { path: src/retry/jitter.ts, change: create }
   - { path: src/retry/policy.ts, change: create }
 deviations:
   - { path: src/retry/jitter.ts, kind: unplanned-create, reason: Split out for testability }
+  - { path: src/retry/policy.ts, kind: clarification, reason: Reads the policy lazily }
 follow_ups: [DEBT-0002]
 ```
 
-Body sections: `## Summary`, `## Deviations`, `## Follow-ups`.
+`files_changed` lists each path the feature's commits changed outside `.azimuth/`, relative to
+the repository root as git prints it, once, sorted by path. Its `change` sums up the path's
+changes, oldest first: `delete` when the last one deleted it (a file created and deleted again is
+a delete), else `create` when the first one added it, else `modify`. A rename counts as a delete
+of the old path and a create of the new one.
+
+`deviations` lists where the build differs from `impact.md`, each with a `reason` that says why.
+`azimuth as-built` generates four kinds, sorted by path, against the `create`, `modify` and `test`
+rows (a row naming a directory covers every file under it; a `read` row plans no change):
+
+| Kind                | Meaning                                                 |
+| ------------------- | ------------------------------------------------------- |
+| `unplanned-create`  | The commits created a path that no row plans            |
+| `unplanned-modify`  | The commits modified a path that no row plans           |
+| `unplanned-delete`  | The commits deleted a path that no row plans            |
+| `planned-unchanged` | No commit changed the row's path, nor any file under it |
+
+Any other kind (`clarification`, `test-change` and the like) is written by hand, for a difference
+the files don't show: a changed interface, a corrected test.
+
+A rerun of `azimuth as-built` recomputes `files_changed` and the generated deviations, and keeps
+the rest: a generated deviation keeps the reason already written for the same path and kind, one
+that no longer applies is dropped with its reason, and the hand-written deviations follow the
+generated ones in their order. `follow_ups`, the body, the BOM and the line endings are kept.
+`completed_at` becomes the run's date (UTC), except that a `done` feature keeps the one it has.
+The frontmatter is written whole, so other keys and comments in it are dropped.
+
+The done gate needs a non-blank `reason` on every deviation, whatever its kind; its detail names
+each one without (`No reason for src/retry/jitter.ts (unplanned-create)`). An `as-built.md` that
+doesn't parse fails it too (`as-built.md has errors (see azimuth check F-005)`).
+
+Body sections: `## Summary` (what was built and how), `## Deviations`, `## Follow-ups`.
 
 ### Spec hash
 

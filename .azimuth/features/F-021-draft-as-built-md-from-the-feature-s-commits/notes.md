@@ -15,3 +15,7 @@ T-021.4: writeAsBuilt throws AzimuthError(invalid) for a non-feature ID, but S-0
 ### T-021.4 · 2026-10-20
 
 Docs (T-021.5): usage 'as-built <F-ID> [--json]'; exit 0 written, 1 unknown feature, wrong status, no git, invalid frontmatter or failed git log, 2 missing or non-feature ID or no project; --json prints the whole result. The feature joins the session's touched only on success. The git check accepts any folder inside a work tree, so the docs should say the project folder is the repository root (as F-006 assumes). S-021.5.1 can fail across midnight UTC, like note.test.ts.
+
+### T-021.5 · 2026-10-20
+
+Small departures found while documenting: a rerun that changes no bytes writes nothing but still prints 'Wrote …'; hand-written deviations are rewritten with only path, kind and reason (the format has no other keys); non-ID follow_ups are kept by as-built but then fail parseAsBuilt, so the gate says 'has errors'.

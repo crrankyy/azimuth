@@ -26,11 +26,16 @@ Target: $ARGUMENTS
    Add missing tests (named with the scenario ID), commit them and every file holding an
    uncommitted test (with `Refs: <T-ID>` naming the task that covers the scenario), and rerun the
    runs the done gate then names.
-4. Write `.azimuth/features/<F-ID>-<slug>/as-built.md` from
-   `.azimuth/templates/feature/as-built.md`: compare the files actually changed
-   (`git log --name-only` for commits with `Refs:` to this feature) with impact.md; list
-   `files_changed`, `deviations` with reasons, and `follow_ups`. File each follow-up with
-   `/azimuth:bug` (debt or bug) and list its ID.
+4. `azimuth as-built <F-ID>` drafts the feature's `as-built.md` from its commits:
+   `files_changed`, and the `deviations` from impact.md (`unplanned-create`, `unplanned-modify`,
+   `unplanned-delete`, `planned-unchanged`), each with an empty reason. It prints the file and
+   the deviations that need a reason. Then edit that file: write each deviation's `reason` (why
+   the build differs from the plan), add deviations of your own kinds for anything else that
+   differs (a changed interface, a corrected test) with their reasons, write the Summary (what
+   was built and how), and file each follow-up with `/azimuth:bug` (debt or bug) and list its ID
+   in `follow_ups`. After a later commit, run `azimuth as-built <F-ID>` again: it keeps the
+   reasons, your deviations, the body and the follow-ups. The done gate refuses while a
+   deviation has no reason.
 5. Reconcile `.azimuth/project/architecture.md` with what was built (modules, boundaries, data
    flow), then set `reconciled_at` to the current `git rev-parse --short HEAD`.
 6. `azimuth check <F-ID>`, then commit: `docs(<F-ID>): close out` with `Refs: <F-ID>`. Keep this
