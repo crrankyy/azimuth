@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-016.5
     title: Cards for running and waiting sessions (red → green)
-    status: in-progress
+    status: done
     after: [T-016.2]
     covers: [S-016.5.1, S-016.5.2, S-016.5.3, S-016.5.4]
     files: [viewer/src/screens/activity/LiveCards.tsx, viewer/src/screens/activity/live-cards.css, viewer/src/screens/activity/LiveCards.test.tsx]
