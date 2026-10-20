@@ -16,7 +16,7 @@ approved_at: 2026-10-20
 approved_by: agent
 approved_hash: sha256:7b9da2383130606bd5f799cf0f063af23fa92e2c2a8af1986db85cb5921fcecc
 approved_commit: a31b882
-review_ack_at: null
+review_ack_at: 2026-10-20T11:04:38Z
 ---
 # F-016: Show agent sessions on an Activity timeline
 

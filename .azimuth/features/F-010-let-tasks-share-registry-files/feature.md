@@ -16,7 +16,7 @@ approved_at: 2026-10-19
 approved_by: agent
 approved_hash: sha256:c9807d1e308375347310c656f740f76f96b27d49610b9c06e334cd766568f00e
 approved_commit: 83e0a14
-review_ack_at: null
+review_ack_at: 2026-10-20T11:04:31Z
 ---
 # F-010: Let tasks share registry files
 

@@ -16,7 +16,7 @@ approved_at: 2026-10-19
 approved_by: agent
 approved_hash: sha256:f5eff0bdd7062d41d8e85d460ac54a2cbaad3f0a2f5a28cea8f210bf423451ee
 approved_commit: 29737cc
-review_ack_at: null
+review_ack_at: 2026-10-20T11:04:37Z
 ---
 # F-015: Show live agents and their transcripts in the viewer
 

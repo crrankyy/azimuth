@@ -16,7 +16,7 @@ approved_at: 2026-10-19
 approved_by: agent
 approved_hash: sha256:4b8907126dc6dedba7b9f27db28da672b2e4d4911f264b9b2ea03246da7be4cd
 approved_commit: ad55c04
-review_ack_at: null
+review_ack_at: 2026-10-20T11:04:32Z
 ---
 # F-008: Keep task notes and settled values out of the approval
 

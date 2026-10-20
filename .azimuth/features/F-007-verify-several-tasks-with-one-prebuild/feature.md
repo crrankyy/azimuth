@@ -16,7 +16,7 @@ approved_at: 2026-10-19
 approved_by: agent
 approved_hash: sha256:d734b327d26be45f9358d350138b9cd83e335ca1ed83d8f95fe95c25cee32b16
 approved_commit: 7a35fa8
-review_ack_at: null
+review_ack_at: 2026-10-20T11:04:29Z
 ---
 # F-007: Verify several tasks with one prebuild
 

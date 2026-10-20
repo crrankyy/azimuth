@@ -16,7 +16,7 @@ approved_at: 2026-10-19
 approved_by: agent
 approved_hash: sha256:bdc1804aa5b2464227748f93d93cf445c89177df3f911df93218f71402a2924d
 approved_commit: d5937e4
-review_ack_at: null
+review_ack_at: 2026-10-20T11:04:33Z
 ---
 # F-011: Keep one Azimuth session per Claude Code session
 

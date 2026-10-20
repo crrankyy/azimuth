@@ -25,3 +25,9 @@ around 95% and leaves about 30 px for the label ("Ed…"); at 1024 px every runn
 cut (scratchpad shots/F-016/polish-report.json). Ending the window at least ten minutes after now,
 or putting the label left of the span when there is no room, would fix it; the window rule is the
 user's call.
+
+## Decision
+
+Decided by the user on 2026-10-20: the "Last 75 min" window ends at the first quarter hour at
+least 10 minutes after now, and a label that still doesn't fit after its span (narrow screens)
+is drawn left of the now line instead of being cut.

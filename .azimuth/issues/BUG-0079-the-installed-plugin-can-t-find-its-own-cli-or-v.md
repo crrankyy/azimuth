@@ -2,7 +2,7 @@
 id: BUG-0079
 type: bug
 title: The installed plugin can't find its own CLI or viewer, so autostart stops the viewer and never restarts it
-status: in-progress
+status: resolved
 severity: high
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: []
 files: [src/server/autostart.ts, src/cli/commands/viewer.ts]
 found_by: SES-20261019-2021
 created: 2026-10-20
-resolved_at: null
+resolved_at: 2026-10-20
 ---
 ## Repro
 1. Install the plugin (`claude plugin install azimuth@azimuth`), which copies `plugin/` to

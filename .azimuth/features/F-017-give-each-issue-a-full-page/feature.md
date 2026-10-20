@@ -16,7 +16,7 @@ approved_at: 2026-10-19
 approved_by: agent
 approved_hash: sha256:a29606ebeb23b0c71085411ec3da015c43f67effd3e452697e4a6bca922a3abc
 approved_commit: 7b62199
-review_ack_at: null
+review_ack_at: 2026-10-20T11:04:30Z
 ---
 # F-017: Give each issue a full page
 

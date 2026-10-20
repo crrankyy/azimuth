@@ -16,7 +16,7 @@ approved_at: 2026-10-19
 approved_by: agent
 approved_hash: sha256:17e80e93ff3ba975ca6850e62f176223b87d7f87ca8e8a3eef1c35ba5a5c6c11
 approved_commit: 745f055
-review_ack_at: null
+review_ack_at: 2026-10-20T11:04:35Z
 ---
 # F-014: Record what each agent is doing and waiting for
 

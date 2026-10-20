@@ -25,3 +25,10 @@ commit makes every earlier task run stale, and close-out reruns them all (seen f
 F-008, F-010, F-012, F-013 and F-017 on 2026-10-20). `docs/cli.md` is bundled into the CLI, so
 excluding all Markdown would be wrong; scoping each task to impact paths that no later task of the
 same feature owns is one option.
+
+## Decision
+
+Decided by the user on 2026-10-20: an opt-in ignore list. A new `verify.ignore_paths` (globs)
+names paths whose commits never make a verify run stale, such as README.md and the docs that
+aren't bundled into the CLI. It is empty by default, so nothing changes until a project lists
+paths.
