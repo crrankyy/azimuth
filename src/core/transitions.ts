@@ -342,9 +342,14 @@ export function reapproveFeature(root: string, id: string, opts: MoveOptions): R
     const f = featureById(ctx, id);
     checkExpected(f.status, opts.expectStatus, id);
     if (f.status !== "approved" && f.status !== "in-progress") {
+      // Close-out edits made agents look for a reapproval the done gate never asks for.
+      const verifying =
+        f.status === "verifying"
+          ? " The done gate doesn't check the approval, so a spec fix during close-out needs no reapproval."
+          : "";
       throw new AzimuthError(
         "invalid",
-        `${id} is ${f.status}; only approved or in-progress features can be re-approved.`,
+        `${id} is ${f.status}; only approved or in-progress features can be re-approved.${verifying}`,
       );
     }
     if (opts.actor === "agent" && model.config.autonomy.approve_specs === "manual") {

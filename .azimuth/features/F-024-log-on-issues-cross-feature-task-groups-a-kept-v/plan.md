@@ -2,7 +2,7 @@
 tasks:
   - id: T-024.1
     title: Log on issues (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-024.1.1, S-024.1.2, S-024.1.3, S-024.1.4, S-024.1.5, S-024.1.6, S-024.1.7, S-024.1.8]
     files: [src/core/transitions.ts, src/cli/commands/write.ts, viewer/src/screens/issues/history.ts, viewer/src/screens/issues/IssueHistory.tsx, test/core/transitions.test.ts, test/cli/log.test.ts, viewer/src/screens/issues/history.test.tsx]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-024.2
     title: The reapprove refusal in verifying (red → green)
-    status: todo
+    status: in-progress
     after: [T-024.1]
     covers: [S-024.2.1, S-024.2.2, S-024.2.3]
     files: [src/core/transitions.ts, test/core/transitions.test.ts]

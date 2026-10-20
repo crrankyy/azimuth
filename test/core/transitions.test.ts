@@ -511,6 +511,43 @@ describe("F-024 log on issues", () => {
   });
 });
 
+describe("F-024 reapprove refusals", () => {
+  const now = new Date("2026-10-20T09:00:00Z");
+  const refusal = (status: string) => {
+    const tree = repo(featureFiles({ id: "F-001", status }));
+    const dir = join(tree.root, ".azimuth/features/F-001-thing");
+    const records = () => ["feature.md", "log.md"].map((f) => readFileSync(join(dir, f), "utf8"));
+    const before = records();
+    const error = errorOf(() => reapproveFeature(tree.root, "F-001", { actor: "you", now }));
+    return { error, before, after: records() };
+  };
+
+  it("S-024.2.1 tells a verifying feature that no reapproval is needed", () => {
+    const { error, before, after } = refusal("verifying");
+    expect([error.code, error.message]).toEqual([
+      "invalid",
+      "F-001 is verifying; only approved or in-progress features can be re-approved. The done gate doesn't check the approval, so a spec fix during close-out needs no reapproval.",
+    ]);
+    expect(after).toEqual(before);
+  });
+
+  it("S-024.2.2 keeps the refusal for a done feature", () => {
+    const { error } = refusal("done");
+    expect([error.code, error.message]).toEqual([
+      "invalid",
+      "F-001 is done; only approved or in-progress features can be re-approved.",
+    ]);
+  });
+
+  it("S-024.2.3 keeps the refusal for an idea", () => {
+    const { error } = refusal("idea");
+    expect([error.code, error.message]).toEqual([
+      "invalid",
+      "F-001 is idea; only approved or in-progress features can be re-approved.",
+    ]);
+  });
+});
+
 describe("allocation", () => {
   it("allocates sequential IDs, skips taken ones and never reissues", () => {
     const tree = repo({ ".azimuth/questions/Q-0003.md": "x" });
