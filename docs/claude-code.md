@@ -14,7 +14,7 @@ also the plugin's marketplace (`.claude-plugin/marketplace.json` → `./plugin`)
 
 ## Install
 
-From a clone of this repository (v0.2 is installed locally; the build output isn't committed):
+From a clone of this repository (v0.3 is installed locally; the build output isn't committed):
 
 ```sh
 pnpm install && pnpm build

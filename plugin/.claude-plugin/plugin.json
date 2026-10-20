@@ -1,6 +1,6 @@
 {
   "name": "azimuth",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Specs, gated lifecycles, live activity and a local viewer for agent-built projects. Manages .azimuth/ in your repository.",
   "author": { "name": "crrankyy" },
   "homepage": "https://github.com/crrankyy/azimuth",

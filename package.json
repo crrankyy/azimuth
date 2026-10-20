@@ -1,6 +1,6 @@
 {
   "name": "azimuth",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "File-based project management for codebases built with AI agents, with a live offline viewer and a Claude Code plugin.",
   "private": true,
   "type": "module",
