@@ -11,3 +11,6 @@ draft → approved
 
 ## 2026-10-20T19:11:06Z · agent · transition · SES-20261020-1730
 approved → in-progress
+
+## 2026-10-20T19:14:58Z · agent · note · SES-20261020-1730
+T-018.1: in-progress → done. Committed 5d86bbd; R-0268 passed.

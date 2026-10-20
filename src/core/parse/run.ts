@@ -1,8 +1,16 @@
 import { ID_PATTERNS, isId } from "../ids";
-import type { CoverageStatus, Problem, VerifyRun } from "../types";
+import type { CoverageStatus, Problem, RunPrebuild, VerifyRun } from "../types";
 import { problem } from "./common";
 
 const STATUSES: CoverageStatus[] = ["passing", "failing", "not-run", "untested"];
+
+/** Runs written before the field existed, or with a malformed value, read as no prebuild. */
+function readPrebuild(value: unknown): RunPrebuild | null {
+  if (!value || typeof value !== "object") return null;
+  const { ok, duration_ms } = value as Record<string, unknown>;
+  if (typeof ok !== "boolean" || typeof duration_ms !== "number" || duration_ms < 0) return null;
+  return { ok, duration_ms };
+}
 
 export function parseRun(
   text: string,
@@ -50,7 +58,7 @@ export function parseRun(
         ? { waited_ms: data.waited_ms }
         : {}),
       ...(data.ses === null || isId(data.ses, "session") ? { ses: data.ses } : {}),
-      prebuild: null,
+      prebuild: readPrebuild(data.prebuild),
     },
     problems: [],
   };

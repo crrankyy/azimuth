@@ -159,6 +159,8 @@ stale_after_days: 5
 verify:
   timeout_seconds: 600
   output_tail_lines: 40
+  prebuild_failure: stop # stop: a failed prebuild records no runs | continue: each task's own command still runs, and the done gate asks for a rerun with a working build
+  min_free_gb: 10 # verify and task finish warn below this much free disk space (GB); 0 turns it off
 viewer:
   port: 4319
   autostart: true # Claude Code sessions start the viewer automatically
