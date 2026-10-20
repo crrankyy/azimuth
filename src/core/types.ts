@@ -427,6 +427,13 @@ export interface Commit {
   files_changed: number;
 }
 
+/** The prebuild that ran before a verify run, in the same `azimuth verify` or finish call. */
+export interface RunPrebuild {
+  /** false only under verify.prebuild_failure: continue; otherwise a failed prebuild records no run. */
+  ok: boolean;
+  duration_ms: number;
+}
+
 export interface VerifyRun {
   id: Id;
   target: Id;
@@ -443,6 +450,11 @@ export interface VerifyRun {
   waited_ms?: number;
   /** The Azimuth session current when the run was made; null outside a session. */
   ses?: Id | null;
+  /**
+   * null when no prebuild ran (none configured, a blank command, `--no-prebuild`), and for run
+   * files without the key or with a malformed value. Always present in the model and the index.
+   */
+  prebuild: RunPrebuild | null;
 }
 
 export type AgentStatus = "running" | "waiting" | "done";

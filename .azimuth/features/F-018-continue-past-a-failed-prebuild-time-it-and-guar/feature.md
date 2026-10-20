@@ -2,7 +2,7 @@
 id: F-018
 title: Continue past a failed prebuild, time it and guard the disk
 summary: "verify.prebuild_failure: continue lets each target's own command run after a failed prebuild while the done gate asks for a rerun with a working build; runs record the prebuild that served them; verify.min_free_gb warns before a verify on a nearly full disk."
-status: approved
+status: in-progress
 priority: P1
 size: M
 mode: brownfield

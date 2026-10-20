@@ -12,7 +12,7 @@ import { loadProject, type FeatureEntity } from "./model";
 import { azPath } from "./paths";
 import { runShell } from "./shell";
 import { traceTests } from "./trace";
-import type { Id, VerifyRun } from "./types";
+import type { Id, RunPrebuild, VerifyRun } from "./types";
 
 export interface VerifyTarget {
   task: string;
@@ -26,6 +26,8 @@ export interface PrebuildResult {
   ok: boolean;
   /** 124 after a timeout. */
   exit_code: number;
+  /** True when verify.build_timeout_seconds stopped it; a timed-out prebuild never lets targets run. */
+  timed_out: boolean;
   duration_ms: number;
   /** Last verify.output_tail_lines lines; ends with "[azimuth] prebuild timed out after <N>s" on a timeout. */
   output_tail: string;
@@ -42,6 +44,13 @@ export type VerifyProgress =
 export interface RunContext {
   waited_ms: number;
   ses: Id | null;
+  /** Written to the run as `prebuild`; default null. */
+  prebuild?: RunPrebuild | null;
+  /**
+   * The command's timeout, also the N of "[azimuth] timed out after <N>s"; default
+   * verify.timeout_seconds.
+   */
+  timeout_seconds?: number;
   signal?: AbortSignal;
   now?: () => Date;
 }
@@ -61,7 +70,7 @@ export interface VerifyBatchOptions {
 
 export interface VerifyBatchResult {
   waited_ms: number;
-  /** null when no prebuild is configured or it was skipped. */
+  /** null when no prebuild is configured, it was skipped, or it was interrupted. */
   prebuild: PrebuildResult | null;
   /** In target order; [] when the prebuild failed. */
   runs: VerifyRun[];
@@ -110,7 +119,11 @@ function tail(text: string, lines: number): string {
   return text.replace(/\s+$/, "").split("\n").slice(-lines).join("\n");
 }
 
-/** Runs one target's verify command and records the run; null when aborted (nothing recorded). */
+/**
+ * Runs one target's verify command under context.timeout_seconds (default
+ * verify.timeout_seconds) and records the run with `prebuild: context.prebuild ?? null`; null
+ * when aborted (nothing recorded).
+ */
 export async function runVerify(
   root: string,
   target: VerifyTarget,
@@ -118,12 +131,13 @@ export async function runVerify(
 ): Promise<VerifyRun | null> {
   const { now = () => new Date() } = context;
   const config = loadProject(root).config;
+  const timeoutSeconds = context.timeout_seconds ?? config.verify.timeout_seconds;
   const scratch = join(tmpdir(), `azimuth-junit-${process.pid}-${Date.now()}`);
   mkdirSync(scratch, { recursive: true });
   const junitPath = join(scratch, "junit.xml");
   const result = await runShell(target.command, {
     cwd: root,
-    timeoutMs: config.verify.timeout_seconds * 1000,
+    timeoutMs: timeoutSeconds * 1000,
     // Commands can write a JUnit report here for exact per-scenario results.
     env: { ...process.env, AZIMUTH_JUNIT: junitPath, AZIMUTH_TASK: target.task, FORCE_COLOR: "0" },
     signal: context.signal,
@@ -153,13 +167,14 @@ export async function runVerify(
     at: toUtc(now().toISOString()),
     commit: headSha(root),
     output_tail: tail(
-      timedOut ? `${output}\n[azimuth] timed out after ${config.verify.timeout_seconds}s` : output,
+      timedOut ? `${output}\n[azimuth] timed out after ${timeoutSeconds}s` : output,
       config.verify.output_tail_lines,
     ),
     scenarios: [...scenarios].map(([id, status]) => ({ id, status })),
     junit,
     waited_ms: context.waited_ms,
     ses: context.ses,
+    prebuild: context.prebuild ?? null,
   };
   mkdirSync(azPath(root, "cache", "runs"), { recursive: true });
   const id = allocateId(root, "run", (id) => {
@@ -190,6 +205,7 @@ async function runPrebuild(
     command,
     ok: result.exit_code === 0 && !result.timed_out,
     exit_code: result.exit_code,
+    timed_out: result.timed_out,
     duration_ms: result.duration_ms,
     output_tail: tail(output, verify.output_tail_lines),
   };

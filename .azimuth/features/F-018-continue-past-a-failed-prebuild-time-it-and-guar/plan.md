@@ -2,7 +2,7 @@
 tasks:
   - id: T-018.1
     title: Scaffolding, the run field, the config keys and the golden fixture
-    status: todo
+    status: in-progress
     after: []
     covers: []
     files: [src/core/types.ts, src/core/config.ts, src/core/verify.ts, src/core/parse/run.ts, test/fixtures/hookline/expected-index.ts, test/cli/verify-report.test.ts]

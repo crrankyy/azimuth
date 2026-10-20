@@ -50,6 +50,7 @@ export function parseRun(
         ? { waited_ms: data.waited_ms }
         : {}),
       ...(data.ses === null || isId(data.ses, "session") ? { ses: data.ses } : {}),
+      prebuild: null,
     },
     problems: [],
   };

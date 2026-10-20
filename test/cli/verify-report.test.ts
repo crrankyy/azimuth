@@ -36,6 +36,7 @@ const run = (
     output_tail: "",
     scenarios: [],
     junit: null,
+    prebuild: null,
     ...fields,
   },
 });
@@ -74,6 +75,7 @@ describe("reportLines", () => {
           command: "cargo build",
           ok: true,
           exit_code: 0,
+          timed_out: false,
           duration_ms: 41200,
           output_tail: "Finished",
         },
@@ -115,6 +117,7 @@ describe("reportLines", () => {
         command: "cargo build",
         ok: false,
         exit_code: 2,
+        timed_out: false,
         duration_ms: 3100,
         output_tail: "no compiler",
       },

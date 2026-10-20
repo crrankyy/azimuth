@@ -2039,7 +2039,8 @@ export const expectedIndex = {
           "status": "failing"
         }
       ],
-      "junit": null
+      "junit": null,
+      "prebuild": null
     },
     {
       "id": "R-0141",
@@ -2057,7 +2058,8 @@ export const expectedIndex = {
           "status": "passing"
         }
       ],
-      "junit": null
+      "junit": null,
+      "prebuild": null
     },
     {
       "id": "R-0140",
@@ -2083,7 +2085,8 @@ export const expectedIndex = {
           "status": "passing"
         }
       ],
-      "junit": null
+      "junit": null,
+      "prebuild": null
     },
     {
       "id": "R-0139",
@@ -2096,7 +2099,8 @@ export const expectedIndex = {
       "commit": "c2d4e18",
       "output_tail": "",
       "scenarios": [],
-      "junit": null
+      "junit": null,
+      "prebuild": null
     },
     {
       "id": "R-0138",
@@ -2130,7 +2134,8 @@ export const expectedIndex = {
           "status": "passing"
         }
       ],
-      "junit": null
+      "junit": null,
+      "prebuild": null
     },
     {
       "id": "R-0137",
@@ -2152,7 +2157,8 @@ export const expectedIndex = {
           "status": "passing"
         }
       ],
-      "junit": null
+      "junit": null,
+      "prebuild": null
     }
   ],
   "live": [],

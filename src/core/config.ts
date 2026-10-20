@@ -4,6 +4,9 @@ import { AZ_DIR, CONFIG_FILE, azPath } from "./paths";
 import { r, type Reader } from "./schema";
 import { QUESTION_AUTONOMY, type Autonomy, type Problem, type ProjectMode } from "./types";
 
+export const PREBUILD_FAILURES = ["stop", "continue"] as const;
+export type PrebuildFailure = (typeof PREBUILD_FAILURES)[number];
+
 export interface Config {
   schema: 1;
   project: { name: string; description: string; mode: ProjectMode };
@@ -32,6 +35,17 @@ export interface Config {
     prebuild: string | null;
     /** Timeout of the prebuild alone. */
     build_timeout_seconds: number;
+    /**
+     * What a prebuild that exits non-zero does. stop (default): no target runs and no run is
+     * recorded. continue: every target runs under build_timeout_seconds + timeout_seconds and
+     * records prebuild { ok: false }. A prebuild that times out or is interrupted always stops.
+     */
+    prebuild_failure: PrebuildFailure;
+    /**
+     * verify and task finish warn on stderr, and doctor shows a `?` line, when the project
+     * root's filesystem has less than this many GB (10^9 bytes) free; 0 turns the guard off.
+     */
+    min_free_gb: number;
   };
   parallel: {
     /**
@@ -70,6 +84,8 @@ export const DEFAULT_CONFIG: Config = {
     ignore_paths: [],
     prebuild: null,
     build_timeout_seconds: 1800,
+    prebuild_failure: "stop",
+    min_free_gb: 10,
   },
   parallel: { shared_files: [] },
   viewer: { port: 4319, autostart: true, editor_url: null },
@@ -108,6 +124,8 @@ const SHAPE: Record<string, Record<string, Reader<unknown>> | Reader<unknown>> =
     ignore_paths: r.strings(),
     prebuild: r.nullable(r.string()),
     build_timeout_seconds: r.int(1),
+    prebuild_failure: r.oneOf(PREBUILD_FAILURES),
+    min_free_gb: r.int(0),
   },
   parallel: { shared_files: r.strings() },
   viewer: { port: r.int(1), autostart: r.bool(), editor_url: r.nullable(r.string()) },
