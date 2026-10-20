@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-021.3
     title: Read the feature's commits and write as-built.md (red → green)
-    status: in-progress
+    status: done
     after: [T-021.1]
     covers: [S-021.2.1, S-021.2.2, S-021.2.3, S-021.4.1, S-021.4.2, S-021.4.3, S-021.4.4, S-021.4.5]
     files: [src/core/as-built.ts, src/core/git.ts, src/core/frontmatter.ts, src/core/create.ts, test/core/as-built.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-021.4
     title: azimuth as-built on the command line (red → green)
-    status: todo
+    status: in-progress
     after: [T-021.3]
     covers: [S-021.5.1, S-021.5.2, S-021.5.3, S-021.5.4, S-021.5.5, S-021.5.6]
     files: [src/cli/commands/as-built.ts, src/cli/main.ts, test/cli/as-built.test.ts]

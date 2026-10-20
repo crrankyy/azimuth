@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import { isAzimuthError } from "../core/errors";
 import { VERSION } from "../core/version";
+import { asBuilt } from "./commands/as-built";
 import * as harness from "./commands/harness";
 import { note } from "./commands/note";
 import * as read from "./commands/read";
@@ -31,6 +32,7 @@ const COMMANDS: Record<string, Command> = {
   log: write.log,
   note,
   settle,
+  "as-built": asBuilt,
   verify: work.verify,
   task,
   brief,
