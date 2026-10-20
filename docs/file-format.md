@@ -556,12 +556,14 @@ resolved_at: null
 
 Suggested body sections: bug `Repro`, `Expected`, `Actual`; debt `Problem`, `Proposed fix`;
 risk `Scenario`, `Mitigation`. When a move is given a reason (required for `wontfix`), `azimuth
-move` adds it to a `Status notes` section, created at the end of the body:
+move` adds it to a `Status notes` section, created at the end of the body.
+`azimuth log <ID> "<text>"` adds a progress note there too, as `<time> · <actor> · <text>`:
 
 ```markdown
 ## Status notes
 
 - 2026-10-18T16:20:00Z · you · resolved → open: Still fails offline
+- 2026-10-18T17:05:00Z · agent · Fails only offline
 ```
 
 ## Sessions

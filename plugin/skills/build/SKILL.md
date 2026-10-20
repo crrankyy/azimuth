@@ -59,7 +59,8 @@ Target: $ARGUMENTS
       `task finish`, or `azimuth note <T-ID> "<text>"`, which writes the feature's notes.md; never
       add it to feature.md.
 5. Stop and report instead of pushing on when:
-   - a decision is needed: raise a question (`azimuth new question … --feature <F-ID>`), and
+   - a decision is needed: raise a question (`azimuth new question "<question>" --feature <F-ID>`
+     with `--option a="Label: detail" --option b="Label: detail" --recommend a`), and
      `azimuth move <T-ID> blocked --note "Waiting on Q-…"` if it blocks the task;
    - the same fix has failed twice: log what you learned and ask the user;
    - the work needs a decision record: use `/azimuth:adr`.
@@ -69,11 +70,14 @@ Target: $ARGUMENTS
 
 ## Notes, settled values and the approval
 
-`azimuth note` and `azimuth settle` never make the approval stale, so don't run
-`azimuth reapprove` after them. Every other spec edit does: a lesson written into feature.md, or
-a story corrected because the code proved a THEN wrong. A story correction still needs
-`azimuth reapprove <F-ID>`; a lesson belongs in a note. The user reviews the values you settle in
-the inbox, and the feature can't reach done while a `{?}` is left.
+The approval's spec hash covers the feature.md body, impact.md, stories.md and contract.md.
+plan.md isn't part of it: editing a task's `files`, `covers` or `verify` needs no
+`azimuth reapprove`, and neither do `azimuth note` and `azimuth settle`. An edit to any of the
+four makes the approval stale: a lesson written into feature.md, or a story corrected because
+the code proved a THEN wrong. A story correction needs `azimuth reapprove <F-ID>` while the
+feature is approved or in progress; once it is verifying, the done gate doesn't check the
+approval, so a close-out fix needs none. A lesson belongs in a note. The user reviews the values
+you settle in the inbox, and the feature can't reach done while a `{?}` is left.
 
 ## Delegating to subagents
 

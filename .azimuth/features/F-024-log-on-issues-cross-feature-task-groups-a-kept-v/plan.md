@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-024.4
     title: azimuth next prints the cross-feature groups (red → green)
-    status: in-progress
+    status: done
     after: [T-024.3]
     covers: [S-024.4.1, S-024.4.2, S-024.4.3, S-024.4.4, S-024.4.5, S-024.4.6]
     files: [src/cli/commands/read.ts, test/cli/parallel.test.ts]
@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-024.6
     title: Skills, docs and full verification
-    status: todo
+    status: in-progress
     after: [T-024.2, T-024.4, T-024.5]
     covers: []
     files: [plugin/skills/build/SKILL.md, plugin/skills/azimuth/SKILL.md, plugin/skills/bug/SKILL.md, docs/cli.md, docs/viewer.md, docs/file-format.md]

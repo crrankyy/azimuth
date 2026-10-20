@@ -17,3 +17,7 @@ Issue: $ARGUMENTS
 3. Fill the body: bug → Repro, Expected, Actual; debt → Problem, Proposed fix; risk →
    Scenario, Mitigation (set `likelihood` and `impact` in the frontmatter).
 4. `azimuth check <ID>` and report the ID.
+
+While you investigate or fix an issue, record each finding with `azimuth log <ID> "<finding>"`:
+it adds a dated bullet to the issue's Status notes, where
+`azimuth move <ID> resolved --reason "…"` later adds the closing one.

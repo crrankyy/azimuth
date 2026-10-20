@@ -46,25 +46,25 @@ sessions in `.azimuth/`, validates them and shows them live in a local viewer. F
 
 ## CLI reference
 
-| Command                                                                                                         | Purpose                                                                |
-| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `azimuth status --brief`                                                                                        | Project summary: what needs the user, work in flight, what's next      |
-| `azimuth show <ID> --brief`                                                                                     | One item with its gate, tasks, questions and recent log                |
-| `azimuth next [F-ID]`                                                                                           | Highest-priority unblocked work, or a feature's ready tasks            |
-| `azimuth check [ID…]`                                                                                           | Validate files; exit 1 on errors                                       |
-| `azimuth new feature "<title>" [--summary "…"] [--priority P0-P3] [--milestone M-NN]`                           | Capture an idea                                                        |
-| `azimuth new spec F-NNN`                                                                                        | Scaffold missing spec files from templates                             |
-| `azimuth new question "<question>" --feature F-NNN [--blocking] --option key="Label: detail" … --recommend key` | Ask the user instead of guessing                                       |
-| `azimuth new adr "<title>" [--links IDs]` · `azimuth new issue "<title>" --type bug\|debt\|risk`                | Record decisions and issues                                            |
-| `azimuth move <ID> <status> [--reason "…"] [--note "…"] [--by <ID>]`                                            | Gated status change for features, tasks, decisions, milestones, issues |
-| `azimuth reapprove F-NNN`                                                                                       | Approve a spec again after it changed                                  |
-| `azimuth resolve Q-NNNN --adr ADR-NNNN \| --assumption F-NNN`                                                   | Record how an answer was applied                                       |
-| `azimuth log <ID> "<message>"`                                                                                  | Progress note in the feature's log                                     |
-| `azimuth note <T-ID\|F-ID> "<text>"`                                                                            | What a task taught, in the feature's notes.md (no reapproval)          |
-| `azimuth settle <S-ID> "<value>"`                                                                               | Fill a scenario's first `{?}` with the value a passing test proved     |
-| `azimuth as-built <F-ID>`                                                                                       | Draft as-built.md from the feature's commits (reruns keep the reasons) |
-| `azimuth verify <T-ID\|F-ID>`                                                                                   | Run verify commands and record the result                              |
-| `azimuth task finish <T-ID> --commit "<message>" [--note "<text>"] [--adopt <path,…>]`                          | Commit a task's files with `Refs:`, verify it and move it to done      |
-| `azimuth brief <T-ID>`                                                                                          | The prompt for a subagent building a task, from the records            |
-| `azimuth trace [F-ID]`                                                                                          | Scenario → test coverage                                               |
-| `azimuth session start --skill <name> --goal "…"` · `session note "…"` · `session handoff "<next steps>"`       | Record work: one session per Claude Code session, closed by the plugin |
+| Command                                                                                                     | Purpose                                                                |
+| ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `azimuth status --brief`                                                                                    | Project summary: what needs the user, work in flight, what's next      |
+| `azimuth show <ID> --brief`                                                                                 | One item with its gate, tasks, questions and recent log                |
+| `azimuth next [F-ID]`                                                                                       | Highest-priority unblocked work, or a feature's ready tasks            |
+| `azimuth check [ID…]`                                                                                       | Validate files; exit 1 on errors                                       |
+| `azimuth new feature "<title>" [--summary "…"] [--priority P0-P3] [--milestone M-NN]`                       | Capture an idea                                                        |
+| `azimuth new spec F-NNN`                                                                                    | Scaffold missing spec files from templates                             |
+| `azimuth new question "<question>" --feature F-NNN [--blocking] --option a="Label: detail" … --recommend a` | Ask the user instead of guessing                                       |
+| `azimuth new adr "<title>" [--links IDs]` · `azimuth new issue "<title>" --type bug\|debt\|risk`            | Record decisions and issues                                            |
+| `azimuth move <ID> <status> [--reason "…"] [--note "…"] [--by <ID>]`                                        | Gated status change for features, tasks, decisions, milestones, issues |
+| `azimuth reapprove F-NNN`                                                                                   | Approve a spec again after it changed                                  |
+| `azimuth resolve Q-NNNN --adr ADR-NNNN \| --assumption F-NNN`                                               | Record how an answer was applied                                       |
+| `azimuth log <ID> "<message>"`                                                                              | Progress note in the feature's log, or in an issue's Status notes      |
+| `azimuth note <T-ID\|F-ID> "<text>"`                                                                        | What a task taught, in the feature's notes.md (no reapproval)          |
+| `azimuth settle <S-ID> "<value>"`                                                                           | Fill a scenario's first `{?}` with the value a passing test proved     |
+| `azimuth as-built <F-ID>`                                                                                   | Draft as-built.md from the feature's commits (reruns keep the reasons) |
+| `azimuth verify <T-ID\|F-ID>`                                                                               | Run verify commands and record the result                              |
+| `azimuth task finish <T-ID> --commit "<message>" [--note "<text>"] [--adopt <path,…>]`                      | Commit a task's files with `Refs:`, verify it and move it to done      |
+| `azimuth brief <T-ID>`                                                                                      | The prompt for a subagent building a task, from the records            |
+| `azimuth trace [F-ID]`                                                                                      | Scenario → test coverage                                               |
+| `azimuth session start --skill <name> --goal "…"` · `session note "…"` · `session handoff "<next steps>"`   | Record work: one session per Claude Code session, closed by the plugin |

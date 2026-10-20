@@ -24,7 +24,12 @@ One viewer runs per project. `azimuth view` reuses it; `azimuth view --stop` sto
 running while any Claude Code session in the project is open (its Claude Code process runs and
 it hasn't ended), and otherwise exits by itself after two idle hours with no open page and no
 requests, or when `.azimuth/` disappears. If it stops during a session, your next prompt starts
-it again. A newer build replaces an older running viewer automatically.
+it again. A newer build replaces an older running viewer automatically, on the same port, so open
+pages reconnect: autostart waits up to a second for the old viewer to exit, and the replacement
+takes the next free port only if that one is still taken. A viewer that stopped without removing
+its record (a crash, a reboot) also comes back on the port it had. When `viewer.port` in
+config.yaml has changed since that viewer started, or its record is from an older build that
+didn't note it, the replacement starts at `viewer.port` (or the next free port) instead.
 
 ## Staying current
 

@@ -15,3 +15,7 @@ Not built in this task: the bundled server writes records without config_port un
 ### T-024.4 · 2026-10-20
 
 Docs (T-024.6): the section is a plain 'Across F-001, F-002:' line, then at most six groupLine lines (the next F-NNN form), then '… and <n> more' (ellipsis as in status --brief); it shows only when at least two in-progress features no question holds have ready tasks, after every item (high issues and the milestone item included). next --json stays an array.
+
+### T-024.6 · 2026-10-20
+
+The next skill and the build skill's delegating section don't mention the cross-feature groups yet (left to F-018's docs task, which edits that section). Only the start gate checks the approval; 'reapprove while in progress' is a convention the gates don't enforce.
