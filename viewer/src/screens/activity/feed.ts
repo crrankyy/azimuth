@@ -9,7 +9,11 @@ import type {
   Session,
   VerifyRun,
 } from "../../../../src/core/types";
+import type { ActivityData } from "./sessions";
 
+/** The kind chips: Sessions, Subagents, Commits, Verify runs, Your actions. */
+export type ActivityKind = "session" | "subagent" | "commit" | "run" | "action";
+/** Feed item kinds (unchanged). */
 export type FeedKind = "session" | "commit" | "run" | "action";
 
 interface Base {
@@ -28,13 +32,22 @@ export type FeedItem =
 /** "all", "untracked" (commits without refs) or a feature ID. */
 export type FeatureFilter = string;
 
+export type Period = "today" | "yesterday" | "earlier";
+
+export interface PeriodGroup {
+  period: Period;
+  /** "Today · Sunday, Oct 18" | "Yesterday · Saturday, Oct 17" | "Earlier" */
+  heading: string;
+  items: FeedItem[];
+}
+
 const unique = (ids: (string | null)[]) => [...new Set(ids.filter((x): x is string => !!x))];
 
 /**
  * Everything that happened, newest first. A session's commits are shown inside its SessionCard,
  * so only commits outside any known session get their own row.
  */
-export function buildFeed(index: Index): FeedItem[] {
+export function buildFeed(index: Index, _data: ActivityData): FeedItem[] {
   const sessionIds = new Set(index.sessions.map((s) => s.id));
   const items: FeedItem[] = [
     ...index.sessions.map((session) => ({
@@ -90,6 +103,11 @@ export function featureCounts(items: FeedItem[]): { id: string; count: number }[
   return [...counts]
     .map(([id, count]) => ({ id, count }))
     .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
+}
+
+/** Today and Yesterday by local day, everything older in Earlier; empty groups are left out. */
+export function byPeriod(_items: FeedItem[], _now: number): PeriodGroup[] {
+  return [];
 }
 
 /** Items grouped by local day, keeping the newest-first order. */

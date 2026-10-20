@@ -3,6 +3,7 @@ import type { Commit, Index, Session } from "../../../src/core/types";
 import { useIndexState } from "../data/IndexProvider";
 import { clock, duration, plural } from "../lib/format";
 import { Prose } from "../lib/markdown";
+import type { SessionThread } from "../screens/activity/thread";
 import { IdChip } from "./IdChip";
 import { FlagBadge, Tag } from "./primitives";
 import "./session-card.css";
@@ -58,14 +59,15 @@ export function SessionCard({
   session: s,
   expanded,
   onToggle,
-  live = false,
   flash = false,
 }: {
   session: Session;
+  /** Optional only while SessionCard.test.tsx renders cards without one (T-016.7 requires it). */
+  thread?: SessionThread;
   expanded: boolean;
   onToggle: () => void;
-  /** An agent is working in this session right now. */
-  live?: boolean;
+  /** Prefix the collapsed times with the date (the feed's Earlier group). */
+  dated?: boolean;
   flash?: boolean;
 }) {
   const { index } = useIndexState();
@@ -87,7 +89,6 @@ export function SessionCard({
       <span className="ses-kind">Session</span>
       <span className="az-mono ses-id">{s.id}</span>
       {s.skill && <Tag>{s.skill}</Tag>}
-      {live && <span className="az-live" role="img" aria-label="Live now" />}
     </>
   );
   const cls = `ses-card ${expanded ? "az-card expanded" : "collapsed"} ${flash ? "az-flash" : ""}`;

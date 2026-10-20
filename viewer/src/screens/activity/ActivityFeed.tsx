@@ -6,18 +6,27 @@ import { clock, dayHeading, plural, shortDuration } from "../../lib/format";
 import { inline } from "../../lib/markdown";
 import { routeForId } from "../../lib/router";
 import { byDay, type FeedItem } from "./feed";
+import type { ActivitySession } from "./sessions";
+import type { SessionThread } from "./thread";
 
 export interface FeedState {
   now: number;
   expanded: Set<string>;
   onToggle: (id: string) => void;
-  /** Session IDs with an agent working in them right now. */
-  liveSessions: Set<string>;
   changed: Set<string>;
+  /** Each persisted session's thread (sessionThreads), by SES ID. */
+  threads: Map<string, SessionThread>;
 }
 
 /** The project timeline, grouped by day: sessions, commits, verify runs and your actions. */
-export function ActivityFeed({ items, state }: { items: FeedItem[]; state: FeedState }) {
+export function ActivityFeed({
+  items,
+  state,
+}: {
+  items: FeedItem[];
+  cards: ActivitySession[];
+  state: FeedState;
+}) {
   return (
     <div className="feed">
       {byDay(items).map((group) => {
@@ -75,16 +84,20 @@ function Marker({ item, open }: { item: FeedItem; open: boolean }) {
 
 function FeedContent({ item, state }: { item: FeedItem; state: FeedState }) {
   switch (item.kind) {
-    case "session":
+    case "session": {
+      // sessionThreads has a thread for every persisted session, so this only guards the type.
+      const thread = state.threads.get(item.session.id);
+      if (!thread) return null;
       return (
         <SessionCard
           session={item.session}
+          thread={thread}
           expanded={state.expanded.has(item.session.id)}
           onToggle={() => state.onToggle(item.session.id)}
-          live={state.liveSessions.has(item.session.id)}
           flash={state.changed.has(item.session.id)}
         />
       );
+    }
     case "commit":
       return <CommitRow commit={item.commit} />;
     case "run":

@@ -2,7 +2,7 @@
 tasks:
   - id: T-016.1
     title: Scaffolding (types, signatures, live fixture)
-    status: todo
+    status: in-progress
     after: []
     covers: []
     files: [viewer/src/screens/activity/sessions.ts, viewer/src/screens/activity/timeline.ts, viewer/src/screens/activity/thread.ts, viewer/src/screens/activity/feed.ts, viewer/src/screens/activity/AgentTimeline.tsx, viewer/src/screens/activity/LiveCards.tsx, test/fixtures/live/timeline.ts, viewer/src/screens/activity/ActivityFeed.tsx, viewer/src/components/SessionCard.tsx, viewer/src/screens/Activity.tsx]

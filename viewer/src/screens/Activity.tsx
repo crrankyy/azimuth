@@ -6,17 +6,19 @@ import { featureById } from "../data/selectors";
 import { href, type Route } from "../lib/router";
 import { ActivityFeed } from "./activity/ActivityFeed";
 import {
-  activeLive,
   buildFeed,
   featureCounts,
   matchesFeature,
+  type ActivityKind,
   type FeatureFilter,
-  type FeedKind,
 } from "./activity/feed";
+import { liveCards } from "./activity/LiveCards";
 import { LiveStrip } from "./activity/LiveStrip";
+import { activityData } from "./activity/sessions";
+import { sessionThreads } from "./activity/thread";
 import "./activity/activity.css";
 
-const KINDS: { kind: FeedKind; label: string }[] = [
+const KINDS: { kind: ActivityKind; label: string }[] = [
   { kind: "session", label: "Sessions" },
   { kind: "commit", label: "Commits" },
   { kind: "run", label: "Verify runs" },
@@ -27,9 +29,10 @@ const sessionIdOf = (route: Route) => (route.id?.startsWith("SES-") ? route.id :
 
 export function ActivityScreen({ route }: { route: Route }) {
   const { index, now, changed } = useIndexState();
-  const feed = useMemo(() => (index ? buildFeed(index) : []), [index]);
+  const data = useMemo(() => (index ? activityData(index, now) : null), [index, now]);
+  const feed = useMemo(() => (index && data ? buildFeed(index, data) : []), [index, data]);
   const routed = sessionIdOf(route);
-  const [kinds, setKinds] = useState<Set<FeedKind>>(() => new Set(KINDS.map((k) => k.kind)));
+  const [kinds, setKinds] = useState<Set<ActivityKind>>(() => new Set(KINDS.map((k) => k.kind)));
   const [feature, setFeature] = useState<FeatureFilter>("all");
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const first = routed ?? feed.find((i) => i.kind === "session")?.key;
@@ -44,13 +47,13 @@ export function ActivityScreen({ route }: { route: Route }) {
   useEffect(() => {
     if (routed) document.getElementById(`ses-${routed}`)?.scrollIntoView({ block: "start" });
   }, [routed]);
-  if (!index) return null;
+  if (!index || !data) return null;
 
   const typed = feed.filter((i) => kinds.has(i.kind));
   const shown = typed.filter((i) => matchesFeature(i, feature));
   const untracked = typed.filter((i) => matchesFeature(i, "untracked")).length;
-  const liveSessions = new Set(activeLive(index.live, now).flatMap((s) => (s.ses ? [s.ses] : [])));
-  const toggleKind = (kind: FeedKind) =>
+  const threads = sessionThreads(index, data, { now, kinds });
+  const toggleKind = (kind: ActivityKind) =>
     setKinds((prev) => {
       const next = new Set(prev);
       if (!next.delete(kind)) next.add(kind);
@@ -84,7 +87,8 @@ export function ActivityScreen({ route }: { route: Route }) {
           {shown.length > 0 ? (
             <ActivityFeed
               items={shown}
-              state={{ now, expanded, onToggle: toggleSession, liveSessions, changed }}
+              cards={liveCards(data)}
+              state={{ now, expanded, onToggle: toggleSession, changed, threads }}
             />
           ) : (
             <EmptyState title={feed.length ? "Nothing matches these filters" : "No activity yet"}>
