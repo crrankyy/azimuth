@@ -23,7 +23,10 @@ claude plugin install azimuth@azimuth
 ```
 
 A plugin from a marketplace added by local path loads in place, so a new `pnpm build` takes effect
-when the next session starts, or in a running session after `/reload-plugins`. Then, in a repository you want to manage, run `/azimuth:init` in Claude Code (or
+when the next session starts, or in a running session after `/reload-plugins`. The same goes for
+installing or enabling the plugin: a session that was already running has no Azimuth hooks until
+you run `/reload-plugins` or start a new one, and `azimuth session start` and `azimuth doctor` say
+so when they run in such a session. Then, in a repository you want to manage, run `/azimuth:init` in Claude Code (or
 `azimuth init` in a terminal). To use `azimuth` in your own terminal, run `azimuth doctor
 --print-path` and follow it.
 
@@ -154,10 +157,11 @@ protocol tells the agent to stop and ask rather than edit statuses by hand. `ini
 
 ## Troubleshooting
 
-| Symptom                                    | Check                                                                                                         |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `azimuth: Node.js 20 or newer is required` | Install Node 20+, or set `AZIMUTH_NODE=/path/to/node`; delete `~/.cache/azimuth/node-path` after moving Node. |
-| `plugin/dist/cli.mjs is missing`           | Run `pnpm build` in the Azimuth clone.                                                                        |
-| No live activity in the viewer             | `azimuth doctor` (is the plugin installed and enabled; any hook errors?).                                     |
-| The viewer didn't start                    | `azimuth view` in a terminal shows the error; `viewer.autostart` may be `false` or `AZIMUTH_NO_VIEWER=1` set. |
-| An agent can't approve                     | `autonomy.approve_specs` is `manual`, or a gate check fails (`azimuth show F-NNN --brief`).                   |
+| Symptom                                                   | Check                                                                                                          |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `azimuth: Node.js 20 or newer is required`                | Install Node 20+, or set `AZIMUTH_NODE=/path/to/node`; delete `~/.cache/azimuth/node-path` after moving Node.  |
+| `plugin/dist/cli.mjs is missing`                          | Run `pnpm build` in the Azimuth clone.                                                                         |
+| No live activity in the viewer                            | `azimuth doctor` (is the plugin installed and enabled; any hook errors?).                                      |
+| `Azimuth's hooks haven't run in this Claude Code session` | The session started before the plugin was installed or enabled: run `/reload-plugins`, or start a new session. |
+| The viewer didn't start                                   | `azimuth view` in a terminal shows the error; `viewer.autostart` may be `false` or `AZIMUTH_NO_VIEWER=1` set.  |
+| An agent can't approve                                    | `autonomy.approve_specs` is `manual`, or a gate check fails (`azimuth show F-NNN --brief`).                    |

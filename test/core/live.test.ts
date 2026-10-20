@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   anySessionOpen,
   appendLive,
+  hooksRan,
   liveDir,
   liveFile,
   liveMetaFile,
@@ -453,5 +454,33 @@ describe("F-014 live sessions in the index", () => {
     const { tree } = withTranscripts();
     const meta = readLiveMeta(tree.root, "c1");
     expect(transcriptPathOf(meta, readLiveRecords(tree.root, "c1"), "../a1")).toBeNull();
+  });
+});
+
+describe("BUG-0080 whether hooks ran in a Claude Code session", () => {
+  const project = () => {
+    const tree = writeTree({ ".azimuth/config.yaml": MINIMAL_CONFIG });
+    cleanup = tree.cleanup;
+    return tree.root;
+  };
+
+  it("BUG-0080 says no for a log only azimuth session start wrote", () => {
+    const root = project();
+    expect(hooksRan(root, "c1")).toBe(false);
+    appendLive(root, "c1", { kind: "session", at: ago(2), ses: "SES-20261018-1000" });
+    updateLiveMeta(root, "c1", { ses: "SES-20261018-1000" });
+    expect(hooksRan(root, "c1")).toBe(false);
+  });
+
+  it("BUG-0080 counts only hook records at or after since", () => {
+    const root = project();
+    // A sidecar that SessionStart filled in long ago says nothing about the current process.
+    updateLiveMeta(root, "c1", { started_at: ago(30), ses: "SES-20261017-0600" });
+    appendLive(root, "c1", { kind: "prompt", at: ago(2) });
+    appendLive(root, "c1", { kind: "session", at: ago(0.5), ses: "SES-20261017-0600" });
+    expect(hooksRan(root, "c1")).toBe(true);
+    expect(hooksRan(root, "c1", NOW.getTime() - HOUR)).toBe(false);
+    appendLive(root, "c1", { kind: "start", at: ago(0.25), source: "resume" });
+    expect(hooksRan(root, "c1", NOW.getTime() - HOUR)).toBe(true);
   });
 });

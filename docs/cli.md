@@ -31,7 +31,9 @@ protocol, templates and the CLAUDE.md/AGENTS.md blocks.
 ### `azimuth doctor [--print-path]`
 
 Checks Node, the Claude Code plugin, validation errors, the CLAUDE.md import, hook activity and the
-viewer. `--print-path` prints an `ln -s` line that links `azimuth` into `~/.local/bin` (which must
+viewer. Inside Claude Code the hook check is about that session: it fails when Azimuth's hooks
+haven't run in it (it started before the plugin was enabled). Records that `azimuth session start`
+writes itself never count as hook activity. `--print-path` prints an `ln -s` line that links `azimuth` into `~/.local/bin` (which must
 be on your PATH).
 
 ## Read
@@ -298,7 +300,11 @@ session's Azimuth session is still open, it prints that session's ID again, adds
 `- HH:MM · <skill> · <goal>` (UTC) to its Goals section and adds `--touch` to its `touched`. It
 never reopens a closed session or changes the first `skill`, `goal` and `started_at`. Outside
 Claude Code every `session start` creates a session. The plugin closes the session when the Claude
-Code session ends, so agents don't run `session close`.
+Code session ends, so agents don't run `session close`. When the plugin's hooks haven't run in the
+Claude Code session (it started before the plugin was enabled), `session start` still prints the
+ID, then warns on stderr to run `/reload-plugins` or start a new session, and until then to end
+the session with `azimuth session close`: without hooks nothing closes the session or records the
+work.
 
 `session close --stale` closes each open session that started more than 12 hours ago and whose
 Claude Code session hasn't written to its live log in the last hour (or is unknown), ending it at

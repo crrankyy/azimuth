@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { appendLive } from "../../src/core/live";
 import { VERSION } from "../../src/core/version";
 import { readViewerRecord } from "../../src/server/registry";
 import { featureFiles } from "../helpers/project";
@@ -211,6 +212,24 @@ describe("azimuth CLI (through the launcher, without node on PATH)", () => {
     expect(json<{ handoff: string }>(["show", ses.out.trim()]).handoff).toBe(
       "Fix the triaged bug.",
     );
+  });
+
+  it("BUG-0080 warns when Azimuth's hooks haven't run in the Claude Code session", () => {
+    const claude = { CLAUDE_CODE_SESSION_ID: "claude-e2e-nohooks" };
+    const first = az(["session", "start", "--skill", "bug", "--goal", "Triage"], "agent", claude);
+    expect(first.code).toBe(0);
+    expect(first.out.trim()).toMatch(/^SES-\d{8}-\d{4}(-\d+)?$/);
+    expect(first.err).toContain("hooks haven't run in this Claude Code session");
+    expect(first.err).toContain("/reload-plugins");
+    appendLive(tree.root, "claude-e2e-nohooks", {
+      kind: "prompt",
+      at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+    });
+    const again = az(["session", "start", "--skill", "bug", "--goal", "Fix"], "agent", claude);
+    expect(again.code).toBe(0);
+    expect(again.err).not.toContain("/reload-plugins");
+    const outside = az(["session", "start", "--skill", "bug", "--goal", "Outside"], "you");
+    expect(outside.err).not.toContain("/reload-plugins");
   });
 
   it("reports hand-edited status as drift", () => {

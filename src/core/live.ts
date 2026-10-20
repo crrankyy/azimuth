@@ -191,6 +191,22 @@ export function updateLiveMeta(
   return next;
 }
 
+/**
+ * Whether Azimuth's hooks wrote to a Claude Code session's live log at or after `since` (ms; any
+ * time when omitted). The `session` records that `azimuth session start` writes itself don't
+ * count. Claude Code loads a plugin's hooks only when a session starts or on /reload-plugins, so
+ * a session that began before the plugin was enabled has none; in a session with hooks, the
+ * prompt or the last tool call wrote a record moments ago.
+ */
+export function hooksRan(root: string, claudeSession: string, since = -Infinity): boolean {
+  return readLiveRecords(root, claudeSession).some(
+    (r) => r.kind !== "session" && Date.parse(r.at) >= since,
+  );
+}
+
+export const HOOKS_MISSING =
+  "Azimuth's hooks haven't run in this Claude Code session (it probably started before the plugin was enabled), so prompts, tool calls and the session's end aren't recorded and the viewer isn't kept running. Run /reload-plugins in Claude Code, or start a new session; until hooks run, end the Azimuth session with `azimuth session close`.";
+
 /** Appends one event. A single short write with O_APPEND, so concurrent hooks don't interleave. */
 export function appendLive(root: string, claudeSession: string, record: LiveRecord): void {
   mkdirSync(liveDir(root), { recursive: true });

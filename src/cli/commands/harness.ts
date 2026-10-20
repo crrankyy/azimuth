@@ -11,7 +11,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildIndex } from "../../core/build-index";
 import { sharedCacheDir } from "../../core/lock";
-import { readLiveSessions } from "../../core/live";
+import { HOOKS_MISSING, hooksRan, readLiveSessions } from "../../core/live";
+import { ACTIVE_CLAUDE_MS, claudeSessionFromEnv } from "../../core/session";
 import { findProjectRoot } from "../../core/paths";
 import { VERSION } from "../../core/version";
 import { HOOKS, type HookInput } from "../../hooks/handlers";
@@ -131,6 +132,27 @@ export function pluginCheck(listJson: string): { ok: boolean | null; text: strin
   };
 }
 
+/**
+ * Whether hooks run: in the given Claude Code session (a hook record within ACTIVE_CLAUDE_MS), or
+ * (outside Claude Code) in any recent one. Records that `azimuth session start` writes itself
+ * don't count.
+ */
+export function hooksCheck(
+  root: string,
+  claudeSession: string | null,
+  now = new Date(),
+): { ok: boolean | null; text: string } {
+  if (claudeSession) {
+    return hooksRan(root, claudeSession, now.getTime() - ACTIVE_CLAUDE_MS)
+      ? { ok: true, text: "Hooks are running in this Claude Code session" }
+      : { ok: false, text: HOOKS_MISSING };
+  }
+  const recording = readLiveSessions(root).filter((s) => hooksRan(root, s.claude_session));
+  return recording.length > 0
+    ? { ok: true, text: `Hooks are recording (last activity ${recording[0]?.last_seen_at})` }
+    : { ok: null, text: "No hook activity yet (start a Claude Code session here)" };
+}
+
 export const doctor: Command = {
   usage: "doctor [--print-path]",
   summary: "Check that Node, the plugin, hooks and the viewer are wired up",
@@ -176,13 +198,8 @@ export const doctor: Command = {
       ? readFileSync(join(root, "CLAUDE.md"), "utf8")
       : "";
     line(claudeMd.includes("@.azimuth/PROTOCOL.md"), "CLAUDE.md imports the Azimuth protocol");
-    const live = readLiveSessions(root);
-    line(
-      live.length > 0 ? true : null,
-      live.length > 0
-        ? `Hooks are recording (last activity ${live[0]?.last_seen_at})`
-        : "No hook activity yet (start a Claude Code session here)",
-    );
+    const hooks = hooksCheck(root, claudeSessionFromEnv(process.env));
+    line(hooks.ok, hooks.text);
     const url = viewerUrl(root);
     line(url ? true : null, url ? `Viewer running at ${url}` : "Viewer not running (azimuth view)");
     const hookLog = join(sharedCacheDir(root), "hooks.log");

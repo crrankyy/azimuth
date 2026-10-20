@@ -2,7 +2,9 @@ import { constants } from "node:os";
 import { autostartEnabled, recordSessionAfterInit } from "../../hooks/handlers";
 import { ensureViewer } from "../../server/autostart";
 import { initProject } from "../../core/init";
+import { HOOKS_MISSING, hooksRan } from "../../core/live";
 import {
+  ACTIVE_CLAUDE_MS,
   appendNote,
   claudeSessionFromEnv,
   closeSession,
@@ -68,15 +70,19 @@ export const session: Command = {
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean);
+        const claudeSession = claudeSessionFromEnv(process.env);
         const ses = startSession(rt.root, {
           skill: (values.skill as string | undefined) ?? null,
           goal,
           touched,
           agent: process.env.AZIMUTH_AGENT,
-          claudeSession: claudeSessionFromEnv(process.env),
+          claudeSession,
         });
         if (rt.json) printJson({ id: ses });
         else print(ses);
+        // Every unit of work starts here, so a session without hooks is caught at its first step.
+        if (claudeSession && !hooksRan(rt.root, claudeSession, Date.now() - ACTIVE_CLAUDE_MS))
+          process.stderr.write(`${HOOKS_MISSING}\n`);
         return;
       }
       case "note": {
