@@ -105,6 +105,34 @@ export function taskGroups(index: Index, f: Feature): TaskGroup[] {
 const byPriority = (a: Feature, b: Feature) =>
   PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority) || a.id.localeCompare(b.id);
 
+/** Ready tasks of several in-progress features, grouped like a feature's own (TaskGroup). */
+export interface CrossFeatureGroups {
+  /** The features whose ready tasks were grouped, in the order their tasks were taken. */
+  features: Id[];
+  /** parallelGroups over those tasks, with index.project.shared_files. */
+  groups: TaskGroup[];
+}
+
+/**
+ * The groups of the ready tasks of every in-progress feature that no open blocking question
+ * holds, features in nextWork's order (priority, then ID), each feature's tasks in readyTasks
+ * order, in one parallelGroups call. Null unless at least two features have a ready task.
+ */
+export function crossFeatureGroups(index: Index): CrossFeatureGroups | null {
+  // nextWork skips a feature held by a question, so its tasks aren't offered as ready either.
+  const features = index.features
+    .filter(
+      (f) => f.status === "in-progress" && !f.derived.blocked_by.some((b) => b.kind === "question"),
+    )
+    .sort(byPriority)
+    .filter((f) => readyTasks(f).length > 0);
+  if (features.length < 2) return null;
+  return {
+    features: features.map((f) => f.id),
+    groups: parallelGroups(features.flatMap(readyTasks), index.project.shared_files),
+  };
+}
+
 function failingChecks(f: Feature): string {
   return (f.derived.next_gate?.checks ?? [])
     .filter((c) => !c.ok)

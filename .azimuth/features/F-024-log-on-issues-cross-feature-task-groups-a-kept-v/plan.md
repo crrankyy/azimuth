@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-024.2
     title: The reapprove refusal in verifying (red → green)
-    status: in-progress
+    status: done
     after: [T-024.1]
     covers: [S-024.2.1, S-024.2.2, S-024.2.3]
     files: [src/core/transitions.ts, test/core/transitions.test.ts]

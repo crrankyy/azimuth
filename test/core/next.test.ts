@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
-import { parallelGroups, taskGroups } from "../../src/core/next";
+import { createQuestion } from "../../src/core/create";
+import { crossFeatureGroups, parallelGroups, taskGroups } from "../../src/core/next";
 import type { Feature, Task } from "../../src/core/types";
 import { featureFiles, type FeatureSpec } from "../helpers/project";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
@@ -26,6 +27,14 @@ function builtFeature(spec: FeatureSpec) {
   cleanup = tree.cleanup;
   const { index } = buildIndex(tree.root);
   return { index, f: index.features.find((x) => x.id === "F-001") as Feature };
+}
+
+/** The features written as one project, removed after the test. */
+function project(specs: FeatureSpec[]): string {
+  const files = Object.assign({}, ...specs.map(featureFiles)) as Record<string, string>;
+  const tree = writeTree({ ".azimuth/config.yaml": MINIMAL_CONFIG, ...files });
+  cleanup = tree.cleanup;
+  return tree.root;
 }
 
 describe("parallelGroups", () => {
@@ -103,5 +112,75 @@ describe("taskGroups", () => {
       ],
     });
     expect(taskGroups(index, f)).toEqual([]);
+  });
+});
+
+describe("crossFeatureGroups", () => {
+  it("S-024.3.1 groups two features' ready tasks, the higher priority's first", () => {
+    const root = project([
+      {
+        id: "F-001",
+        status: "in-progress",
+        extra: { priority: "P2" },
+        tasks: [
+          { id: "T-001.2", files: ["src/a.ts"] },
+          { id: "T-001.3", status: "in-progress", files: ["src/c.ts"] },
+        ],
+      },
+      {
+        id: "F-002",
+        status: "in-progress",
+        extra: { priority: "P0" },
+        tasks: [{ id: "T-002.1", files: ["src/a.ts"] }],
+      },
+    ]);
+    expect(crossFeatureGroups(buildIndex(root).index)).toEqual({
+      features: ["F-002", "F-001"],
+      groups: [
+        { tasks: ["T-002.1", "T-001.3"], shared: [] },
+        { tasks: ["T-001.2"], shared: [] },
+      ],
+    });
+  });
+
+  it("S-024.3.2 gives no cross-feature groups when only one feature has ready tasks", () => {
+    const root = project([
+      {
+        id: "F-001",
+        status: "in-progress",
+        tasks: [
+          { id: "T-001.2", files: ["src/a.ts"] },
+          { id: "T-001.3", files: ["src/b.ts"] },
+        ],
+      },
+      {
+        id: "F-002",
+        status: "in-progress",
+        tasks: [{ id: "T-002.1", status: "blocked", note: "Waiting on the user" }],
+      },
+      { id: "F-003", status: "approved", tasks: [{ id: "T-003.1", files: ["src/c.ts"] }] },
+    ]);
+    expect(crossFeatureGroups(buildIndex(root).index)).toBeNull();
+  });
+
+  it("S-024.3.3 leaves out a feature an open blocking question holds", () => {
+    const root = project([
+      { id: "F-001", status: "in-progress", tasks: [{ id: "T-001.1", files: ["src/a.ts"] }] },
+      { id: "F-002", status: "in-progress", tasks: [{ id: "T-002.1", files: ["src/b.ts"] }] },
+      { id: "F-003", status: "in-progress", tasks: [{ id: "T-003.1", files: ["src/c.ts"] }] },
+    ]);
+    createQuestion(
+      root,
+      { title: "Which?", feature: "F-002", blocking: true },
+      { actor: "agent", session: null },
+    );
+    const { index } = buildIndex(root);
+    expect(index.features.find((f) => f.id === "F-002")?.derived.blocked_by).toEqual([
+      { kind: "question", id: "Q-0001" },
+    ]);
+    expect(crossFeatureGroups(index)).toEqual({
+      features: ["F-001", "F-003"],
+      groups: [{ tasks: ["T-001.1", "T-003.1"], shared: [] }],
+    });
   });
 });
