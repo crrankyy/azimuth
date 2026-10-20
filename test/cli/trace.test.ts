@@ -78,6 +78,7 @@ describe("trace hides mention-only references", () => {
         name: "// S-001.1.2 waits for the bank stub.",
         status: "not-run",
         confidence: "fallback",
+        committed: true,
       },
     ]);
   });

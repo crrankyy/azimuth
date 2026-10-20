@@ -257,6 +257,8 @@ export interface ScenarioTest {
   name: string;
   status: CoverageStatus;
   confidence: "marker" | "fallback";
+  /** False when the test is only in the working tree; the done gate doesn't count it. */
+  committed: boolean;
 }
 
 export interface Scenario {

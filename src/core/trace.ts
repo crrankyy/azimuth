@@ -137,3 +137,18 @@ export function traceTests(root: string, globs: string[]): Map<string, TestRef[]
   }
   return out;
 }
+
+/**
+ * `tests` with `committed` set on every ref, as a new map of new ref objects: `tests` and its
+ * refs sit in traceTests' scan cache, so they are never mutated.
+ */
+export function markCommitted(
+  _root: string,
+  tests: Map<string, TestRef[]>,
+  _changed: readonly string[] | null,
+): Map<string, TestRef[]> {
+  // Nothing is compared with HEAD yet, so every ref counts as committed, as it does without git.
+  return new Map(
+    [...tests].map(([id, refs]) => [id, refs.map((r) => ({ ...r, committed: true }))]),
+  );
+}

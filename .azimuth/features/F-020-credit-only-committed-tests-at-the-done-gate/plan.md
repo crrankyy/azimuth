@@ -2,7 +2,7 @@
 tasks:
   - id: T-020.1
     title: The committed field in the facts, the index and the fixtures that describe it
-    status: todo
+    status: in-progress
     after: []
     covers: []
     files: [src/core/facts.ts, src/core/types.ts, src/core/derive.ts, src/core/git.ts, src/core/trace.ts, test/fixtures/hookline/expected-index.ts, test/cli/trace.test.ts]

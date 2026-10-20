@@ -51,7 +51,13 @@ export function coverageOf(
   const status = runStatus.get(scenarioId) ?? "not-run";
   return {
     status,
-    tests: refs.map((t) => ({ file: t.file, name: t.name, status, confidence: t.confidence })),
+    tests: refs.map((t) => ({
+      file: t.file,
+      name: t.name,
+      status,
+      confidence: t.confidence,
+      committed: t.committed !== false,
+    })),
   };
 }
 

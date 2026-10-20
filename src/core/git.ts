@@ -184,6 +184,7 @@ export function gitFacts(root: string, model: Model): GitFacts {
     branch: branch === "HEAD" ? null : branch,
     head,
     dirty: status !== null && status.trim() !== "",
+    changed: [],
     commits,
     files,
     headSpecHash,

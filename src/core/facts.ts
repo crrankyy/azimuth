@@ -9,6 +9,13 @@ export interface GitFacts {
   branch: string | null;
   head: Sha | null;
   dirty: boolean;
+  /**
+   * Every path `git status --porcelain -z --untracked-files=all` names, sorted and unique:
+   * modified, added, deleted and unmerged files, untracked files (each file of an untracked
+   * directory) and a rename's or copy's new path. Relative to the repository root. [] without
+   * git or when the status call fails.
+   */
+  changed: string[];
   /** Newest first. */
   commits: Commit[];
   /** Files changed per commit SHA. */
@@ -25,6 +32,13 @@ export interface TestRef {
   file: string;
   name: string;
   confidence: "marker" | "fallback";
+  /**
+   * False when the reference is only in the working tree: its file is in GitFacts.changed and
+   * HEAD's copy of the file has no reference with the same scenario ID and name. markCommitted
+   * sets it on every ref; scanTestFile and traceTests leave it out, and a ref without it counts
+   * as committed.
+   */
+  committed?: boolean;
 }
 
 export interface Facts {
@@ -47,6 +61,7 @@ export function emptyGitFacts(): GitFacts {
     branch: null,
     head: null,
     dirty: false,
+    changed: [],
     commits: [],
     files: new Map(),
     headSpecHash: new Map(),

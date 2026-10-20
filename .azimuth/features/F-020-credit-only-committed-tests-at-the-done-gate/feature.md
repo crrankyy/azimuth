@@ -2,7 +2,7 @@
 id: F-020
 title: Credit only committed tests at the done gate
 summary: A test whose scenario marker is only in the working tree is marked uncommitted in trace and the viewer, and the done gate doesn't count it.
-status: approved
+status: in-progress
 priority: P0
 size: M
 mode: brownfield

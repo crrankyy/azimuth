@@ -578,7 +578,8 @@ export const expectedIndex = {
                       "file": "src/retry/backoff.test.ts",
                       "name": "S-005.1.1 retries a 503 with exponential backoff",
                       "status": "passing",
-                      "confidence": "marker"
+                      "confidence": "marker",
+                      "committed": true
                     }
                   ]
                 }
@@ -597,7 +598,8 @@ export const expectedIndex = {
                       "file": "src/retry/classify.test.ts",
                       "name": "S-005.1.2 does not retry a 400",
                       "status": "passing",
-                      "confidence": "marker"
+                      "confidence": "marker",
+                      "committed": true
                     }
                   ]
                 }
@@ -616,7 +618,8 @@ export const expectedIndex = {
                       "file": "src/retry/backoff.test.ts",
                       "name": "S-005.1.3 honours Retry-After",
                       "status": "passing",
-                      "confidence": "marker"
+                      "confidence": "marker",
+                      "committed": true
                     }
                   ]
                 }
@@ -635,7 +638,8 @@ export const expectedIndex = {
                       "file": "src/retry/backoff.test.ts",
                       "name": "S-005.1.4 caps Retry-After at maxDelay",
                       "status": "passing",
-                      "confidence": "marker"
+                      "confidence": "marker",
+                      "committed": true
                     }
                   ]
                 }
@@ -661,7 +665,8 @@ export const expectedIndex = {
                       "file": "src/retry/policy.test.ts",
                       "name": "S-005.2.1 marks delivery exhausted after maxAttempts",
                       "status": "failing",
-                      "confidence": "marker"
+                      "confidence": "marker",
+                      "committed": true
                     }
                   ]
                 }
