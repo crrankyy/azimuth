@@ -57,7 +57,7 @@ your own git configuration can't affect results.
 
 ## Releasing
 
-v0.1 is installed from a local clone (see [getting started](getting-started.md)); the build
+v0.2 is installed from a local clone (see [getting started](getting-started.md)); the build
 output (`plugin/dist/`) isn't committed. Bump `version` in `package.json`, `src/core/version.ts`
 and `plugin/.claude-plugin/plugin.json` together (a test checks that the first two match); a
 running viewer from an older version is replaced automatically.
