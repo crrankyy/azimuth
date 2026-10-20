@@ -28,6 +28,19 @@ stale_after_days: 5
 verify:
   timeout_seconds: 600
   output_tail_lines: 40
+  # Docs no code or test reads. docs/cli.md, concepts.md and file-format.md are bundled into the
+  # CLI (`azimuth docs`), so they stay out.
+  ignore_paths:
+    - README.md
+    - CHANGELOG.md
+    - CLAUDE.md
+    - AGENTS.md
+    - docs/README.md
+    - docs/architecture.md
+    - docs/claude-code.md
+    - docs/development.md
+    - docs/getting-started.md
+    - docs/viewer.md
 viewer:
   port: 4319
   autostart: true # Claude Code sessions start the viewer automatically
