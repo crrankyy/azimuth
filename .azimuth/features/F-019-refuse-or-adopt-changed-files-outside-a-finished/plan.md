@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-019.4
     title: task finish --adopt, the split lines and the warning on the command line (red → green)
-    status: in-progress
+    status: done
     after: [T-019.3]
     covers: [S-019.5.1, S-019.5.2, S-019.5.3, S-019.5.4, S-019.5.5]
     files: [src/cli/commands/task.ts, test/cli/task.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-019.5
     title: CLI docs, build and azimuth skills, and full verification
-    status: todo
+    status: in-progress
     after: [T-019.4]
     covers: []
     files: [docs/cli.md, plugin/skills/build/SKILL.md, plugin/skills/azimuth/SKILL.md]

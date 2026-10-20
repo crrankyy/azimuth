@@ -37,9 +37,21 @@ Target: $ARGUMENTS
       and moves the task to done with the result in its log. It prints one line per step and
       stops at the first ✗: fix the cause and run it again, without `--note` when the note step
       already ran. After a failed verify the commit stays and the task stays in progress; the
-      fix goes in the next finish's commit. `not staged:` lists changed files it left out.
+      fix goes in the next finish's commit.
       Don't build by hand first: a build every verify command needs belongs in
       `verify.prebuild`, which each finish runs once, under its own timeout.
+      - **A refused file.** The check refuses a changed file outside the task's `files` that
+        adds a marker for a scenario the task covers, or that is an `impact.md` path no
+        in-progress task lists; each output line names one file and why. Find whose lane changed
+        it. This task's: run finish again with `--adopt <path,…>`, which adds the paths to the
+        task's `files` in plan.md and commits them, with no reapprove; `--adopt` may stay on
+        later reruns. Another task's: finish that task first, with `--adopt` if it doesn't list
+        the file yet. Nobody's: commit or revert it. Adopt only what this task's lane changed.
+      - **What stayed out.** `not staged:` lists changed files no in-progress task lists: no
+        task in flight will commit them, so check each one. The lines
+        `not staged, other in-progress tasks:` and `not staged, records:` are expected. A
+        `warning:` line says the commit carries another lane's unfinished insertion in a shared
+        file and may not build on its own; it fails nothing.
    5. Every few significant steps in a long task, add
       `azimuth log <T-ID> "<what changed, what's next>"` so the viewer shows progress (and
       `azimuth session note "<progress>"` for the session's own record). Record what the task
@@ -91,5 +103,7 @@ recorded in yours.
   change and run `azimuth task finish` (step 4.4) for its tasks one after another, never in
   parallel. Each commits only its task's files and the feature's records. A shared file is
   staged whole, so the first finished task that lists it commits it with every task's
-  insertions, and the next task's commit no longer sees it changed. Fix a task whose finish
-  failed and finish it again.
+  insertions, and the next task's commit no longer sees it changed; finish's `warning:` line
+  flags that commit and fails nothing. When finish refuses a file, the subagents' reports of the
+  files they changed say whose lane changed it: finish that lane's task with `--adopt` (step
+  4.4). Fix a task whose finish failed and finish it again.

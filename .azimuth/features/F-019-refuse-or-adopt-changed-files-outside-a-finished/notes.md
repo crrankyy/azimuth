@@ -15,3 +15,7 @@ T-019.4: pass --adopt to finishTask as adopt: string[] after splitting on commas
 ### T-019.4 · 2026-10-20
 
 Docs (T-019.5): --adopt takes one comma-separated value (parseArgs keeps only the last when the flag repeats), so document it as comma-separated, not repeatable. --adopt ./ passes the CLI's empty check and core then reduces it to nothing, so finish runs with no adopt step: don't promise a usage error for it. runCli runs main() from the sources in-process, so CLI tests need no build.
+
+### T-019.5 · 2026-10-20
+
+The marker rule ignores other tasks: a test another in-progress task lists can be refused here and --adopt refuses it too, so finish that task first (the docs say so; the refusal message doesn't hint at it).

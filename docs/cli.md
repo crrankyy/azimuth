@@ -202,36 +202,103 @@ scenario ID or function name too. `$AZIMUTH_TASK` holds the task ID.
 
 ## Finish a task
 
-`azimuth task finish <T-ID> --commit "<message>" [--note "<text>"] [--json]` commits a task,
-verifies it and moves it to done in one call. It runs these steps in order and stops at the first
-that fails:
+`azimuth task finish <T-ID> --commit "<message>" [--note "<text>"] [--adopt <path,…>] [--json]`
+commits a task, verifies it and moves it to done in one call. It runs these steps in order and
+stops at the first that fails:
 
 1. **check** reads only: the project is a git repository, the feature and the task exist and are
    both in progress, the task has a verify command, the feature has no errors (counted as
-   `azimuth check <F-ID>` counts them; warnings don't stop it), and nothing is already staged
-   outside the paths the stage step would stage. A failed check changes nothing.
-2. **note**, with `--note` only, adds the text to the feature's `notes.md` as `azimuth note` does,
+   `azimuth check <F-ID>` counts them; warnings don't stop it), every `--adopt` path can be
+   adopted, nothing is already staged outside the paths the stage step would stage, and no
+   changed file outside the task's `files` needs a decision (below). A failed check changes
+   nothing.
+2. **adopt**, with `--adopt` only, adds the paths to the task's `files` in `plan.md` (below), so
+   they are staged with the rest.
+3. **note**, with `--note` only, adds the text to the feature's `notes.md` as `azimuth note` does,
    so it goes into the commit.
-3. **stage** runs `git add` on the changed paths (modified, added, deleted, renamed and untracked;
+4. **stage** runs `git add` on the changed paths (modified, added, deleted, renamed and untracked;
    never ignored ones) that are one of the task's `files` or lie under one, and on the changed
    records under the feature's folder. Every other changed path is left out and listed as
-   `not staged`. It fails when there is nothing to stage.
-4. **commit** makes one commit of exactly the staged paths. Hooks run; finish never passes
+   `not staged` (below). It fails when there is nothing to stage.
+5. **commit** makes one commit of exactly the staged paths. Hooks run; finish never passes
    `--no-verify`, amends, pushes or makes a second commit.
-5. **verify** runs `verify.prebuild` and the task's verify command and records the run, as
+6. **verify** runs `verify.prebuild` and the task's verify command and records the run, as
    `azimuth verify <T-ID>` does, waiting for another running verify first.
-6. **done** moves the task to done when the run passed. The move's log entry carries the result:
+7. **done** moves the task to done when the run passed. The move's log entry carries the result:
    `T-005.4: in-progress → done. Committed 1a2b3c4; R-0142 passed.`
-7. **log**: after a failed run or prebuild, a log note records the result instead:
+8. **log**: after a failed run or prebuild, a log note records the result instead:
    `T-005.4: Committed 1a2b3c4; R-0142 failed (exit 1).`
 
 The move and its log entry are written after the commit and stay uncommitted; the next
 `task finish` in the feature commits them with its records, and close-out commits the last ones.
 They change only `.azimuth/`, so they never make the run stale.
 
+The check refuses a changed path, untracked ones included, that lies outside the task's `files`
+and outside the feature's folder when one of two rules holds:
+
+- **Marker:** it matches `tests.globs`, and its working copy holds a marker for a scenario the
+  task covers that HEAD's copy doesn't hold. A marker is a test name starting with the scenario
+  ID, a `// scenario:` comment or `@pytest.mark.scenario`; a mere mention of the ID doesn't count.
+  A deleted file holds no markers. An untracked file, or the new path of a rename, has no copy at
+  HEAD, so all its markers are new.
+- **Impact:** it is a `create`, `modify` or `test` path of the feature's `impact.md`, or lies
+  under one, and no other in-progress task, of any feature, lists it.
+
+The `✗ check:` line names the files and how to proceed. Its output has one line per file, sorted
+by path, with the reason; a file both rules refuse shows the marker reason:
+
+```
+$ azimuth task finish T-005.4 --commit "feat(F-005): count files"
+✗ check: Changed outside T-005.4's files: src/format.ts, test/cli.test.ts. Adopt each into the task whose lane changed it (task finish <T-ID> --adopt <path,…>), or commit or revert it.
+    src/format.ts: a modify path in F-005's impact.md that no in-progress task lists
+    test/cli.test.ts: adds a marker for S-005.4.2, which T-005.4 covers
+- stage: not run
+- commit: not run
+- verify: not run
+- done: not run
+- log: not run
+
+$ azimuth task finish T-005.4 --commit "feat(F-005): count files" --adopt test/cli.test.ts,src/format.ts
+✓ check: F-005 has no errors
+✓ adopt: added to T-005.4's files: test/cli.test.ts, src/format.ts
+✓ stage: .azimuth/features/F-005-counts/plan.md, src/count.ts, src/format.ts, test/cli.test.ts, test/count.test.ts
+✓ commit: 1a2b3c4 feat(F-005): count files
+✓ verify: R-0142 passed in 1.2s
+✓ done: T-005.4: in-progress → done
+✓ log: Committed 1a2b3c4; R-0142 passed.
+```
+
+Several new markers read `adds markers for S-005.4.1, S-005.4.2, which T-005.4 covers`. For each
+file, find whose lane changed it. When it is this task's, run finish again with `--adopt`. When
+it is another task's, finish that task first, with `--adopt` if it doesn't list the file yet, so
+that its commit takes the file. Otherwise commit or revert the file yourself. A changed file that
+neither rule refuses doesn't stop the check; the stage step leaves it out and lists it as not
+staged.
+
+`--adopt` takes one comma-separated list of repository-relative paths, as `git status --porcelain`
+prints them; given twice, only the last list counts. Each path is trimmed and loses a leading `./`
+and a trailing `/`, and a path given twice counts once. A path that is already the task's (listed,
+under a listed directory, or in the feature's folder) is accepted whether or not it changed. Any
+other path must be exactly a path `git status` lists, so a directory is refused and can't sweep in
+another lane's files. The check refuses an invalid path with one of these sentences, one per path
+in the order given:
+
+- `Can't adopt src/other.ts: git status shows no change to it.`
+- `Can't adopt src/parse.ts: T-006.1 lists it and is in progress, so it goes in T-006.1's commit.`
+  It names the first such task, by feature ID and then plan order.
+
+The adopt step then appends the paths the task doesn't list yet to its `files` in `plan.md`, in
+the order given. It never removes or reorders an entry, and never changes another task or field.
+`plan.md` isn't part of the [spec hash](file-format.md#spec-hash), so adopting never makes the
+approval stale and needs no `reapprove`; the stage step commits `plan.md` with the feature's
+records. The step prints `added to T-005.4's files: <paths>`, naming the paths it wrote, or
+`already T-005.4's files: <paths>`, naming every adopted path, when it had nothing to write. It
+writes no log entry: the commit shows the change.
+
 A file that two tasks list, such as a [shared file](concepts.md#parallel-tasks-and-shared-files),
 is staged whole: the first task finished commits it with every task's insertions, and the next
-task's commit no longer sees it changed.
+task's commit no longer sees it changed. For a shared file that another in-progress task lists,
+finish prints a warning (below).
 
 The message gets a `Refs: <T-ID>` trailer unless a line after its first already starts with
 `Refs:` (any case); that message is kept as written. When the message has more than one
@@ -240,16 +307,29 @@ becomes the first line of that paragraph, so git still reads them all as trailer
 is added as a new last paragraph. Trailing whitespace is removed.
 
 finish prints one line per step: `✓` for a step that ran, `✗` for the one that failed, followed
-by its output indented four spaces (the feature's errors, git's output with the hooks', or the
-run's output tail), and `- <step>: not run` for the steps that didn't run. `not staged:` follows
-the stage step when it left paths out:
+by its output indented four spaces (the feature's errors, the refused files, git's output with
+the hooks', or the run's output tail), and `- <step>: not run` for the steps that didn't run.
+The changed paths the stage step left out follow it, by owner, each line only when it has paths:
+
+- `not staged:` files no in-progress task lists. Look at each: no task in flight will commit it.
+- `not staged, other in-progress tasks:` files another in-progress task lists; its finish
+  commits them.
+- `not staged, records:` paths under `.azimuth/`, such as another feature's log or a session.
+
+Then comes a `warning:` line for each staged path that matches `parallel.shared_files` and that
+another in-progress task also lists: the commit carries that task's unfinished insertion and may
+not build on its own. Several tasks read `T-005.3's and T-006.1's`. The warning never fails a step
+or changes the exit code.
 
 ```
 $ azimuth task finish T-005.4 --commit "feat(F-005): count files" --note "Counts the BOM."
 ✓ check: F-005 has no errors
 ✓ note: T-005.4: note added
-✓ stage: .azimuth/features/F-005-counts/notes.md, src/count.ts, test/count.test.ts
+✓ stage: .azimuth/features/F-005-counts/notes.md, src/count.ts, src/registry.ts, test/count.test.ts
   not staged: src/other.ts
+  not staged, other in-progress tasks: src/parse.ts
+  not staged, records: .azimuth/features/F-006-parse/log.md
+  warning: src/registry.ts carries T-006.1's work in progress; this commit may not build on its own.
 ✓ commit: 1a2b3c4 feat(F-005): count files
 ✓ verify: R-0142 passed in 1.2s
 ✓ done: T-005.4: in-progress → done
@@ -266,18 +346,25 @@ $ azimuth task finish T-005.4 --commit "feat(F-005): count files"
 ```
 
 `--json` prints only the result, whatever the outcome: `{task, feature, ok, steps, staged,
-not_staged, commit, run, interrupted}`, where each step is `{step, status, detail, output}` and
-`status` is `done`, `failed` or `not-run`. A failed git step shows the last
-`verify.output_tail_lines` lines of git's output. Unless the check failed, the feature and the
+not_staged, commit, run, interrupted, not_staged_outside, not_staged_other_tasks,
+not_staged_records, shared}`, where each step is `{step, status, detail, output}` and `status` is
+`done`, `failed` or `not-run`. `steps` holds `adopt` only with `--adopt` and `note` only with
+`--note`. `not_staged` lists every path left out, and the three `not_staged_…` lists split it as
+the three lines do. `shared` holds the warnings as `{path, tasks}`. A failed git step shows the
+last `verify.output_tail_lines` lines of git's output. Unless the check failed, the feature and the
 task are added to the current session's `touched` list.
 
 It exits 0 when the task is done and 1 when a step failed. Usage errors exit 2 and change nothing:
-no `--commit` or a blank one, an ID that isn't a task ID, an action other than `finish`, or no
-project. Ctrl-C or SIGTERM during the verify step kills the running command as in
-`azimuth verify`: no run is recorded, nothing is logged, the commit stays and finish exits 130 or 143.
+no `--commit` or a blank one, an ID that isn't a task ID, an action other than `finish`, an
+`--adopt` that names no path once split at commas and trimmed
+(`task finish --adopt needs a path: --adopt <path,…>.`), or no project. Ctrl-C or SIGTERM during
+the verify step kills the running command as in `azimuth verify`: no run is recorded, nothing is
+logged, the commit stays and finish exits 130 or 143.
 
 To rerun after a failure, fix what the `✗` line names and run `task finish` again; leave out
-`--note` when the note step already ran, since the note stays in `notes.md`. After a failed
+`--note` when the note step already ran, since the note stays in `notes.md`. `--adopt` may stay:
+once the adopt step ran, the paths are the task's files even when a later step failed, so the
+check accepts them and the adopt step writes nothing. After a failed
 commit the paths stay staged. After a failed verify the commit stays and the task stays in
 progress: the next finish commits the fix with the failure's log entry and verifies again. When
 the failure lay outside the task (another lane's broken file) and nothing is left to stage, the
