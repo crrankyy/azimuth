@@ -58,7 +58,7 @@ tasks:
     note: null
   - id: T-016.8
     title: Feed periods and what threads and cards take over (red → green)
-    status: in-progress
+    status: done
     after: [T-016.2]
     covers: [S-016.7.1, S-016.7.2]
     files: [viewer/src/screens/activity/feed.ts, viewer/src/screens/activity/feed.test.ts]
