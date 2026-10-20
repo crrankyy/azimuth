@@ -4,19 +4,19 @@ Written 2026-10-20 by the orchestrating session (Claude Fable 5.1) for the lead 
 
 ## 1. What was built
 
-| Measure | 0.2 run (this session) | 0.1 run (2026-10-19, for scale) |
-|---|---|---|
-| Wall clock, first to last commit | 19:33 to 21:35 (2.0 h; ~2.6 h including the bug investigation) | 21.5 h |
-| Features done | 4 (F-049, F-050, F-055, F-056: 14 tasks, 47 scenarios) | 44 (185 tasks) |
-| Specs written and approved | 2 (F-065 export, 21 scenarios; F-072 perf acceptance, 12 scenarios) | 73 |
-| Bugs fixed | 1 critical (BUG-0005, SIGSEGV on Touch Bar Macs) | — |
-| Commits | 42 (14 feat, 1 fix, 1 test, 16 docs, 10 chore) | 528 (169 feat, 333 docs/chore) |
-| Rust added | 8,825 lines in 46 files | ~90,000 lines |
-| Verify runs | 32 (R-0427 to R-0458), all passed, 194 s total, median ≈ 4 s | 426 (8 failed, 3 timed out), 3.0 h |
-| Subagent lanes | 14 (Opus), 3.6 to 25.4 min each, 70k to 164k tokens each | ~25 |
-| Issues filed | 36 (4 BUG, 20 DEBT, 12 RISK) | 49 |
-| Questions | 6, all auto-answered with the recommendation (`questions: proceed`) | 24, all answered as recommended |
-| Story corrections | 7 (byte offsets and one path) in 4 features | 10 features |
+| Measure                          | 0.2 run (this session)                                              | 0.1 run (2026-10-19, for scale)    |
+| -------------------------------- | ------------------------------------------------------------------- | ---------------------------------- |
+| Wall clock, first to last commit | 19:33 to 21:35 (2.0 h; ~2.6 h including the bug investigation)      | 21.5 h                             |
+| Features done                    | 4 (F-049, F-050, F-055, F-056: 14 tasks, 47 scenarios)              | 44 (185 tasks)                     |
+| Specs written and approved       | 2 (F-065 export, 21 scenarios; F-072 perf acceptance, 12 scenarios) | 73                                 |
+| Bugs fixed                       | 1 critical (BUG-0005, SIGSEGV on Touch Bar Macs)                    | —                                  |
+| Commits                          | 42 (14 feat, 1 fix, 1 test, 16 docs, 10 chore)                      | 528 (169 feat, 333 docs/chore)     |
+| Rust added                       | 8,825 lines in 46 files                                             | ~90,000 lines                      |
+| Verify runs                      | 32 (R-0427 to R-0458), all passed, 194 s total, median ≈ 4 s        | 426 (8 failed, 3 timed out), 3.0 h |
+| Subagent lanes                   | 14 (Opus), 3.6 to 25.4 min each, 70k to 164k tokens each            | ~25                                |
+| Issues filed                     | 36 (4 BUG, 20 DEBT, 12 RISK)                                        | 49                                 |
+| Questions                        | 6, all auto-answered with the recommendation (`questions: proceed`) | 24, all answered as recommended    |
+| Story corrections                | 7 (byte offsets and one path) in 4 features                         | 10 features                        |
 
 Throughput: 14 tasks in the 2 h of build time is about 7 tasks per hour with two to four lanes, the same as the best stretch of the 0.1 run, but this time with four feature close-outs, two specs and a bug fix interleaved, and with roughly half the orchestrator calls per task. Commits per task fell from about 2.9 to about 1.6 (the remaining docs commits are story corrections and files-list fixes, §4.2 and §4.3).
 
@@ -32,19 +32,19 @@ Steps 1 and 4 are one call each now. Step 3 is where the remaining bookkeeping l
 
 ## 3. The 0.1 recommendations, checked
 
-| 0.1 § | Recommendation | 0.2 outcome | Evidence |
-|---|---|---|---|
-| 5.1 | Path-scoped verify staleness | **Shipped; weaker than hoped in a multi-feature build** | Every close-out still reran every task: tasks go stale through shared `lib.rs`, `Cargo.lock` and dependency edges (`T-055.2 … 8016ad2 changed crates/zmd-workspace/src/lib.rs`; `T-049.1 … f914c44 changed switcher.rs`). Cheap only because the prebuild is cached: 4 reruns in 22 s. The gate's detail line (commit and path) is exactly right and made this diagnosable. |
-| 5.2 | Verify that understands the build | **Shipped and decisive** | `verify.prebuild` runs once per finish; the first finish of a batch pays 1:43 to 2:26, the rest take 4 to 14 s. Zero timeouts, zero collisions, no manual pre-build. The verify lock recorded `waited_ms` = 0 throughout. One hole: the run JSON does not record the prebuild's duration, so the real cost of a finish (two minutes) is invisible in the records. |
-| 5.3 | One compound task command | **Shipped; the biggest single gain** | `task finish` did check, note, stage, commit, verify, move and log in one call, 14 times, never wrongly. The one defect is §4.4. |
-| 5.4 | Content-based spec staleness, records exempt | **Shipped** | `note`, `settle` and `resolve --assumption` never staled an approval (F-049 stayed approved through two resolves; F-065 approved right after three). A corrected THEN still needs `reapprove`, correctly. |
-| 5.5 | Registry files first-class | **Shipped, with a sharp edge** | `parallel.shared_files` let two or three lanes extend `zmd-workspace/src/lib.rs` and the controller registries every wave with no merge conflict. But a shared file is staged whole by the first finish, so 893c20c (T-049.1) carries `pub mod switcher;` while `switcher.rs` landed in f914c44: a commit that does not compile alone. Bisect-unfriendly; verify runs on the working tree, so nothing failed. |
-| 5.6 | Generate lane briefs | **Shipped; good** | `azimuth brief` gave 800 to 1,700 words with scenarios, contract, invariants, files, verify, notes of earlier tasks and the standing rules; lanes finished without a single clarification. I still appended ~150 words per lane (§4.6). |
-| 5.7 | `{?}` for measured values | **Shipped; unused by these specs** | The four features were specced on 0.1 with exact offsets, and 7 of them were wrong (§4.2). The two new specs use `{?}` in 6 places; the next run will show whether `settle` removes the churn. |
-| 5.8 | Coarser sessions | **Shipped** | One Azimuth session (SES-20261020-1343) absorbed every `session start`; `session note` carried progress. 1 session instead of ~15. |
-| 5.9 | Unattended mode as a setting | **Shipped; exactly the real workflow** | `questions: proceed` answered Q-0025 to Q-0030 at creation and printed what to do next; `resolve --assumption` wrote the record. Two calls per decision instead of three records. |
-| 5.10 | Quiet by default | **Shipped** | `check` prints counts; `new` prints only the ID (36 issues created in chains, every ID correct); `trace` hides mention-only rows; `verify --summary` is the right default for me. |
-| 5.11 | notes.md per feature | **Shipped** | Lane lessons went to `notes.md` through `--note`; the briefs of later tasks carried them (T-049.3's brief had T-049.1, .2 and .4's notes). |
+| 0.1 § | Recommendation                               | 0.2 outcome                                             | Evidence                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----- | -------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5.1   | Path-scoped verify staleness                 | **Shipped; weaker than hoped in a multi-feature build** | Every close-out still reran every task: tasks go stale through shared `lib.rs`, `Cargo.lock` and dependency edges (`T-055.2 … 8016ad2 changed crates/zmd-workspace/src/lib.rs`; `T-049.1 … f914c44 changed switcher.rs`). Cheap only because the prebuild is cached: 4 reruns in 22 s. The gate's detail line (commit and path) is exactly right and made this diagnosable.                                   |
+| 5.2   | Verify that understands the build            | **Shipped and decisive**                                | `verify.prebuild` runs once per finish; the first finish of a batch pays 1:43 to 2:26, the rest take 4 to 14 s. Zero timeouts, zero collisions, no manual pre-build. The verify lock recorded `waited_ms` = 0 throughout. One hole: the run JSON does not record the prebuild's duration, so the real cost of a finish (two minutes) is invisible in the records.                                             |
+| 5.3   | One compound task command                    | **Shipped; the biggest single gain**                    | `task finish` did check, note, stage, commit, verify, move and log in one call, 14 times, never wrongly. The one defect is §4.4.                                                                                                                                                                                                                                                                              |
+| 5.4   | Content-based spec staleness, records exempt | **Shipped**                                             | `note`, `settle` and `resolve --assumption` never staled an approval (F-049 stayed approved through two resolves; F-065 approved right after three). A corrected THEN still needs `reapprove`, correctly.                                                                                                                                                                                                     |
+| 5.5   | Registry files first-class                   | **Shipped, with a sharp edge**                          | `parallel.shared_files` let two or three lanes extend `zmd-workspace/src/lib.rs` and the controller registries every wave with no merge conflict. But a shared file is staged whole by the first finish, so 893c20c (T-049.1) carries `pub mod switcher;` while `switcher.rs` landed in f914c44: a commit that does not compile alone. Bisect-unfriendly; verify runs on the working tree, so nothing failed. |
+| 5.6   | Generate lane briefs                         | **Shipped; good**                                       | `azimuth brief` gave 800 to 1,700 words with scenarios, contract, invariants, files, verify, notes of earlier tasks and the standing rules; lanes finished without a single clarification. I still appended ~150 words per lane (§4.6).                                                                                                                                                                       |
+| 5.7   | `{?}` for measured values                    | **Shipped; unused by these specs**                      | The four features were specced on 0.1 with exact offsets, and 7 of them were wrong (§4.2). The two new specs use `{?}` in 6 places; the next run will show whether `settle` removes the churn.                                                                                                                                                                                                                |
+| 5.8   | Coarser sessions                             | **Shipped**                                             | One Azimuth session (SES-20261020-1343) absorbed every `session start`; `session note` carried progress. 1 session instead of ~15.                                                                                                                                                                                                                                                                            |
+| 5.9   | Unattended mode as a setting                 | **Shipped; exactly the real workflow**                  | `questions: proceed` answered Q-0025 to Q-0030 at creation and printed what to do next; `resolve --assumption` wrote the record. Two calls per decision instead of three records.                                                                                                                                                                                                                             |
+| 5.10  | Quiet by default                             | **Shipped**                                             | `check` prints counts; `new` prints only the ID (36 issues created in chains, every ID correct); `trace` hides mention-only rows; `verify --summary` is the right default for me.                                                                                                                                                                                                                             |
+| 5.11  | notes.md per feature                         | **Shipped**                                             | Lane lessons went to `notes.md` through `--note`; the briefs of later tasks carried them (T-049.3's brief had T-049.1, .2 and .4's notes).                                                                                                                                                                                                                                                                    |
 
 Net: nine of eleven asks landed as designed; two (5.1, 5.5) landed with a residue described below. The 0.1 report's §4.1 to §4.4, §4.7 to §4.9 and §4.11 are closed.
 
@@ -113,21 +113,21 @@ Everything the 0.1 report listed, plus: `task finish` as the unit of work; `brie
 
 ## Appendix: the lanes
 
-| Task | Minutes | Tokens | Tool uses | Note |
-|---|---|---|---|---|
-| T-049.1 | 7.3 | 132k | 24 | shared lib.rs with T-055.1 |
-| T-055.1 | 6.0 | 96k | 14 | release-only 10k test |
-| T-049.2 | 8.5 | 126k | 22 | edited `watch()`; TEMP-table move queue |
-| T-055.2 | 13.6 | 84k | 19 | release timing run 1.22 ms |
-| T-056.1 | 5.7 | 95k | 24 | added grep-searcher/regex |
-| T-049.4 | 6.4 | 73k | 19 | found BUG-0006 |
-| T-055.3 | 25.4 | 163k | 54 | app wiring; the batch waited on it |
-| T-056.2 | 6.6 | 106k | 19 | `$1x` regex rewrite |
-| T-050.1 | 8.8 | 106k | 26 | schema 3 |
-| T-049.3 | 11.8 | 164k | 51 | three files outside its list |
-| T-050.2 | 5.4 | 90k | 16 | aho-corasick |
-| T-056.3 | 8.0 | 126k | 29 | stayed inside its files |
-| T-050.3 | 3.6 | 70k | 16 | stayed inside its files |
-| T-050.4 | 11.8 | 135k | 46 | found the Cmd+Shift+B bug |
+| Task    | Minutes | Tokens | Tool uses | Note                                    |
+| ------- | ------- | ------ | --------- | --------------------------------------- |
+| T-049.1 | 7.3     | 132k   | 24        | shared lib.rs with T-055.1              |
+| T-055.1 | 6.0     | 96k    | 14        | release-only 10k test                   |
+| T-049.2 | 8.5     | 126k   | 22        | edited `watch()`; TEMP-table move queue |
+| T-055.2 | 13.6    | 84k    | 19        | release timing run 1.22 ms              |
+| T-056.1 | 5.7     | 95k    | 24        | added grep-searcher/regex               |
+| T-049.4 | 6.4     | 73k    | 19        | found BUG-0006                          |
+| T-055.3 | 25.4    | 163k   | 54        | app wiring; the batch waited on it      |
+| T-056.2 | 6.6     | 106k   | 19        | `$1x` regex rewrite                     |
+| T-050.1 | 8.8     | 106k   | 26        | schema 3                                |
+| T-049.3 | 11.8    | 164k   | 51        | three files outside its list            |
+| T-050.2 | 5.4     | 90k    | 16        | aho-corasick                            |
+| T-056.3 | 8.0     | 126k   | 29        | stayed inside its files                 |
+| T-050.3 | 3.6     | 70k    | 16        | stayed inside its files                 |
+| T-050.4 | 11.8    | 135k   | 46        | found the Cmd+Shift+B bug               |
 
 Finishes: first of a batch 1:43 to 2:26 (prebuild), the rest 4 to 14 s; one 7:10 when a prune ran concurrently. Verify runs: 32, all passed, 194 s total.
