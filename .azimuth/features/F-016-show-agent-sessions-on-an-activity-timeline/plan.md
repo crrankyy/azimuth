@@ -2,7 +2,7 @@
 tasks:
   - id: T-016.1
     title: Scaffolding (types, signatures, live fixture)
-    status: in-progress
+    status: done
     after: []
     covers: []
     files: [viewer/src/screens/activity/sessions.ts, viewer/src/screens/activity/timeline.ts, viewer/src/screens/activity/thread.ts, viewer/src/screens/activity/feed.ts, viewer/src/screens/activity/AgentTimeline.tsx, viewer/src/screens/activity/LiveCards.tsx, test/fixtures/live/timeline.ts, viewer/src/screens/activity/ActivityFeed.tsx, viewer/src/components/SessionCard.tsx, viewer/src/screens/Activity.tsx]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-016.2
     title: Sessions joined and work attributed (red → green)
-    status: todo
+    status: in-progress
     after: [T-016.1]
     covers: [S-016.1.1, S-016.1.2, S-016.1.3, S-016.1.4, S-016.1.5, S-016.1.6, S-016.1.7, S-016.1.8]
     files: [viewer/src/screens/activity/sessions.ts, viewer/src/screens/activity/sessions.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-016.3
     title: Timeline window, rows, spans, markers and filters (red → green)
-    status: todo
+    status: in-progress
     after: [T-016.2]
     covers: [S-016.2.1, S-016.2.2, S-016.2.3, S-016.2.4, S-016.2.5, S-016.2.6, S-016.2.7, S-016.2.8, S-016.2.9, S-016.3.1, S-016.3.2, S-016.3.3]
     files: [viewer/src/screens/activity/timeline.ts, viewer/src/screens/activity/timeline.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-016.4
     title: The Agent timeline component (red → green)
-    status: todo
+    status: in-progress
     after: [T-016.3]
     covers: [S-016.4.1, S-016.4.2, S-016.4.3, S-016.4.4, S-016.4.5]
     files: [viewer/src/screens/activity/AgentTimeline.tsx, viewer/src/screens/activity/timeline.css, viewer/src/screens/activity/AgentTimeline.test.tsx]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-016.5
     title: Cards for running and waiting sessions (red → green)
-    status: todo
+    status: in-progress
     after: [T-016.2]
     covers: [S-016.5.1, S-016.5.2, S-016.5.3, S-016.5.4]
     files: [viewer/src/screens/activity/LiveCards.tsx, viewer/src/screens/activity/live-cards.css, viewer/src/screens/activity/LiveCards.test.tsx]
@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-016.6
     title: Session threads (red → green)
-    status: todo
+    status: in-progress
     after: [T-016.2]
     covers: [S-016.6.1, S-016.6.2, S-016.6.3, S-016.6.4]
     files: [viewer/src/screens/activity/thread.ts, viewer/src/screens/activity/thread.test.ts]
@@ -50,7 +50,7 @@ tasks:
     note: null
   - id: T-016.7
     title: SessionCard shows the thread, tally and pick-up (red → green)
-    status: todo
+    status: in-progress
     after: [T-016.6]
     covers: [S-016.6.5, S-016.6.6, S-016.6.7]
     files: [viewer/src/components/SessionCard.tsx, viewer/src/components/session-card.css, viewer/src/components/SessionCard.test.tsx]
@@ -58,7 +58,7 @@ tasks:
     note: null
   - id: T-016.8
     title: Feed periods and what threads and cards take over (red → green)
-    status: todo
+    status: in-progress
     after: [T-016.2]
     covers: [S-016.7.1, S-016.7.2]
     files: [viewer/src/screens/activity/feed.ts, viewer/src/screens/activity/feed.test.ts]
@@ -66,7 +66,7 @@ tasks:
     note: null
   - id: T-016.9
     title: ActivityFeed by period with the cards first (red → green)
-    status: todo
+    status: in-progress
     after: [T-016.5, T-016.7, T-016.8]
     covers: [S-016.7.3, S-016.7.4]
     files: [viewer/src/screens/activity/ActivityFeed.tsx, viewer/src/screens/activity/activity.css, viewer/src/screens/activity/feed.ts, viewer/src/screens/activity/ActivityFeed.test.tsx]
@@ -74,7 +74,7 @@ tasks:
     note: null
   - id: T-016.10
     title: The Activity screen wires timeline, cards, threads and filters (red → green)
-    status: todo
+    status: in-progress
     after: [T-016.4, T-016.9]
     covers: [S-016.8.1, S-016.8.2, S-016.8.3, S-016.8.4, S-016.8.5]
     files: [viewer/src/screens/Activity.tsx, viewer/src/screens/activity/activity.css, viewer/src/screens/Activity.test.tsx]
@@ -82,7 +82,7 @@ tasks:
     note: null
   - id: T-016.11
     title: Docs, full verification and a screenshot against the design
-    status: todo
+    status: in-progress
     after: [T-016.10]
     covers: []
     files: [docs/viewer.md]
