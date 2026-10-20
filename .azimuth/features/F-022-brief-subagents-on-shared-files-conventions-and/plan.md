@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-022.3
     title: Build skill, docs and full verification
-    status: in-progress
+    status: done
     after: [T-022.2]
     covers: []
     files: [docs/cli.md, plugin/skills/build/SKILL.md]

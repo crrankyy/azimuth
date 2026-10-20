@@ -50,7 +50,7 @@ tasks:
     note: null
   - id: T-020.7
     title: Docs, the verify skill and full verification
-    status: in-progress
+    status: done
     after: [T-020.5, T-020.6]
     covers: []
     files: [docs/cli.md, docs/concepts.md, plugin/skills/verify/SKILL.md, docs/viewer.md]

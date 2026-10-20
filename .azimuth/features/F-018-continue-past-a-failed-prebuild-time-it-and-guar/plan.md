@@ -58,7 +58,7 @@ tasks:
     note: null
   - id: T-018.8
     title: Docs, the build skill's early-finish rule and full verification
-    status: in-progress
+    status: done
     after: [T-018.2, T-018.4, T-018.5, T-018.6, T-018.7]
     covers: []
     files: [docs/cli.md, docs/file-format.md, docs/concepts.md, plugin/skills/build/SKILL.md, src/cli/commands/harness.ts]

@@ -29,3 +29,12 @@ T-020.5: in-progress → done. Committed 38ced15; R-0242 passed.
 
 ## 2026-10-20T18:46:46Z · agent · note · SES-20261020-1730
 T-020.6: in-progress → done. Committed 2f8ca82; R-0246 passed.
+
+## 2026-10-20T19:25:14Z · agent · note · SES-20261020-1730
+T-020.7: in-progress → done. Committed 7f7e257; R-0275 passed.
+
+## 2026-10-20T19:28:31Z · agent · note · SES-20261020-1730 · auto
+Re-approved the changed spec.
+
+## 2026-10-20T20:06:16Z · agent · transition · SES-20261020-1730
+in-progress → verifying

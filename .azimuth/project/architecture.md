@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-21
-reconciled_at: bd1e2c3
+reconciled_at: 3fbd9cc
 modules:
   - name: core
     path: src/core
@@ -72,6 +72,21 @@ frontmatter, Vitest, ESLint and Prettier. pnpm only.
 - Verify commands and the prebuild run through `runShell` (`src/core/shell.ts`) as a detached
   process group; a timeout, or SIGINT/SIGTERM to `azimuth verify`, kills the whole group (SIGTERM,
   then SIGKILL after 2 s).
+- A failed prebuild stops the batch unless `verify.prebuild_failure: continue`; then each target
+  runs under the build plus test timeouts, every run records the prebuild that served it, and
+  `done.verify-passed` treats a pass after a failed prebuild as needing a rerun. A prebuild that
+  timed out or was interrupted always stops the batch. `src/core/disk.ts` reads free space for
+  the `verify.min_free_gb` warning, which only the CLI prints; nothing is blocked.
+- Test credit: `analyzeProject` passes `traceTests`' refs through `markCommitted`
+  (`src/core/trace.ts`), which reads HEAD's copy of only the changed test files
+  (`GitFacts.changed`, from the single `git status --untracked-files=all` call in `gitFacts`).
+  `done.scenarios-passing` counts a scenario only when one of its counting tests (marked ones
+  when it has any) is committed; how runs credit tests is unchanged.
+- `src/core/as-built.ts` reads every commit naming a feature (`readFeatureCommits` in git.ts,
+  the whole history, prefiltered with `git log --grep`) and writes only that feature's
+  as-built.md; `done.as-built` needs a reason on every deviation.
+- The viewer record keeps the `viewer.port` the config asked for (`config_port`), so autostart
+  restarts a replaced viewer on its old port unless the config changed.
 - `src/core/flows.ts`, `glob.ts`, `ids.ts`, `next.ts`, `placeholders.ts` and `types.ts` import no
   Node modules, so the viewer can use them.
 - An agent answers a question only under `autonomy.questions: proceed`, and only a new,
@@ -144,7 +159,8 @@ prints and the server pushes to the viewer over SSE.
   `--adopt` writes such paths into the task's `files` in plan.md, which isn't in the spec hash;
   `azimuth brief`
   (`src/core/task-brief.ts`) prints a subagent prompt from the model alone, without git or a
-  clock.
+  clock, with the shared-file rules, the project's conventions and a closing report request.
+  `milestoneReady` lives in `flows.ts` so that `next.ts` stays free of Node imports.
 - Viewer: each issue has a page at `#/issues/<id>/page` (`viewer/src/screens/issues/`), whose
   related work (`related.ts`) and history (`history.ts`) are derived from the index on every
   render.

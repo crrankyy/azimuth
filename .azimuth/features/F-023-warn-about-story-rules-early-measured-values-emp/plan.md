@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-023.5
     title: Docs, spec skill, strict comments and full verification
-    status: in-progress
+    status: done
     after: [T-023.4]
     covers: []
     files: [docs/file-format.md, docs/concepts.md, docs/cli.md, plugin/skills/spec/SKILL.md, src/core/init.ts, src/core/types.ts]

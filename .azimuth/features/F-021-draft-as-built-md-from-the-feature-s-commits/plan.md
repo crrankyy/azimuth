@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-021.5
     title: Verify and azimuth skills, docs and full verification
-    status: in-progress
+    status: done
     after: [T-021.2, T-021.4]
     covers: []
     files: [plugin/skills/verify/SKILL.md, plugin/skills/azimuth/SKILL.md, docs/cli.md, docs/file-format.md, docs/concepts.md]
