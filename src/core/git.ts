@@ -126,12 +126,35 @@ function hashAt(blobs: Map<string, string | null>, rev: string, f: FeatureEntity
 
 const NEEDS_HEAD_HASH = ["draft", ...ACTIVE_STATUSES];
 
+/**
+ * Reads `git status --porcelain -z` output. Each entry is `XY path`; a rename's or copy's entry
+ * is followed by its source path as a token of its own, which is skipped. Untracked entries
+ * (`??`) are changed but don't make the tree dirty.
+ */
+function parseStatus(out: string): { changed: string[]; dirty: boolean } {
+  const tokens = out.split("\0");
+  const changed = new Set<string>();
+  let dirty = false;
+  for (let i = 0; i < tokens.length; i++) {
+    const entry = tokens[i] ?? "";
+    if (!entry) continue;
+    const xy = entry.slice(0, 2);
+    changed.add(entry.slice(3));
+    if (xy !== "??") dirty = true;
+    if (/[RC]/.test(xy)) i++;
+  }
+  return { changed: [...changed].sort(), dirty };
+}
+
 /** Gathers git history and spec-at-HEAD facts for the analysis. */
 export function gitFacts(root: string, model: Model): GitFacts {
   if (!isGitRepo(root)) return emptyGitFacts();
   const branch = git(root, ["rev-parse", "--abbrev-ref", "HEAD"])?.trim() ?? null;
   const head = git(root, ["rev-parse", "--short=7", "HEAD"])?.trim() || null;
-  const status = git(root, ["status", "--porcelain", "--untracked-files=no"]);
+  // One status call serves both `dirty` and `changed`; a failed call leaves both empty.
+  const { changed, dirty } = parseStatus(
+    git(root, ["status", "--porcelain", "-z", "--untracked-files=all"]) ?? "",
+  );
   const raw = head ? readCommits(root, model.config.git.log_depth) : [];
 
   const sessionOf = new Map<string, string>();
@@ -183,8 +206,8 @@ export function gitFacts(root: string, model: Model): GitFacts {
     available: true,
     branch: branch === "HEAD" ? null : branch,
     head,
-    dirty: status !== null && status.trim() !== "",
-    changed: [],
+    dirty,
+    changed,
     commits,
     files,
     headSpecHash,

@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-020.2
     title: One status call lists the changed paths (red → green)
-    status: todo
+    status: in-progress
     after: [T-020.1]
     covers: [S-020.1.1, S-020.1.2, S-020.1.3, S-020.1.4]
     files: [src/core/git.ts, test/core/git-trace.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-020.3
     title: markCommitted compares changed test files with HEAD (red → green)
-    status: in-progress
+    status: done
     after: [T-020.1]
     covers: [S-020.2.1, S-020.2.2, S-020.2.3, S-020.2.4, S-020.2.5]
     files: [src/core/trace.ts, test/core/committed-tests.test.ts]

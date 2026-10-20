@@ -6,7 +6,7 @@ import { globToRegExp, inModule } from "../../src/core/glob";
 import { loadProject } from "../../src/core/model";
 import { scanTestFile, traceTests } from "../../src/core/trace";
 import { featureFiles } from "../helpers/project";
-import { commitAll, initRepo } from "../helpers/git";
+import { commitAll, git, initRepo } from "../helpers/git";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
 
 let cleanup: (() => void) | null = null;
@@ -226,6 +226,67 @@ describe("gitFacts", () => {
     const facts = gitFacts(tree.root, loadProject(tree.root));
     expect(facts.available).toBe(false);
     expect(facts.commits).toEqual([]);
+  });
+});
+
+describe("gitFacts changed paths", () => {
+  /**
+   * The F-020 stories' project, F-001 in progress, plus `extra` files; committed as HEAD unless
+   * `repo` is false, which leaves a folder outside any git repository.
+   */
+  const changedProject = (extra: Record<string, string> = {}, repo = true) => {
+    const tree = writeTree({
+      ".gitignore": ".azimuth/cache/\n",
+      ".azimuth/config.yaml": MINIMAL_CONFIG,
+      ...featureFiles({ id: "F-001", status: "in-progress" }),
+      "src/app.ts": "export const a = 0;\n",
+      "test/keymap.test.ts": 'it("S-001.1.1 opens the palette", () => {});\n',
+      ...extra,
+    });
+    cleanup = tree.cleanup;
+    if (repo) {
+      initRepo(tree.root);
+      commitAll(tree.root, "chore: start");
+    }
+    return tree;
+  };
+
+  it("S-020.1.1 lists modified, staged and untracked files and marks the tree dirty", () => {
+    const { root, write } = changedProject({
+      "test/a.test.ts": 'it("S-001.1.1 also opens", () => {});\n',
+    });
+    write("src/app.ts", "export const a = 1;\n");
+    write("test/c.test.ts", 'it("S-001.1.2 staged", () => {});\n');
+    git(root, ["add", "test/c.test.ts"]);
+    write("test/b.test.ts", 'it("S-001.1.2 untracked", () => {});\n');
+    const facts = gitFacts(root, loadProject(root));
+    expect(facts.changed).toEqual(["src/app.ts", "test/b.test.ts", "test/c.test.ts"]);
+    expect(facts.dirty).toBe(true);
+  });
+
+  it("S-020.1.2 lists an untracked file alone and keeps the tree clean", () => {
+    const { root, write } = changedProject();
+    write("test/b.test.ts", 'it("S-001.1.2 untracked", () => {});\n');
+    const facts = gitFacts(root, loadProject(root));
+    expect(facts.changed).toEqual(["test/b.test.ts"]);
+    expect(facts.dirty).toBe(false);
+  });
+
+  it("S-020.1.3 lists each file of an untracked directory", () => {
+    const { root, write } = changedProject();
+    write("test/new/a.test.ts", 'it("S-001.1.1 new a", () => {});\n');
+    write("test/new/b.test.ts", 'it("S-001.1.2 new b", () => {});\n');
+    expect(gitFacts(root, loadProject(root)).changed).toEqual([
+      "test/new/a.test.ts",
+      "test/new/b.test.ts",
+    ]);
+  });
+
+  it("S-020.1.4 lists no changed path outside a repository", () => {
+    const { root } = changedProject({}, false);
+    const facts = gitFacts(root, loadProject(root));
+    expect(facts.available).toBe(false);
+    expect(facts.changed).toEqual([]);
   });
 });
 
