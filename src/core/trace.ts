@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { TestRef } from "./facts";
+import { readBlobs } from "./git";
 import { globToRegExp, matchesAny } from "./glob";
 
 const SCENARIO = String.raw`S-\d{3}\.\d+\.\d+`;
@@ -138,17 +139,47 @@ export function traceTests(root: string, globs: string[]): Map<string, TestRef[]
   return out;
 }
 
+// Names come from one line of a test file, so a newline can't occur inside the key.
+const refKey = (id: string, name: string) => `${id}\n${name}`;
+
+/**
+ * File → keys of the refs HEAD's copy of it holds, read with one `git cat-file --batch`; a file
+ * HEAD doesn't hold (or a failed read) has none. No files, no call to git.
+ */
+function headRefKeys(root: string, files: string[]): Map<string, Set<string>> {
+  const blobs = readBlobs(
+    root,
+    files.map((f) => `HEAD:${f}`),
+  );
+  const out = new Map<string, Set<string>>();
+  for (const file of files) {
+    const text = blobs.get(`HEAD:${file}`) ?? null;
+    const refs = text === null ? new Map<string, TestRef[]>() : scanTestFile(text, file);
+    out.set(file, new Set([...refs].flatMap(([id, list]) => list.map((r) => refKey(id, r.name)))));
+  }
+  return out;
+}
+
 /**
  * `tests` with `committed` set on every ref, as a new map of new ref objects: `tests` and its
- * refs sit in traceTests' scan cache, so they are never mutated.
+ * refs sit in traceTests' scan cache, so they are never mutated. A ref is uncommitted only when
+ * its file is in `changed` and HEAD's copy of the file has no ref with the same scenario ID and
+ * name. `changed` null means no git: every ref is committed and nothing is read.
  */
 export function markCommitted(
-  _root: string,
+  root: string,
   tests: Map<string, TestRef[]>,
-  _changed: readonly string[] | null,
+  changed: readonly string[] | null,
 ): Map<string, TestRef[]> {
-  // Nothing is compared with HEAD yet, so every ref counts as committed, as it does without git.
+  const changedSet = new Set(changed ?? []);
+  const files = new Set([...tests.values()].flat().map((r) => r.file));
+  const inHead = headRefKeys(
+    root,
+    [...files].filter((f) => changedSet.has(f)),
+  );
+  const committed = (id: string, ref: TestRef) =>
+    inHead.get(ref.file)?.has(refKey(id, ref.name)) ?? true;
   return new Map(
-    [...tests].map(([id, refs]) => [id, refs.map((r) => ({ ...r, committed: true }))]),
+    [...tests].map(([id, refs]) => [id, refs.map((r) => ({ ...r, committed: committed(id, r) }))]),
   );
 }

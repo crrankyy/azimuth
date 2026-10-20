@@ -2,7 +2,7 @@
 tasks:
   - id: T-020.1
     title: The committed field in the facts, the index and the fixtures that describe it
-    status: in-progress
+    status: done
     after: []
     covers: []
     files: [src/core/facts.ts, src/core/types.ts, src/core/derive.ts, src/core/git.ts, src/core/trace.ts, test/fixtures/hookline/expected-index.ts, test/cli/trace.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-020.3
     title: markCommitted compares changed test files with HEAD (red → green)
-    status: todo
+    status: in-progress
     after: [T-020.1]
     covers: [S-020.2.1, S-020.2.2, S-020.2.3, S-020.2.4, S-020.2.5]
     files: [src/core/trace.ts, test/core/committed-tests.test.ts]
