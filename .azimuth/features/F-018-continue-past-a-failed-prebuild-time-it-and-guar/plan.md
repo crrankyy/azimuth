@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-018.4
     title: verify prints the prebuild's time and marks runs after a failed one (red → green)
-    status: in-progress
+    status: done
     after: [T-018.3]
     covers: [S-018.4.1, S-018.4.2, S-018.4.3]
     files: [src/cli/verify-report.ts, test/cli/verify-report.test.ts, test/cli/verify.test.ts]

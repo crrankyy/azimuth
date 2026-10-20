@@ -23,3 +23,7 @@ The gate takes each task's last run from model.runs, sorted by at then ID, so a 
 ### T-018.4 · 2026-10-20
 
 Docs (T-018.8): docs/cli.md's --summary text says a passing prebuild's line is left out, which is no longer true. work.ts needed no change: it already exits 1 after a failed prebuild under continue. test/cli/verify.test.ts doesn't assert stderr, since the disk warning depends on the machine.
+
+### T-018.6 · 2026-10-20
+
+verifyOutcome reads the prebuild's ok, duration and exit code from batch.prebuild (PrebuildResult), not run.prebuild; the no-run branch is now 'failed prebuild and no run', so a run under continue always reports the run itself.

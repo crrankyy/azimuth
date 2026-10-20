@@ -892,4 +892,69 @@ describe("finishTask against real git", () => {
       expect(headFiles()).toEqual([`${DIR}log.md`, "src/a.ts"]);
     });
   });
+
+  describe("ST-018.6 task finish shows the prebuild in its verify step", () => {
+    const FAILED_PREBUILD =
+      '  prebuild: "echo no compiler; exit 2"\n  prebuild_failure: continue\n';
+
+    it("S-018.6.1 adds a passing prebuild's time to the verify line", async () => {
+      repo({ verify: '  prebuild: "echo built"\n' });
+      changeTaskFiles();
+      const result = await finish();
+      const sha = head();
+      expect(result.ok).toBe(true);
+      expect(step(result, "verify")?.detail).toMatch(
+        /^R-0001 passed in \d+\.\ds \(prebuild \d+\.\ds\)$/,
+      );
+      expect(lastLogBody()).toBe(`T-001.1: in-progress → done. Committed ${sha}; R-0001 passed.`);
+    });
+
+    it("S-018.6.2 finishes a task whose command passes after a failed prebuild under continue", async () => {
+      repo({ verify: FAILED_PREBUILD });
+      changeTaskFiles();
+      const result = await finish();
+      const sha = head();
+      expect(result.ok).toBe(true);
+      expect(steps(result)).toBe(
+        "check done, stage done, commit done, verify done, done done, log done",
+      );
+      expect(step(result, "verify")?.detail).toMatch(
+        /^R-0001 passed in \d+\.\ds after a failed prebuild \(exit 2, \d+\.\ds\)$/,
+      );
+      expect(step(result, "verify")?.output).toBe("");
+      expect(taskStatus("T-001.1")).toBe("done");
+      expect(lastLogBody()).toBe(
+        `T-001.1: in-progress → done. Committed ${sha}; R-0001 passed after a failed prebuild.`,
+      );
+    });
+
+    it("S-018.6.3 keeps the task in progress when its command fails after a failed prebuild", async () => {
+      repo({
+        verify: FAILED_PREBUILD,
+        tasks: [{ ...T1, verify: "echo S-001.1.1 boom; exit 1" }],
+      });
+      changeTaskFiles();
+      const result = await finish();
+      const sha = head();
+      expect(result.ok).toBe(false);
+      expect(steps(result)).toBe(
+        "check done, stage done, commit done, verify failed, done not-run, log done",
+      );
+      expect(step(result, "verify")?.detail).toMatch(
+        /^R-0001 failed \(exit 1\) in \d+\.\ds after a failed prebuild \(exit 2, \d+\.\ds\)$/,
+      );
+      expect(step(result, "verify")?.output).toBe("S-001.1.1 boom");
+      expect(taskStatus("T-001.1")).toBe("in-progress");
+      expect(lastLogBody()).toBe(
+        `T-001.1: Committed ${sha}; R-0001 failed (exit 1) after a failed prebuild.`,
+      );
+    });
+
+    it("S-018.6.4 leaves the verify line unchanged without a prebuild", async () => {
+      repo();
+      changeTaskFiles();
+      const result = await finish();
+      expect(step(result, "verify")?.detail).toMatch(/^R-0001 passed in \d+\.\ds$/);
+    });
+  });
 });

@@ -16,7 +16,7 @@ import { inScope, repoPath, runScope } from "./run-scope";
 import { scanTestFile } from "./trace";
 import { addLogEntry, moveTask, type Who } from "./transitions";
 import type { Commit, Id, Problem } from "./types";
-import { verifyBatch, verifyTargets, type VerifyBatchResult } from "./verify";
+import { verifyBatch, verifyTargets, type PrebuildResult, type VerifyBatchResult } from "./verify";
 
 /** "adopt" runs after "check" and before "note", and only when `adopt` is given. */
 export type FinishStepName =
@@ -532,9 +532,22 @@ interface VerifyOutcome {
   logged: string;
 }
 
+/**
+ * What the verify line adds after the run's duration. The run records only the prebuild's ok and
+ * duration, so the exit code comes from the batch's PrebuildResult.
+ */
+function prebuildSuffix(prebuild: PrebuildResult | null): string {
+  if (!prebuild) return "";
+  const took = seconds(prebuild.duration_ms);
+  if (prebuild.ok) return ` (prebuild ${took})`;
+  return ` after a failed prebuild (exit ${prebuild.exit_code}, ${took})`;
+}
+
 function verifyOutcome(batch: VerifyBatchResult): VerifyOutcome {
   const { prebuild } = batch;
-  if (prebuild && !prebuild.ok) {
+  const run = batch.runs[0];
+  // A run after a failed prebuild exists only under prebuild_failure: continue.
+  if (prebuild && !prebuild.ok && !run) {
     const failed = `prebuild failed (exit ${prebuild.exit_code})`;
     return {
       passed: false,
@@ -543,22 +556,23 @@ function verifyOutcome(batch: VerifyBatchResult): VerifyOutcome {
       logged: `${failed}.`,
     };
   }
-  const run = batch.runs[0];
   if (!run) throw new Error("verifyBatch recorded no run for the task.");
+  const suffix = prebuildSuffix(prebuild);
+  const after = prebuild && !prebuild.ok ? " after a failed prebuild" : "";
   if (run.ok) {
     return {
       passed: true,
-      detail: `${run.id} passed in ${seconds(run.duration_ms)}`,
+      detail: `${run.id} passed in ${seconds(run.duration_ms)}${suffix}`,
       output: "",
-      logged: `${run.id} passed.`,
+      logged: `${run.id} passed${after}.`,
     };
   }
   const failed = `${run.id} failed (exit ${run.exit_code})`;
   return {
     passed: false,
-    detail: `${failed} in ${seconds(run.duration_ms)}`,
+    detail: `${failed} in ${seconds(run.duration_ms)}${suffix}`,
     output: run.output_tail,
-    logged: `${failed}.`,
+    logged: `${failed}${after}.`,
   };
 }
 
