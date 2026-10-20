@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { Index, Scenario } from "../../../../src/core/types";
+import type { Index, Scenario, ScenarioTest } from "../../../../src/core/types";
 import { expectedIndex } from "../../../../test/fixtures/hookline/expected-index";
 import { IndexContext } from "../../data/IndexProvider";
 import { ScenarioCard } from "./StoriesTab";
@@ -62,5 +62,59 @@ describe("ST-008.11 the viewer marks settled and open values", () => {
     const html = render("it returns `{ a: 1 }` and {x}");
     expect(html).toContain('it returns <code class="az-c">{ a: 1 }</code> and {x}');
     expect(html).not.toContain("fd-ph");
+  });
+});
+
+const COMMITTED_TEST: ScenarioTest = {
+  file: "test/a.test.ts",
+  name: "S-001.1.1 works",
+  status: "passing",
+  confidence: "marker",
+  committed: true,
+};
+const UNCOMMITTED_TEST: ScenarioTest = {
+  file: "test/b.test.ts",
+  name: "S-001.1.1 also works",
+  status: "passing",
+  confidence: "marker",
+  committed: false,
+};
+
+/** A passing S-001.1.1 with these tests. */
+const renderPassing = (tests: ScenarioTest[]) => {
+  const scenario: Scenario = {
+    id: "S-001.1.1",
+    title: "Finds the heading",
+    kind: "happy",
+    given: "the text # Hi",
+    when: "it is parsed",
+    then: "it finds the heading",
+    coverage: { status: "passing", tests },
+  };
+  return renderToStaticMarkup(withIndex(<ScenarioCard scenario={scenario} />));
+};
+
+const UNCOMMITTED_TAG =
+  '<span class="az-tag fd-test-uncommitted" title="Not committed: the done gate counts only tests in HEAD">uncommitted</span>';
+
+describe("ST-020.5 the stories tab tags an uncommitted test", () => {
+  it("S-020.5.1 opens the test list and tags only the uncommitted test's row", () => {
+    const html = renderPassing([COMMITTED_TEST, UNCOMMITTED_TEST]);
+    expect(html).toContain("<span>passing · 2 tests · 1 uncommitted</span>");
+    expect(html).toContain('<div class="fd-tests" id="fd-tests-S-001.1.1">');
+    expect(html.split(UNCOMMITTED_TAG)).toHaveLength(2);
+    const tagged = html
+      .split('<li class="fd-test">')
+      .slice(1)
+      .filter((row) => row.includes(UNCOMMITTED_TAG));
+    expect(tagged).toHaveLength(1);
+    expect(tagged[0]).toContain("test/b.test.ts");
+  });
+
+  it("S-020.5.2 leaves a card of committed tests closed and untagged", () => {
+    const html = renderPassing([COMMITTED_TEST]);
+    expect(html).toContain("<span>passing · 1 test</span>");
+    expect(html).not.toContain('class="fd-tests"');
+    expect(html).not.toContain("uncommitted");
   });
 });

@@ -614,6 +614,13 @@
   font-size: 11px;
   color: var(--ink-tertiary);
 }
+/* A test only in the working tree, which the done gate doesn't count. */
+.fd-test-uncommitted {
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--label-yellow);
+  border-color: var(--st-warning-border);
+}
 .fd-test-status {
   font-size: 12px;
   color: var(--ink-subtle);

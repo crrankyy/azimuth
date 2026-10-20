@@ -70,10 +70,15 @@ function gwt(text: string): ReactNode[] {
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** The title of a test's `uncommitted` tag, here and in the Verification table. */
+export const UNCOMMITTED_TITLE = "Not committed: the done gate counts only tests in HEAD";
+
 function chipLabel(s: Scenario): string {
   const { status, tests } = s.coverage;
   if (status === "untested") return "untested · no test references it";
-  return `${COVERAGE_LOOK[status].label} · ${plural(tests.length, "test")}`;
+  const uncommitted = tests.filter((t) => t.committed === false).length;
+  const label = `${COVERAGE_LOOK[status].label} · ${plural(tests.length, "test")}`;
+  return uncommitted > 0 ? `${label} · ${uncommitted} uncommitted` : label;
 }
 
 function TestRow({
@@ -101,6 +106,11 @@ function TestRow({
             fallback match
           </span>
         )}
+        {test.committed === false && (
+          <span className="az-tag fd-test-uncommitted" title={UNCOMMITTED_TITLE}>
+            uncommitted
+          </span>
+        )}
         <span className="spacer" />
         <span className={`fd-test-status ${test.status}`}>{look.label}</span>
         {run && <IdChip id={run.id} />}
@@ -115,7 +125,9 @@ function TestRow({
 export function ScenarioCard({ scenario }: { scenario: Scenario }) {
   const { index, now } = useIndexState();
   const status = scenario.coverage.status;
-  const [open, setOpen] = useState(status === "failing");
+  const [open, setOpen] = useState(
+    status === "failing" || scenario.coverage.tests.some((t) => t.committed === false),
+  );
   const run = index ? latestRunFor(index, scenario.id) : undefined;
   const panelId = `fd-tests-${scenario.id}`;
   return (

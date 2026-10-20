@@ -25,6 +25,7 @@ import { age, plural, shortDuration } from "../lib/format";
 import { useListKeys } from "../lib/keys";
 import { href, navigate, routeForId, type Route } from "../lib/router";
 import { COVERAGE_LOOK, FEATURE_LOOK, PARKED } from "../lib/status";
+import { UNCOMMITTED_TITLE } from "./feature/StoriesTab";
 import "./verification.css";
 
 type Filter = "all" | "gaps";
@@ -203,7 +204,7 @@ function groupSummary(f: Feature, runs: VerifyRun[]): string {
   return `${n} · ${coverageSummary(c)}`;
 }
 
-function ScenarioRow({
+export function ScenarioRow({
   scenario,
   run,
   now,
@@ -218,6 +219,7 @@ function ScenarioRow({
   const look = COVERAGE_LOOK[status];
   const tests = scenario.coverage.tests;
   const first = tests[0];
+  const uncommitted = tests.some((t) => t.committed === false);
   return (
     <div role="row" className={`vf-grid vf-scenario ${status}`}>
       <span role="cell" className="vf-scn">
@@ -238,10 +240,19 @@ function ScenarioRow({
       <span
         role="cell"
         className={`vf-cell mono vf-test ${first ? "" : "none"}`.trim()}
-        title={tests.map((t) => `${t.file} › ${t.name}`).join("\n") || undefined}
+        title={
+          tests
+            .map((t) => `${t.file} › ${t.name}${t.committed === false ? " (uncommitted)" : ""}`)
+            .join("\n") || undefined
+        }
       >
         {first ? basename(first.file) : "no test references it"}
         {tests.length > 1 && ` +${tests.length - 1}`}
+        {uncommitted && (
+          <span className="az-tag vf-uncommitted" title={UNCOMMITTED_TITLE}>
+            uncommitted
+          </span>
+        )}
       </span>
       <span role="cell" className="vf-cell vf-last">
         {run ? (

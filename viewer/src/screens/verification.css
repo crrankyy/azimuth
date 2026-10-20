@@ -203,6 +203,15 @@ a.vf-card.failing:hover {
 .vf-test.none {
   color: var(--label-yellow);
 }
+/* A test only in the working tree, which the done gate doesn't count. */
+.vf-uncommitted {
+  margin-left: 6px;
+  font-family: var(--font-text);
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--label-yellow);
+  border-color: var(--st-warning-border);
+}
 .vf-last {
   display: flex;
   align-items: center;

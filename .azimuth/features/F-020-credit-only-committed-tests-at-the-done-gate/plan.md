@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-020.5
     title: trace marks a test only in the working tree (red → green)
-    status: in-progress
+    status: done
     after: [T-020.4]
     covers: [S-020.3.1, S-020.3.2, S-020.3.3, S-020.3.4, S-020.3.5]
     files: [src/cli/commands/read.ts, test/cli/trace.test.ts]
@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-020.6
     title: The viewer tags an uncommitted test (red → green)
-    status: todo
+    status: in-progress
     after: [T-020.1]
     covers: [S-020.5.1, S-020.5.2, S-020.5.3, S-020.5.4]
     files: [viewer/src/screens/feature/StoriesTab.tsx, viewer/src/screens/Verification.tsx, viewer/src/screens/feature/feature.css, viewer/src/screens/verification.css, viewer/src/screens/feature/StoriesTab.test.tsx, viewer/src/screens/Verification.test.tsx]

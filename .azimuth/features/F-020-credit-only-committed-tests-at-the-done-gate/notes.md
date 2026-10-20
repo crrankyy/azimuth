@@ -19,3 +19,7 @@ markCommitted treats null and [] alike (nothing read, all committed); analyzePro
 ### T-020.5 · 2026-10-20
 
 Docs (T-020.7): both marks can appear in a fixed order, '<file>: <name> (mention) (uncommitted)'; a mention still shows only with --all, committed or not.
+
+### T-020.6 · 2026-10-20
+
+The tag shows on #/features/F-NNN/stories (chip 'passing · N tests · 1 uncommitted', tag after the test name) and on #/verification in the Test column. The Test cell clips overflow, so a long file name can hide the tag there. verification.css sets font-family var(--font-text) on the tag because the cell is monospace.
