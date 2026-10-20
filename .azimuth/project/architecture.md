@@ -1,6 +1,6 @@
 ---
-updated: 2026-10-20
-reconciled_at: b03346c
+updated: 2026-10-21
+reconciled_at: bd1e2c3
 modules:
   - name: core
     path: src/core
@@ -138,7 +138,11 @@ prints and the server pushes to the viewer over SSE.
 - Finishing tasks: `azimuth task finish` (`src/core/finish.ts`) checks the feature, adds the
   optional note, stages the task's changed files and the feature's records, commits with a
   `Refs:` trailer, runs `verifyBatch` and moves the task to done, stopping at the first failure
-  (after a failed verify the commit stays and only the log entry follows); `azimuth brief`
+  (after a failed verify the commit stays and only the log entry follows). Its check step reads
+  `git status` and refuses, before anything is written, a changed file outside the task that adds
+  a marker for a scenario the task covers or an impact path no other in-progress task lists;
+  `--adopt` writes such paths into the task's `files` in plan.md, which isn't in the spec hash;
+  `azimuth brief`
   (`src/core/task-brief.ts`) prints a subagent prompt from the model alone, without git or a
   clock.
 - Viewer: each issue has a page at `#/issues/<id>/page` (`viewer/src/screens/issues/`), whose

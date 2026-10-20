@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-019.5
     title: CLI docs, build and azimuth skills, and full verification
-    status: in-progress
+    status: done
     after: [T-019.4]
     covers: []
     files: [docs/cli.md, plugin/skills/build/SKILL.md, plugin/skills/azimuth/SKILL.md]
