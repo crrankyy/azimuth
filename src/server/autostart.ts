@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { closeSync, mkdirSync, openSync, realpathSync, statSync, unlinkSync } from "node:fs";
 import { basename, join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadConfig } from "../core/config";
 import { processAlive } from "../core/live";
 import { sharedCacheDir } from "../core/lock";
 import { VERSION } from "../core/version";
@@ -56,6 +57,34 @@ export async function healthy(
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Resolves true as soon as `alive(pid)` returns false, checking at once and then every 50 ms;
+ * resolves false once `timeoutMs` has passed with the process still running. Never throws.
+ */
+export async function waitForExit(
+  pid: number,
+  timeoutMs: number,
+  alive: (pid: number) => boolean = processAlive,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (!alive(pid)) return true;
+    const left = deadline - Date.now();
+    if (left <= 0) return false;
+    await sleep(Math.min(50, left));
+  }
+}
+
+/**
+ * `--port <recorded port>` when the recorded viewer started under the viewer.port config.yaml
+ * still holds, so its replacement comes back where open pages look for it. Nothing otherwise: a
+ * changed viewer.port (or an unknown one, in a record from before 0.3) applies as configured.
+ */
+function keptPortArgs(root: string, existing: ViewerRecord | null): string[] {
+  if (!existing || existing.config_port !== loadConfig(root).config.viewer.port) return [];
+  return ["--port", String(existing.port)];
+}
+
 /** Exclusive "someone is starting the viewer" marker, abandoned after 10 seconds. */
 function claimStart(root: string): boolean {
   const dir = sharedCacheDir(root);
@@ -84,8 +113,9 @@ function releaseStart(root: string): void {
 
 /**
  * Makes sure one viewer serves this project and returns its URL. Reuses a healthy or busy
- * server, restarts one from an older build, otherwise starts a detached server. Waits at most
- * `waitMs` for it to come up; returns null if it isn't up yet.
+ * server, restarts one from an older build (waiting up to a second for it to exit), otherwise
+ * starts a detached server, on the recorded port while viewer.port is unchanged. Waits at most
+ * `waitMs` for it to come up, not counting the exit wait; returns null if it isn't up yet.
  */
 export async function ensureViewer(root: string, waitMs = 1_500): Promise<string | null> {
   const build = buildId();
@@ -99,10 +129,13 @@ export async function ensureViewer(root: string, waitMs = 1_500): Promise<string
       } catch {
         // Already gone.
       }
+      // Until it exits it holds its port, which the replacement may ask for or be configured on.
+      await waitForExit(existing.pid, 1_000);
     }
   }
   if (claimStart(root)) {
-    const child = spawn(process.execPath, [cliPath(), "view", "--serve", "--root", root], {
+    const args = [cliPath(), "view", "--serve", "--root", root, ...keptPortArgs(root, existing)];
+    const child = spawn(process.execPath, args, {
       cwd: root,
       detached: true,
       stdio: "ignore",

@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-024.3
     title: Cross-feature groups of ready tasks (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-024.3.1, S-024.3.2, S-024.3.3]
     files: [src/core/next.ts, test/core/next.test.ts]

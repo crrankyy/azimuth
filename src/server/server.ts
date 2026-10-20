@@ -4,6 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { buildIndex } from "../core/build-index";
+import { loadConfig } from "../core/config";
 import { AzimuthError } from "../core/errors";
 import { sharedCacheDir } from "../core/lock";
 import { anySessionOpen, liveDir, processAlive, readLiveSessions } from "../core/live";
@@ -303,6 +304,9 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
     version: VERSION,
     root,
     started_at: now().toISOString(),
+    // The configured port, not the bound one: a replacement started with --port <old port>
+    // carries it forward, so autostart can tell when viewer.port changed since.
+    config_port: loadConfig(root).config.viewer.port,
   };
   if (opts.register) {
     mkdirSync(dirname(viewerRecordPath(root)), { recursive: true });

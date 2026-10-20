@@ -10,6 +10,11 @@ export interface ViewerRecord {
   version: string;
   root: string;
   started_at: string;
+  /**
+   * config.yaml's viewer.port when this server started (loadConfig, defaults when the file is
+   * missing), whatever port it was given with --port. Absent in records written before 0.3.
+   */
+  config_port?: number;
 }
 
 export function viewerRecordPath(root: string): string {
