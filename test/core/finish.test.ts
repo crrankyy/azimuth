@@ -223,6 +223,8 @@ interface RepoOptions {
   /** config.yaml's verify section. */
   verify?: string;
   files?: Record<string, string>;
+  /** F-001's impact.md entries; featureFiles' default (src/app.ts, modify) when absent. */
+  impact?: { path: string; change: string }[];
 }
 
 /** A git repository whose HEAD holds the project of ST-009.3 to ST-009.5. */
@@ -234,7 +236,12 @@ function repo(options: RepoOptions = {}): string {
     "src/a.ts": "export const a = 0;\n",
     "test/a.test.ts": 'it("S-001.1.1 works", () => {});\n',
     "src/other.ts": "export const other = 0;\n",
-    ...featureFiles({ id: "F-001", status: "in-progress", tasks: options.tasks ?? [T1] }),
+    ...featureFiles({
+      id: "F-001",
+      status: "in-progress",
+      tasks: options.tasks ?? [T1],
+      impact: options.impact,
+    }),
     [`${DIR}stories.md`]: options.stories ?? stories(),
     ...options.files,
   });
@@ -265,6 +272,8 @@ const runFiles = () => {
   const dir = join(root, ".azimuth/cache/runs");
   return existsSync(dir) ? readdirSync(dir) : [];
 };
+/** A file's bytes at HEAD, read raw, to compare with the working copy. */
+const atHead = (path: string) => gitRaw(["show", `HEAD:${path}`]);
 const runJson = (id: string) =>
   JSON.parse(read(`.azimuth/cache/runs/${id}.json`)) as Record<string, unknown>;
 const taskStatus = (id: string) =>
@@ -287,6 +296,24 @@ async function until<T>(get: () => T | null, what: string, deadlineMs = 5_000): 
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
 }
+
+const KEYMAP = 'it("S-001.1.1 maps the default keys", () => {});\n';
+
+/**
+ * The project of F-019's stories: HEAD also holds src/c.ts and test/keymap.test.ts, and F-001's
+ * impact.md modifies src/c.ts.
+ */
+function repo019(options: RepoOptions = {}): string {
+  return repo({
+    impact: [{ path: "src/c.ts", change: "modify" }],
+    ...options,
+    files: { "src/c.ts": "export const c = 0;\n", "test/keymap.test.ts": KEYMAP, ...options.files },
+  });
+}
+
+/** The stray test (#2's repro): a marker for S-001.1.2, which T-001.1 covers, outside its files. */
+const addStrayTest = () =>
+  write("test/keymap.test.ts", `${KEYMAP}it("S-001.1.2 maps the palette keys", () => {});\n`);
 
 function childPid(): number | null {
   if (!existsSync(join(root, "child.pid"))) return null;
@@ -625,5 +652,101 @@ describe("finishTask against real git", () => {
     expect(result.ok).toBe(true);
     expect(step(result, "verify")?.detail).toMatch(/^R-0001 passed in \d+\.\ds$/);
     expect(step(result, "verify")?.output).toMatch(/^waited \d+s for another verify$/);
+  });
+
+  describe("ST-019.3 finish refuses an unlisted file before it writes anything", () => {
+    const CHECK_FAILED =
+      "check failed, stage not-run, commit not-run, verify not-run, done not-run, log not-run";
+
+    it("S-019.3.1 passes changes that need no decision and splits not staged by owner", async () => {
+      const f002 = featureFiles({
+        id: "F-002",
+        slug: "more",
+        status: "in-progress",
+        tasks: [
+          {
+            id: "T-002.1",
+            status: "in-progress",
+            covers: ["S-002.1.1", "S-002.1.2"],
+            files: ["src/c.ts"],
+          },
+        ],
+      });
+      repo019({ files: f002 });
+      changeTaskFiles();
+      write("test/keymap.test.ts", `${KEYMAP}it("S-001.1.1 maps more keys", () => {});\n`);
+      write("src/c.ts", "export const c = 1;\n");
+      write("src/other.ts", "export const other = 1;\n");
+      const log = ".azimuth/features/F-002-more/log.md";
+      write(log, `${read(log)}\n## 2026-10-20T09:00:00Z · agent · note\nLane note.\n`);
+      const result = await finish();
+      expect(result.ok).toBe(true);
+      expect(steps(result)).toBe(
+        "check done, stage done, commit done, verify done, done done, log done",
+      );
+      expect(headFiles()).toEqual(["src/a.ts", "test/a.test.ts"]);
+      expect(result).toMatchObject({
+        not_staged: [log, "src/c.ts", "src/other.ts", "test/keymap.test.ts"],
+        not_staged_outside: ["src/other.ts", "test/keymap.test.ts"],
+        not_staged_other_tasks: ["src/c.ts"],
+        not_staged_records: [log],
+        shared: [],
+      });
+    });
+
+    it("S-019.3.2 refuses the stray test with a note given and writes nothing", async () => {
+      repo019();
+      changeTaskFiles();
+      addStrayTest();
+      const before = head();
+      const result = await finish("T-001.1", { note: "Counts the BOM." });
+      expect(result.ok).toBe(false);
+      expect(steps(result)).toBe(
+        "check failed, note not-run, stage not-run, commit not-run, verify not-run, done not-run, log not-run",
+      );
+      expect(step(result, "check")).toMatchObject({
+        detail:
+          "Changed outside T-001.1's files: test/keymap.test.ts. Adopt each into the task whose lane changed it (task finish <T-ID> --adopt <path,…>), or commit or revert it.",
+        output: "test/keymap.test.ts: adds a marker for S-001.1.2, which T-001.1 covers",
+      });
+      expect([head(), cached()]).toEqual([before, ""]);
+      expect(existsSync(join(root, `${DIR}notes.md`))).toBe(false);
+      expect(read(`${DIR}plan.md`)).toBe(atHead(`${DIR}plan.md`));
+      expect(runFiles()).toEqual([]);
+    });
+
+    it("S-019.3.3 refuses an untracked test file that adds covered markers", async () => {
+      repo019();
+      changeTaskFiles();
+      write(
+        "test/palette.test.ts",
+        'it("S-001.1.1 opens the palette", () => {});\nit("S-001.1.2 closes it", () => {});\n',
+      );
+      const result = await finish();
+      expect(steps(result)).toBe(CHECK_FAILED);
+      expect(step(result, "check")?.output).toBe(
+        "test/palette.test.ts: adds markers for S-001.1.1, S-001.1.2, which T-001.1 covers",
+      );
+      expect(gitRaw(["status", "--porcelain"]).split("\n")).toContain("?? test/palette.test.ts");
+    });
+
+    it("S-019.3.4 refuses an impact path that only a todo task lists", async () => {
+      repo019({
+        tasks: [
+          T1,
+          { id: "T-001.2", status: "todo", covers: [], files: ["src/c.ts"], verify: "echo ok" },
+        ],
+      });
+      changeTaskFiles();
+      write("src/c.ts", "export const c = 1;\n");
+      const result = await finish();
+      expect(steps(result)).toBe(CHECK_FAILED);
+      expect(step(result, "check")?.detail).toMatch(
+        /^Changed outside T-001\.1's files: src\/c\.ts\./,
+      );
+      expect(step(result, "check")?.output).toBe(
+        "src/c.ts: a modify path in F-001's impact.md that no in-progress task lists",
+      );
+    });
   });
 });

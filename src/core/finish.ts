@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { analyzeProject } from "./build-index";
 import { AzimuthError, isAzimuthError } from "./errors";
 import { headSha, isGitRepo, readBlobs, readCommits } from "./git";
@@ -47,6 +49,17 @@ export interface FinishResult {
   run: Id | null;
   /** True when `signal` aborted the verify step. */
   interrupted: boolean;
+  /** not_staged's paths outside `.azimuth/` that no other in-progress task lists, sorted. */
+  not_staged_outside: string[];
+  /** not_staged's paths outside `.azimuth/` that another in-progress task lists, sorted. */
+  not_staged_other_tasks: string[];
+  /** not_staged's paths under `.azimuth/`, sorted. */
+  not_staged_records: string[];
+  /**
+   * Staged paths matching parallel.shared_files that another in-progress task also lists,
+   * sorted by path; [] until the stage step staged something.
+   */
+  shared: SharedStaged[];
 }
 
 export interface FinishOptions extends Who {
@@ -281,6 +294,8 @@ function porcelainPaths(out: string): string[] {
 
 const nulList = (out: string) => out.split("\0").filter(Boolean);
 
+const STATUS_ARGS = ["status", "--porcelain=v1", "-z", "--untracked-files=all"];
+
 function tail(text: string, lines: number): string {
   return text.replace(/\s+$/, "").split("\n").slice(-lines).join("\n");
 }
@@ -336,10 +351,51 @@ const moveFirst = (id: string, status: string) =>
   `${id} is ${status}. Move it to in-progress first (\`azimuth move ${id} in-progress\`).`;
 
 type Checked =
-  | { ok: true; feature: FeatureEntity; task: TaskRaw; tailLines: number; logDepth: number }
+  | {
+      ok: true;
+      feature: FeatureEntity;
+      task: TaskRaw;
+      /** Every other in-progress task, of any feature, in model order. */
+      others: TaskRaw[];
+      sharedFiles: string[];
+      tailLines: number;
+      logDepth: number;
+    }
   | { ok: false; detail: string; output: string };
 
 const refuse = (detail: string, output = ""): Checked => ({ ok: false, detail, output });
+
+/** A working-tree file's text; null when it doesn't exist (deleted). */
+function readWorking(abs: string): string | null {
+  try {
+    return readFileSync(abs, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw e;
+  }
+}
+
+/** unlistedFiles' texts, with HEAD's copies of `testPaths` read in one readBlobs call. */
+function changedTexts(root: string, testPaths: string[]): UnlistedContext["texts"] {
+  const heads = readBlobs(
+    root,
+    testPaths.map((path) => `HEAD:${path}`),
+  );
+  return (path) => ({
+    working: readWorking(join(root, path)),
+    // readBlobs stops early on a truncated reply, leaving later specs out of the map.
+    head: heads.get(`HEAD:${path}`) ?? null,
+  });
+}
+
+/** One line of the refusal's output: the path and why the check refuses it. */
+function unlistedLine({ path, reason }: UnlistedFile, taskId: string, featureId: string): string {
+  if (reason.kind === "impact") {
+    return `${path}: a ${reason.change} path in ${featureId}'s impact.md that no in-progress task lists`;
+  }
+  const markers = reason.scenarios.length === 1 ? "a marker" : "markers";
+  return `${path}: adds ${markers} for ${reason.scenarios.join(", ")}, which ${taskId} covers`;
+}
 
 /** The check step: reads only, in the order of contract.md's table. */
 function check(root: string, taskId: string, featureId: string, now: Date): Checked {
@@ -365,6 +421,11 @@ function check(root: string, taskId: string, featureId: string, now: Date): Chec
     return refuse(`${featureId} has ${count}`, errors.map(problemText).join("\n"));
   }
   const tailLines = model.config.verify.output_tail_lines;
+  const status = runGit(root, STATUS_ARGS);
+  if (status.code !== 0) {
+    return refuse(`git status failed (exit ${status.code})`, tail(status.output, tailLines));
+  }
+  const changed = porcelainPaths(status.stdout);
   const staged = runGit(root, ["diff", "--cached", "--name-only", "--no-renames", "-z"]);
   if (staged.code !== 0) {
     return refuse(`git diff failed (exit ${staged.code})`, tail(staged.output, tailLines));
@@ -376,7 +437,32 @@ function check(root: string, taskId: string, featureId: string, now: Date): Chec
       `Already staged, but not ${taskId}'s files or ${featureId}'s records: ${outside.join(", ")}. Unstage them (git restore --staged <path>) or commit them first.`,
     );
   }
-  return { ok: true, feature, task, tailLines, logDepth: model.config.git.log_depth };
+  const others = model.features.flatMap((f) =>
+    f.tasks.filter((t) => t.status === "in-progress" && t.id !== taskId),
+  );
+  const testGlobs = model.config.tests.globs;
+  const unlisted = unlistedFiles(changed, {
+    task,
+    feature,
+    others,
+    testGlobs,
+    texts: changedTexts(root, changed.filter(testFileMatcher(testGlobs))),
+  });
+  if (unlisted.length > 0) {
+    return refuse(
+      `Changed outside ${taskId}'s files: ${unlisted.map((u) => u.path).join(", ")}. Adopt each into the task whose lane changed it (task finish <T-ID> --adopt <path,…>), or commit or revert it.`,
+      unlisted.map((u) => unlistedLine(u, taskId, featureId)).join("\n"),
+    );
+  }
+  return {
+    ok: true,
+    feature,
+    task,
+    others,
+    sharedFiles: model.config.parallel.shared_files,
+    tailLines,
+    logDepth: model.config.git.log_depth,
+  };
 }
 
 interface VerifyOutcome {
@@ -450,6 +536,10 @@ export async function finishTask(
     commit: null,
     run: null,
     interrupted: false,
+    not_staged_outside: [],
+    not_staged_other_tasks: [],
+    not_staged_records: [],
+    shared: [],
   };
   const mark = (name: FinishStepName, status: FinishStepStatus, detail: string, output = "") => {
     const found = result.steps.find((s) => s.step === name);
@@ -473,13 +563,14 @@ export async function finishTask(
     return result;
   }
   mark("check", "done", `${featureId} has no errors`);
-  const { feature, task, tailLines, logDepth } = checked;
+  const { feature, task, others, sharedFiles, tailLines, logDepth } = checked;
 
   if (hasNote && !attempt("note", () => addNote(root, taskId, opts.note ?? "", who).message)) {
     return result;
   }
 
-  const status = runGit(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
+  // Read again: the note step may have written notes.md since the check.
+  const status = runGit(root, STATUS_ARGS);
   if (status.code !== 0) {
     mark(
       "stage",
@@ -491,6 +582,10 @@ export async function finishTask(
   }
   const selection = selectPaths(porcelainPaths(status.stdout), task, feature.dir);
   result.not_staged = selection.not_staged;
+  const split = splitNotStaged(selection.not_staged, others);
+  result.not_staged_outside = split.outside;
+  result.not_staged_other_tasks = split.other_tasks;
+  result.not_staged_records = split.records;
   const unchanged = `none of ${taskId}'s files and none of ${featureId}'s records changed`;
   let sha: string;
   if (selection.staged.length === 0) {
@@ -517,6 +612,7 @@ export async function finishTask(
       return result;
     }
     result.staged = selection.staged;
+    result.shared = sharedStaged(selection.staged, sharedFiles, others);
     mark("stage", "done", selection.staged.join(", "));
 
     const message = withRefsTrailer(opts.message, taskId);

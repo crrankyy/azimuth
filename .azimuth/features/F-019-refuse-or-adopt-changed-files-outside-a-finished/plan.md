@@ -2,7 +2,7 @@
 tasks:
   - id: T-019.1
     title: testFileMatcher, unlistedFiles, splitNotStaged and sharedStaged (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-019.1.1, S-019.1.2, S-019.1.3, S-019.2.1, S-019.2.2, S-019.2.3, S-019.2.4]
     files: [src/core/glob.ts, test/core/glob.test.ts, src/core/finish.ts, test/core/finish.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-019.2
     title: The check refuses unlisted files; the result splits not staged (red → green)
-    status: todo
+    status: in-progress
     after: [T-019.1]
     covers: [S-019.3.1, S-019.3.2, S-019.3.3, S-019.3.4]
     files: [src/core/finish.ts, test/core/finish.test.ts]
