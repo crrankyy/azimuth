@@ -337,7 +337,8 @@ export const set: Command = {
 
 export const log: Command = {
   usage: 'log <ID> "<message>" [--review]',
-  summary: "Add a progress note (or, as you, a change request) to a feature's log",
+  summary:
+    "Add a progress note to a feature's log or an issue's Status notes (or, as you, a change request to a feature)",
   options: { review: { type: "boolean" }, json: { type: "boolean" } },
   run({ values, positionals }) {
     const id = requirePositional(positionals, 0, "ID");

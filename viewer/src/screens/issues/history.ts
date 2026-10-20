@@ -15,6 +15,8 @@ export type HistoryEntry =
   | { kind: "created"; at: ISODate; by: Id | "you" | "agent" }
   /** A Status notes bullet `<stamp> · <actor> · <from> → <to>: <reason>` (addStatusNote's format). */
   | { kind: "status"; at: ISODateTime; actor: Actor; from: string; to: string; reason: string }
+  /** A Status notes bullet `<stamp> · <actor> · <text>` that isn't a move (azimuth log's form). */
+  | { kind: "logged"; at: ISODateTime; actor: Actor; text: string }
   /** An index commit whose `refs` include the issue's ID. */
   | { kind: "commit"; at: ISODateTime; sha: Sha; subject: string }
   /** A Status notes bullet in any other shape, kept as written. */
@@ -24,6 +26,7 @@ type DatedEntry = Exclude<HistoryEntry, { kind: "note" }>;
 
 const STATUS_NOTES = /^#{1,6}\s+Status notes\s*$/i;
 const MOVE_NOTE = /^(\S+) · (you|agent) · (\S+) → (\S+): (.+)$/;
+const LOG_NOTE = /^(\S+) · (you|agent) · (.+)$/;
 
 /** The body without its "## Status notes" section (matched like sectionOf); the rest unchanged. */
 export function bodyWithoutStatusNotes(body: Markdown): Markdown {
@@ -48,11 +51,21 @@ function statusBullets(body: Markdown): string[] {
   return bullets;
 }
 
+const isTime = (at: string) => !Number.isNaN(Date.parse(at));
+
+/** A move first, then a logged note (a move's bullet matches both), else the bullet as written. */
 function parseBullet(text: string): HistoryEntry {
-  const match = MOVE_NOTE.exec(text);
-  const [, at = "", actor = "", from = "", to = "", reason = ""] = match ?? [];
-  if (!match || Number.isNaN(Date.parse(at))) return { kind: "note", at: null, text };
-  return { kind: "status", at, actor: actor as Actor, from, to, reason };
+  const move = MOVE_NOTE.exec(text);
+  if (move && isTime(move[1] ?? "")) {
+    const [, at = "", actor = "", from = "", to = "", reason = ""] = move;
+    return { kind: "status", at, actor: actor as Actor, from, to, reason };
+  }
+  const logged = LOG_NOTE.exec(text);
+  if (logged && isTime(logged[1] ?? "")) {
+    const [, at = "", actor = "", note = ""] = logged;
+    return { kind: "logged", at, actor: actor as Actor, text: note };
+  }
+  return { kind: "note", at: null, text };
 }
 
 /** `created` names a day, so it counts from local midnight: a move later that day sorts after it. */

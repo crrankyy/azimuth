@@ -107,7 +107,8 @@ const STATUS_NOTES = "## Status notes";
 
 /**
  * Adds a bullet to the body's "Status notes" section, creating the section at the end when it is
- * missing. Issues have no log, so the reasons given for their moves are kept here.
+ * missing. Issues have no log, so the reasons given for their moves and the notes `azimuth log`
+ * adds are kept here.
  */
 export function addStatusNote(text: string, note: string): string {
   const eol = text.includes("\r\n") ? "\r\n" : "\n";
@@ -894,7 +895,29 @@ export function setField(
   });
 }
 
-/** Adds a note (anyone) or a review comment (you) to a feature's log. */
+/** Adds a note to an issue's Status notes, next to the reasons of its moves. */
+function addIssueNote(root: string, id: string, body: string, opts: Who): Result {
+  const now = opts.now ?? new Date();
+  return withLock(root, () => {
+    const { model } = analyzeProject(root, now);
+    const issue = model.issues.find((x) => x.id === id);
+    if (!issue) throw new AzimuthError("not-found", `${id} does not exist.`);
+    const updated = addStatusNote(
+      read(root, issue.file),
+      `${stamp(now)} · ${opts.actor} · ${body.trim()}`,
+    );
+    return {
+      ref: id,
+      from: null,
+      to: null,
+      changed: save(root, [{ file: issue.file, text: updated }]),
+      auto: false,
+      message: `${id}: note added`,
+    };
+  });
+}
+
+/** Adds a note (anyone) or a review comment (you) to a feature's log, or a note to an issue. */
 export function addLogEntry(
   root: string,
   ref: string,
@@ -905,9 +928,17 @@ export function addLogEntry(
   if (!body.trim()) throw new AzimuthError("invalid", "A log entry needs some text.");
   if (type === "review" && opts.actor !== "you")
     throw new AzimuthError("policy", "Only the user requests changes.");
+  if (idKind(ref) === "issue") {
+    if (type === "review")
+      throw new AzimuthError(
+        "invalid",
+        `Change requests (--review) go to a feature; ${ref} is an issue.`,
+      );
+    return addIssueNote(root, ref, body, opts);
+  }
   const featureId = featureOf(ref);
   if (!featureId)
-    throw new AzimuthError("invalid", `${ref} is not a feature, story, scenario or task.`);
+    throw new AzimuthError("invalid", `${ref} is not a feature, story, scenario, task or issue.`);
   const now = opts.now ?? new Date();
   return withLock(root, () => {
     const { ctx } = analyzeProject(root, now);

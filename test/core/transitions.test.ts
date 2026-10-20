@@ -443,6 +443,74 @@ describe("milestones, issues, fields and logs", () => {
   });
 });
 
+describe("F-024 log on issues", () => {
+  const BUG = ".azimuth/issues/BUG-0001-x.md";
+  const now = new Date("2026-10-20T09:00:00Z");
+  const bugFile = (body: string, status = "") =>
+    `---\nid: BUG-0001\ntype: bug\ntitle: X\n${status}severity: low\ncreated: 2026-10-01\n---\n${body}`;
+  const fileOf = (root: string) => readFileSync(join(root, BUG), "utf8");
+
+  it("S-024.1.1 adds a note on a bug as a Status notes bullet", () => {
+    const tree = repo({ [BUG]: bugFile("## Repro\nRun it.\n") });
+    const result = addLogEntry(tree.root, "BUG-0001", "note", "Reproduced with a BOM", {
+      actor: "agent",
+      now,
+    });
+    expect(fileOf(tree.root)).toBe(
+      "---\nid: BUG-0001\ntype: bug\ntitle: X\nseverity: low\ncreated: 2026-10-01\n---\n## Repro\nRun it.\n\n## Status notes\n- 2026-10-20T09:00:00Z · agent · Reproduced with a BOM\n",
+    );
+    expect(result).toEqual({
+      ref: "BUG-0001",
+      from: null,
+      to: null,
+      changed: [BUG],
+      auto: false,
+      message: "BUG-0001: note added",
+    });
+  });
+
+  it("S-024.1.2 puts a note after the moves' bullets, its lines indented", () => {
+    const tree = repo({
+      [BUG]: bugFile(
+        "## Status notes\n- 2026-10-20T08:00:00Z · you · open → in-progress: Taking it\n\n## Actual\nIt breaks.\n",
+        "status: in-progress\n",
+      ),
+    });
+    const [, frontmatter] = fileOf(tree.root).split("---\n");
+    addLogEntry(tree.root, "BUG-0001", "note", "Fails on Windows:\nonly with CRLF", {
+      actor: "agent",
+      now,
+    });
+    const [, after, body] = fileOf(tree.root).split("---\n");
+    expect(body).toBe(
+      "## Status notes\n- 2026-10-20T08:00:00Z · you · open → in-progress: Taking it\n- 2026-10-20T09:00:00Z · agent · Fails on Windows:\n  only with CRLF\n\n## Actual\nIt breaks.\n",
+    );
+    expect(after).toBe(frontmatter);
+    expect(after).toContain("status: in-progress\n");
+  });
+
+  it("S-024.1.5 refuses a change request on an issue", () => {
+    const tree = repo({ [BUG]: bugFile("## Repro\nRun it.\n") });
+    const before = fileOf(tree.root);
+    const error = errorOf(() =>
+      addLogEntry(tree.root, "BUG-0001", "review", "Look again", { actor: "you", now }),
+    );
+    expect([error.code, error.message]).toEqual([
+      "invalid",
+      "Change requests (--review) go to a feature; BUG-0001 is an issue.",
+    ]);
+    expect(fileOf(tree.root)).toBe(before);
+  });
+
+  it("S-024.1.6 refuses an issue that doesn't exist", () => {
+    const tree = repo({ [BUG]: bugFile("## Repro\nRun it.\n") });
+    const error = errorOf(() =>
+      addLogEntry(tree.root, "BUG-0009", "note", "Reproduced", { actor: "agent", now }),
+    );
+    expect([error.code, error.message]).toEqual(["not-found", "BUG-0009 does not exist."]);
+  });
+});
+
 describe("allocation", () => {
   it("allocates sequential IDs, skips taken ones and never reissues", () => {
     const tree = repo({ ".azimuth/questions/Q-0003.md": "x" });

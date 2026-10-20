@@ -107,3 +107,33 @@ describe("F-017 issue history", () => {
     ]);
   });
 });
+
+describe("F-024 a logged note in the issue history", () => {
+  it("S-024.1.7 dates a logged note and sorts it between the move and the commit", () => {
+    const index = movedAndCommitted();
+    const issue = bug1(index);
+    issue.body = `${issue.body}- 2026-10-15T13:00:00Z · agent · Fails only with two workers\n`;
+    expect(rows(renderHistory(index))).toEqual([
+      "Oct 14 You filed it",
+      "Oct 15 An agent moved it from Open to In progress: Reproduced with two workers",
+      "Oct 15 An agent noted: Fails only with two workers",
+      "Oct 16 abc1234 fix(F-005): keep the lease while recording the outcome",
+    ]);
+    expect(issueHistory(issue, index.commits)[2]).toEqual({
+      kind: "logged",
+      at: "2026-10-15T13:00:00Z",
+      actor: "agent",
+      text: "Fails only with two workers",
+    });
+  });
+
+  it("S-024.1.8 keeps a bullet whose first part isn't a time as written", () => {
+    const index = fixture();
+    const issue = bug1(index);
+    issue.body = `${issue.body}\n\n## Status notes\n- someday · you · Look again\n`;
+    expect(issueHistory(issue, index.commits)).toEqual([
+      { kind: "created", at: "2026-10-14", by: "you" },
+      { kind: "note", at: null, text: "someday · you · Look again" },
+    ]);
+  });
+});

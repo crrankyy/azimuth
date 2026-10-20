@@ -2,7 +2,7 @@
 tasks:
   - id: T-024.1
     title: Log on issues (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-024.1.1, S-024.1.2, S-024.1.3, S-024.1.4, S-024.1.5, S-024.1.6, S-024.1.7, S-024.1.8]
     files: [src/core/transitions.ts, src/cli/commands/write.ts, viewer/src/screens/issues/history.ts, viewer/src/screens/issues/IssueHistory.tsx, test/core/transitions.test.ts, test/cli/log.test.ts, viewer/src/screens/issues/history.test.tsx]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-024.3
     title: Cross-feature groups of ready tasks (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-024.3.1, S-024.3.2, S-024.3.3]
     files: [src/core/next.ts, test/core/next.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-024.5
     title: A replaced viewer keeps its port (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-024.5.1, S-024.5.2, S-024.5.3, S-024.5.4, S-024.5.5, S-024.5.6, S-024.5.7, S-024.5.8]
     files: [src/server/autostart.ts, src/server/registry.ts, src/server/server.ts, test/server/autostart.test.ts]

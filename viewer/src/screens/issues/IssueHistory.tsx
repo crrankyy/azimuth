@@ -30,6 +30,12 @@ function EntryText({ entry }: { entry: HistoryEntry }) {
           <b>{statusLabel(entry.to)}</b>: {entry.reason}
         </>
       );
+    case "logged":
+      return (
+        <>
+          <Who by={entry.actor} /> noted: {entry.text}
+        </>
+      );
     case "commit":
       return (
         <>
