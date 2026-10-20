@@ -102,7 +102,7 @@ autonomy:
   approve_specs: auto # auto | manual
   accept_adrs: auto # auto | manual
   questions: ask # ask | proceed: agents take their own recommendation on non-blocking questions
-  strict: false # true: auto-approval also requires zero warnings
+  strict: false # true: auto-approval also requires zero warnings (hints aside)
 stale_after_days: 5
 verify:
   timeout_seconds: 600
@@ -198,6 +198,11 @@ goal: No event is silently lost.
 The body is optional (scope notes, release notes). Features join a milestone through their own
 `milestone` field.
 
+A planned or active milestone with at least one feature, every one of them done, produces
+`W-MILESTONE-READY` on its file. Cancelled and superseded features don't count; a deferred one
+counts and isn't done. `azimuth next` lists such a milestone after critical issues and before
+feature work, as `Ask the user to release M-02 in the viewer`: only the user releases a milestone.
+
 ## Features
 
 A feature is a folder, `features/F-NNN-<slug>/`. An `idea` needs only `feature.md`; the other
@@ -285,9 +290,11 @@ Stories and scenarios are parsed from headings. No frontmatter is required.
 | Scenario heading | `### S-NNN.n.m · <title> {kind}`, where kind is `happy`, `negative` or `edge`. The scenario ID must start with its story's number.                     |
 | Clauses          | List items `**GIVEN**`, `**WHEN**`, `**THEN**`, each exactly once, in that order. `**AND**` items extend the clause before them (joined with " and "). |
 | Vague THEN       | A THEN that says "is handled", "works correctly", "appropriate", "as expected" or "gracefully" produces `W-VAGUE`.                                     |
+| Measured value   | In a draft, a THEN or AND line holding what looks like a measured value produces the hint `W-MEASURED` (see [Placeholders](#placeholders)).            |
 
 Every story needs at least one `happy` scenario and at least one `negative` or `edge`
-scenario before approval.
+scenario before approval. `azimuth check` warns about a story without them (`W-NO-NEGATIVE`) as
+soon as the feature has stories, while it is still an idea too.
 
 #### Placeholders
 
@@ -313,6 +320,16 @@ scenario's first `{?}` with `{=<value>}` and changes no other character of the f
 | Done gate   | `done.placeholders-settled` fails while a scenario holds a `{?}` and names those scenarios.                                                                                                                               |
 | Hand edits  | The [spec hash](#spec-hash) reads every settled value as `{?}`, so writing or changing a `{=…}` by hand doesn't make the approval stale, and leaves no log entry for you to review. `azimuth settle` is the recorded way. |
 
+While the feature is a draft, `azimuth check` points at values that look measured. A THEN line,
+or an AND line after it, that holds a range of digits (`9..12`, `2..=5`), or a name starting with
+`offset`, `caret`, `byte`, `column` or `position` in any case, followed by a number or range
+(`caret: 24`, `position = 7`, `byte_range: 34..39`, `offset: Some(63)`), produces
+`W-MEASURED`, once per line. If only the code can measure the value, write `{?}` instead. Open and
+settled placeholders never count, and neither do GIVEN and WHEN lines with the AND lines after
+them, `byte-for-byte` or function names such as `byte_to_char(5)`. `W-MEASURED` is a hint (see
+[Problems](concepts.md#problems)): `autonomy.strict` doesn't count it, and it goes away at
+approval.
+
 ### `contract.md`
 
 Optional frontmatter `language: typescript` (otherwise the first fenced code block's language
@@ -337,6 +354,10 @@ tasks:
 
 The body is optional free text for people and agents; Azimuth doesn't parse it or show it in the
 viewer. The `after` graph must be acyclic, and every scenario must be covered by at least one task.
+
+While the feature is a draft, a task with empty `covers` produces the hint `W-NO-COVERS`, unless
+it lists files and every one ends in `.md` (a task that only documents). It is fine to leave on a
+task that only scaffolds or wires, and goes away at approval.
 
 ### `log.md`
 

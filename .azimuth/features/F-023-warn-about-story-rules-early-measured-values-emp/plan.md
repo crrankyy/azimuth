@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-023.4
     title: Hints don't count toward strict approval (red → green)
-    status: in-progress
+    status: done
     after: [T-023.3]
     covers: [S-023.4.1, S-023.4.2, S-023.4.3]
     files: [src/core/validate.ts, src/core/gates.ts, test/core/strict-hints.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-023.5
     title: Docs, spec skill, strict comments and full verification
-    status: todo
+    status: in-progress
     after: [T-023.4]
     covers: []
     files: [docs/file-format.md, docs/concepts.md, docs/cli.md, plugin/skills/spec/SKILL.md, src/core/init.ts, src/core/types.ts]

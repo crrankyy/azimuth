@@ -45,7 +45,7 @@ table, who is acting, and the gate for forward moves. A gate is a list of checks
 | Move                    | Gate checks                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | idea → draft            | Spec files written: impact, stories, contract and plan exist, with at least one story and one task.                                                                                                                                                                                                                                                                                                                        |
-| draft → approved        | No errors in the feature · every story has a happy and a negative or edge scenario · every scenario has GIVEN, WHEN and THEN · every scenario is covered by a task · every task has a verify command · the spec is committed · no open blocking question · dependencies exist and form no cycle · size is not XL. (With `autonomy.strict`: no warnings either.)                                                            |
+| draft → approved        | No errors in the feature · every story has a happy and a negative or edge scenario · every scenario has GIVEN, WHEN and THEN · every scenario is covered by a task · every task has a verify command · the spec is committed · no open blocking question · dependencies exist and form no cycle · size is not XL. (With `autonomy.strict`: no warnings either; hints don't count.)                                         |
 | approved → in-progress  | The spec is unchanged since approval · every dependency is done (you may override this one with a reason).                                                                                                                                                                                                                                                                                                                 |
 | in-progress → verifying | Every task is done or skipped with a note · no open blocking question.                                                                                                                                                                                                                                                                                                                                                     |
 | verifying → done        | The latest verify run of every task passed at HEAD · every scenario has a committed passing test · no `{?}` placeholder is left in `stories.md` · `as-built.md` exists, parses and gives a reason for every deviation · `architecture.md` was reconciled after the feature's last commit. Commits that only change `.azimuth/` (the as-built, the reconciliation, recorded decisions) don't count for either commit check. |
@@ -73,6 +73,11 @@ questions `open → answered` (or `obsolete`; you can replace an agent's answer 
 → `superseded`, rejected → `proposed` (you, or an agent for a decision an agent rejected) and
 accepted → `proposed` (you only, for a decision an agent accepted); milestones `planned → active → released`; issues `open → in-progress → resolved |
 wontfix`.
+
+Only you release a milestone. A planned or active milestone with at least one feature, every one
+of them done (cancelled and superseded features don't count; a deferred one isn't done), is
+reported by `azimuth check` (`W-MILESTONE-READY`), and `azimuth next` asks the agent to have you
+release it.
 
 An agent builds each task in a loop: `azimuth move <T-ID> in-progress`, the tests and the code
 (written by the agent itself, or by a subagent whose prompt is `azimuth brief <T-ID>`, built
@@ -109,12 +114,14 @@ autonomy:
   approve_specs: auto # agents approve a spec once every gate check passes
   accept_adrs: auto # agents accept their own decisions
   questions: ask # proceed: agents take their own recommendation on non-blocking questions
-  strict: false # true: automatic approval also requires zero warnings
+  strict: false # true: automatic approval also requires zero warnings (hints aside)
 ```
 
 With `auto`, an agent that finishes a spec approves it and moves on to building; the gates still
 apply. Every automatic approval of a spec and acceptance or rejection of a decision appears in your inbox as
 **Review** until you acknowledge it or send it back (a spec to draft, a decision to proposed).
+With `strict: true`, approval also requires no warnings in the feature except hints, which may be
+deliberate (see [Problems](#problems)).
 
 With `questions: proceed`, a question an agent raises is answered with its recommendation as soon
 as `azimuth new question` creates it, when it is not blocking and exactly one option is
@@ -264,3 +271,10 @@ cycles, status edited by hand) and warnings (worth fixing: vague THEN clauses, p
 architecture's modules, file conflicts, stale architecture). Entities with schema errors are left
 out of the index until fixed. Agents run `check` after every edit; the plugin also reports to
 Claude, right after the edit, any edit that leaves an `.azimuth/` file invalid.
+
+Two warnings are hints: likely improvements to a draft that may be deliberate. `W-MEASURED`
+points at a THEN or AND value that looks like one only the code can measure (if it is, write
+`{?}`), and `W-NO-COVERS` at a task that covers no scenario (fine for a task that only scaffolds
+or wires). `check`, `status --brief` and the viewer show them like any other warning. Nothing
+silences them, they go away when the feature is approved, and `autonomy.strict` doesn't count
+them.

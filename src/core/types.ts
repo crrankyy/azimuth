@@ -115,7 +115,7 @@ export interface Autonomy {
    * exactly one recommended option is answered with it at once (answer.by: agent).
    */
   questions: QuestionAutonomy;
-  /** When true, auto-approval also requires zero warnings in the feature. */
+  /** When true, auto-approval also requires zero warnings in the feature, hints aside. */
   strict: boolean;
 }
 

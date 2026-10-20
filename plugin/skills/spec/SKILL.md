@@ -87,8 +87,14 @@ Run `azimuth new spec <F-ID>` to scaffold missing files, then replace the placeh
 
 ## 4. Check, draft, commit, approve
 
-1. `azimuth check <F-ID>` until it reports no errors (warnings: fix unless deliberate).
-2. `azimuth move <F-ID> draft`.
+1. `azimuth check <F-ID>` until it reports no errors (warnings: fix unless deliberate). It
+   applies the story rule to the idea already (`W-NO-NEGATIVE`), so it catches here a story the
+   approval gate would refuse.
+2. `azimuth move <F-ID> draft`, then `azimuth check <F-ID>` again for the draft's hints.
+   `W-MEASURED`: if only the code can measure the value, write it as `{?}` (section 3);
+   otherwise keep it. `W-NO-COVERS`: give the task the scenarios it makes pass; a task that only
+   scaffolds or wires may keep it, and a task whose files are all Markdown never gets it. Hints
+   don't count toward `autonomy.strict`.
 3. Commit the spec: `docs(<F-ID>): spec <title>` with `Refs: <F-ID>`.
 4. If no blocking question is open, run `azimuth move <F-ID> approved`. The CLI approves it when
    every gate check passes and the project allows automatic approval. If it refuses because

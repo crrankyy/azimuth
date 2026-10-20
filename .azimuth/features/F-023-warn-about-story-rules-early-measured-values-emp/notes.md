@@ -15,3 +15,7 @@ T-023.4: put HINT_CODES and isHint near the top of validate.ts; the two codes co
 ### T-023.4 · 2026-10-20
 
 Docs (T-023.5): word the strict comments as 'hints aside'; codes outside HINT_CODES (W-NO-NEGATIVE, W-VAGUE, W-MILESTONE-READY) still count toward strict. S-023.4.1's warnings come out W-NO-COVERS first (sortProblems puts plan.md before stories.md); the THEN fixes no order and the test compares them sorted. gates.ts now imports isHint from validate.ts (no cycle).
+
+### T-023.5 · 2026-10-20
+
+The strict comments say 'auto-approval', but approve.no-warnings runs for any approval when strict is on (pre-existing wording). docs/azimuth-spec.md also lists warning codes; it is the original spec and wasn't updated.
