@@ -21,7 +21,7 @@ const target = (task: string, command = "echo ok"): VerifyProgress => ({
 const run = (
   id: string,
   task: string,
-  fields: Partial<Pick<VerifyRun, "ok" | "exit_code" | "duration_ms" | "output_tail">>,
+  fields: Partial<Pick<VerifyRun, "ok" | "exit_code" | "duration_ms" | "output_tail" | "prebuild">>,
 ): VerifyProgress => ({
   kind: "run",
   run: {
@@ -126,6 +126,49 @@ describe("reportLines", () => {
       expect(reportLines(event, mode)).toEqual([
         "prebuild failed (exit 2) in 3.1s",
         "    no compiler",
+      ]);
+    }
+  });
+
+  it("S-018.4.1 prints a passing prebuild's time in summary mode too", () => {
+    const events: VerifyProgress[] = [
+      {
+        kind: "prebuilt",
+        result: {
+          command: "cargo build",
+          ok: true,
+          exit_code: 0,
+          timed_out: false,
+          duration_ms: 41200,
+          output_tail: "Finished",
+        },
+      },
+      target("T-001.1"),
+      run("R-0001", "T-001.1", { duration_ms: 1200, prebuild: { ok: true, duration_ms: 41200 } }),
+    ];
+    expect(lines(events, "summary")).toEqual([
+      "prebuild passed in 41.2s",
+      "R-0001 T-001.1 passed in 1.2s",
+    ]);
+  });
+
+  it("S-018.4.2 marks runs made after a failed prebuild in both modes", () => {
+    const prebuild = { ok: false, duration_ms: 3100 };
+    const events = [
+      run("R-0001", "T-001.1", { duration_ms: 1200, prebuild }),
+      run("R-0002", "T-001.2", {
+        ok: false,
+        exit_code: 3,
+        duration_ms: 500,
+        output_tail: "boom",
+        prebuild,
+      }),
+    ];
+    for (const mode of MODES) {
+      expect(lines(events, mode)).toEqual([
+        "R-0001 T-001.1 passed in 1.2s after a failed prebuild",
+        "R-0002 T-001.2 failed (exit 3) in 0.5s after a failed prebuild",
+        "    boom",
       ]);
     }
   });

@@ -27,15 +27,16 @@ export function reportLines(event: VerifyProgress, mode: ReportMode): string[] {
       return full ? [color.dim(`prebuild: ${event.command}`)] : [];
     case "prebuilt": {
       const { ok, exit_code, duration_ms, output_tail } = event.result;
-      if (ok && !full) return [];
       const line = `prebuild ${outcome(ok, exit_code)} in ${seconds(duration_ms)}`;
       return ok ? [line] : [line, ...tailLines(output_tail)];
     }
     case "target":
       return full ? [color.dim(`${event.target.task}: ${event.target.command}`)] : [];
     case "run": {
-      const { id, target, ok, exit_code, duration_ms, output_tail } = event.run;
-      const line = `${id} ${target} ${outcome(ok, exit_code)} in ${seconds(duration_ms)}`;
+      const { id, target, ok, exit_code, duration_ms, output_tail, prebuild } = event.run;
+      // Only verify.prebuild_failure: continue lets a run follow a failed prebuild.
+      const after = prebuild?.ok === false ? " after a failed prebuild" : "";
+      const line = `${id} ${target} ${outcome(ok, exit_code)} in ${seconds(duration_ms)}${after}`;
       return ok ? [line] : [line, ...tailLines(output_tail)];
     }
   }

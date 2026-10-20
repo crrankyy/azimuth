@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-018.5
     title: The done gate asks for a rerun after a failed prebuild (red → green)
-    status: in-progress
+    status: done
     after: [T-018.2]
     covers: [S-018.5.1, S-018.5.2, S-018.5.3, S-018.5.4]
     files: [src/core/gates.ts, test/core/prebuild-gate.test.ts]
