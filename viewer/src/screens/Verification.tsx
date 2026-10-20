@@ -246,8 +246,10 @@ export function ScenarioRow({
             .join("\n") || undefined
         }
       >
-        {first ? basename(first.file) : "no test references it"}
-        {tests.length > 1 && ` +${tests.length - 1}`}
+        <span className="vf-test-name">
+          {first ? basename(first.file) : "no test references it"}
+          {tests.length > 1 && ` +${tests.length - 1}`}
+        </span>
         {uncommitted && (
           <span className="az-tag vf-uncommitted" title={UNCOMMITTED_TITLE}>
             uncommitted

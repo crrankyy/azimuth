@@ -44,14 +44,16 @@ describe("ST-020.5 the coverage table tags an uncommitted test", () => {
     expect(html).toContain(
       testCell(
         "test/a.test.ts › S-001.1.1 works\ntest/b.test.ts › S-001.1.1 also works (uncommitted)",
-        'a.test.ts +1<span class="az-tag vf-uncommitted" title="Not committed: the done gate counts only tests in HEAD">uncommitted</span>',
+        '<span class="vf-test-name">a.test.ts +1</span><span class="az-tag vf-uncommitted" title="Not committed: the done gate counts only tests in HEAD">uncommitted</span>',
       ),
     );
   });
 
   it("S-020.5.4 renders a test cell of committed tests without a tag", () => {
     const html = renderRow([COMMITTED_TEST]);
-    expect(html).toContain(testCell("test/a.test.ts › S-001.1.1 works", "a.test.ts"));
+    expect(html).toContain(
+      testCell("test/a.test.ts › S-001.1.1 works", '<span class="vf-test-name">a.test.ts</span>'),
+    );
     expect(html).not.toContain("uncommitted");
   });
 });

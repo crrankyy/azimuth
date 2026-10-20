@@ -194,8 +194,14 @@ a.vf-card.failing:hover {
   color: var(--ink-muted);
 }
 .vf-test {
+  display: flex;
+  align-items: center;
   font-size: 11.5px;
   color: var(--ink-subtle);
+}
+/* The name takes the ellipsis, so a long one never hides the uncommitted tag after it. */
+.vf-test-name {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -205,6 +211,7 @@ a.vf-card.failing:hover {
 }
 /* A test only in the working tree, which the done gate doesn't count. */
 .vf-uncommitted {
+  flex: none;
   margin-left: 6px;
   font-family: var(--font-text);
   font-size: 11px;

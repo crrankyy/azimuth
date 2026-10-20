@@ -167,10 +167,10 @@ same scenario with only the first test.
 ### S-020.5.3 · The coverage table tags the scenario's test cell {happy}
 - **GIVEN** the mixed scenario
 - **WHEN** `renderToStaticMarkup` renders `<ScenarioRow scenario={…} now={…} onRun={() => {}} />`
-- **THEN** its test cell holds the text `a.test.ts +1` followed by `<span class="az-tag vf-uncommitted" title="Not committed: the done gate counts only tests in HEAD">uncommitted</span>` as its last child
+- **THEN** its test cell holds `<span class="vf-test-name">a.test.ts +1</span>` followed by `<span class="az-tag vf-uncommitted" title="Not committed: the done gate counts only tests in HEAD">uncommitted</span>` as its last child
 - **AND** the cell's title is `test/a.test.ts › S-001.1.1 works` and `test/b.test.ts › S-001.1.1 also works (uncommitted)` joined by a newline
 
 ### S-020.5.4 · A row of committed tests has no tag {negative}
 - **GIVEN** the committed scenario
 - **WHEN** `renderToStaticMarkup` renders `<ScenarioRow scenario={…} now={…} onRun={() => {}} />`
-- **THEN** its test cell holds only the text `a.test.ts`, the cell's title is `test/a.test.ts › S-001.1.1 works`, and the HTML holds no `uncommitted`
+- **THEN** its test cell holds only `<span class="vf-test-name">a.test.ts</span>`, the cell's title is `test/a.test.ts › S-001.1.1 works`, and the HTML holds no `uncommitted`
