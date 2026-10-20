@@ -1,3 +1,4 @@
+import { milestoneReady } from "./derive";
 import { globToRegExp, matchesAny } from "./glob";
 import {
   PRIORITIES,
@@ -276,11 +277,29 @@ function issueItem(i: Issue): NextItem {
   };
 }
 
-/** Highest-value unblocked work across the project, best first: critical issues, feature work,
- * then high-severity issues. */
+/**
+ * One item per index milestone that milestoneReady accepts, in index order: only the user
+ * releases a milestone, so the agent's step is to ask.
+ */
+export function releaseItems(index: Index): NextItem[] {
+  return index.milestones.filter(milestoneReady).map((m) => ({
+    ref: m.id,
+    title: m.title,
+    action: `Ask the user to release ${m.id} in the viewer`,
+    reason: "Every feature is done; only the user releases a milestone",
+  }));
+}
+
+/**
+ * Highest-value unblocked work across the project, best first: critical issues, milestones ready
+ * for release (releaseItems), feature work, then high-severity issues.
+ */
 export function nextWork(index: Index): NextItem[] {
   const urgent = urgentIssues(index);
   const items: NextItem[] = urgent.filter((i) => i.severity === "critical").map(issueItem);
+  // Ahead of feature work: status --brief shows only the first five items, and a release costs
+  // the agent one sentence to the user.
+  items.push(...releaseItems(index));
   for (const status of GROUPS) {
     const features = index.features.filter((f) => f.status === status).sort(byPriority);
     for (const f of features) {

@@ -2,7 +2,7 @@
 tasks:
   - id: T-023.1
     title: Measured values in THEN and AND lines (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-023.2.1, S-023.2.2, S-023.2.3]
     files: [src/core/parse/stories.ts, test/core/measured.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-023.2
     title: Milestones ready for release in check and next (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-023.5.1, S-023.5.2, S-023.5.3, S-023.5.4, S-023.6.1, S-023.6.2, S-023.6.3]
     files: [src/core/derive.ts, src/core/validate.ts, src/core/next.ts, test/core/milestone-ready.test.ts, test/cli/milestone.test.ts]

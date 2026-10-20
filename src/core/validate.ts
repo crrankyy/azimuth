@@ -1,4 +1,4 @@
-import { codeCommitsAfter, type Derived } from "./derive";
+import { codeCommitsAfter, milestoneProgress, milestoneReady, type Derived } from "./derive";
 import { ACTIVE_STATUSES } from "./flows";
 import type { Facts } from "./facts";
 import { globToRegExp, inModule, matchesAny } from "./glob";
@@ -19,6 +19,7 @@ export function validate(model: Model, facts: Facts, derived: Derived): Problem[
     ...conflictProblems(model),
     ...decisionProblems(model),
     ...questionProblems(model),
+    ...milestoneProblems(model),
     ...sessionProblems(model, facts),
     ...architectureProblems(model, facts),
     ...testNameProblems(facts),
@@ -387,6 +388,22 @@ function questionProblems(model: Model): Problem[] {
     }
   }
   return out;
+}
+
+/** Only the user releases a milestone, so a finished one is reported until they do. */
+function milestoneProblems(model: Model): Problem[] {
+  return model.milestones
+    .map((m) => ({ ...m, ...milestoneProgress(model, m.id) }))
+    .filter(milestoneReady)
+    .map((m) =>
+      problem(
+        "W-MILESTONE-READY",
+        m.file,
+        null,
+        `Every feature of ${m.id} is done but it is still ${m.status}; ask the user to release it.`,
+        m.id,
+      ),
+    );
 }
 
 function sessionProblems(model: Model, facts: Facts): Problem[] {

@@ -8,3 +8,6 @@ idea → draft
 
 ## 2026-10-20T18:48:22Z · agent · transition · SES-20261020-1730 · auto
 draft → approved
+
+## 2026-10-20T18:48:30Z · agent · transition · SES-20261020-1730
+approved → in-progress
