@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-016.3
     title: Timeline window, rows, spans, markers and filters (red → green)
-    status: in-progress
+    status: done
     after: [T-016.2]
     covers: [S-016.2.1, S-016.2.2, S-016.2.3, S-016.2.4, S-016.2.5, S-016.2.6, S-016.2.7, S-016.2.8, S-016.2.9, S-016.3.1, S-016.3.2, S-016.3.3]
     files: [viewer/src/screens/activity/timeline.ts, viewer/src/screens/activity/timeline.test.ts]

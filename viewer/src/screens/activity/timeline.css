@@ -1,0 +1,301 @@
+/* Activity: the Agent timeline (handoff canvas-source/Activity.dc.html). Nothing here animates. */
+
+.tl {
+  padding: 16px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--edge-highlight);
+}
+.tl-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tl-range-label {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+
+/* The chart: a 280 px label column, then the track; the grid and now line sit over the track. */
+.tl-chart {
+  position: relative;
+}
+.tl-grid {
+  position: absolute;
+  left: 280px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.tl-gridline {
+  position: absolute;
+  top: 22px;
+  bottom: 0;
+  width: 1px;
+  background: var(--hairline);
+}
+.tl-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  z-index: 1;
+}
+.tl-now::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22px;
+  bottom: 0;
+  border-left: 1.5px dashed var(--primary-focus);
+}
+.tl-now span {
+  position: absolute;
+  left: -20px;
+  top: 0;
+  width: 40px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--primary);
+  /* Covers a tick label the now line falls on (Today, 3 days). */
+  background: var(--surface-1);
+}
+.tl-axis,
+.tl-row {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  align-items: center;
+}
+.tl-axis {
+  height: 22px;
+  align-items: end;
+  border-bottom: 1px solid var(--hairline);
+}
+.tl-ticks {
+  position: relative;
+  height: 22px;
+  font-size: 11px;
+  color: var(--ink-tertiary);
+}
+.tl-tick {
+  position: absolute;
+  top: 2px;
+  white-space: nowrap;
+}
+.tl-empty {
+  margin: 0;
+  padding: 16px 0;
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+
+/* Rows: 40 px sessions, 28 px subagents; a hairline above each session after the first. */
+.tl-row {
+  text-decoration: none;
+  color: var(--ink);
+}
+.tl-row.d0 {
+  height: 40px;
+}
+.tl-row.d1 {
+  height: 28px;
+}
+.tl-row.d0 + .tl-row.d0,
+.tl-row.d1 + .tl-row.d0 {
+  border-top: 1px solid var(--hairline);
+}
+.tl-row.g-running {
+  background: rgba(180, 190, 254, 0.04);
+}
+.tl-row:hover {
+  background: var(--surface-2);
+}
+.tl-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-right: 12px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tl-label .az-tag {
+  line-height: 18px;
+}
+.tl-row.d1 .tl-label {
+  padding-left: 20px;
+  color: var(--ink-muted);
+}
+.tl-twig,
+.tl-detail {
+  color: var(--ink-tertiary);
+}
+.tl-detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tl-status {
+  flex: none;
+  color: var(--ink-tertiary);
+}
+.tl-row.d0.s-running .tl-status {
+  color: var(--st-active);
+}
+.tl-row.d0.s-waiting .tl-status {
+  color: var(--label-yellow);
+}
+.tl-track {
+  position: relative;
+  height: 100%;
+}
+
+/* Spans by kind; waiting ones also carry .az-stripe over the card's background. */
+.tl-span {
+  position: absolute;
+  box-sizing: border-box;
+}
+.tl-row.d0 .tl-span {
+  top: 12px;
+  height: 16px;
+  border-radius: 4px;
+}
+.tl-row.d1 .tl-span {
+  top: 9px;
+  height: 10px;
+  min-width: 8px;
+  border-radius: 3px;
+}
+.tl-span.k-running,
+.tl-swatch.k-running {
+  background: rgba(250, 179, 135, 0.3);
+  border: 1px solid var(--st-active);
+}
+.tl-row.d1 .tl-span.k-running {
+  background: var(--st-active);
+  border: 0;
+}
+.tl-span.k-done,
+.tl-swatch.k-done {
+  background: rgba(166, 227, 161, 0.16);
+  border: 1px solid rgba(166, 227, 161, 0.45);
+}
+.tl-row.d1 .tl-span.k-done {
+  background: rgba(166, 227, 161, 0.35);
+  border: 0;
+}
+.tl-span.k-open,
+.tl-swatch.k-open {
+  background: rgba(250, 179, 135, 0.08);
+  border: 1px dashed rgba(250, 179, 135, 0.55);
+}
+.tl-span.k-waiting,
+.tl-swatch.k-waiting {
+  background-color: var(--surface-1);
+  border: 1px solid rgba(249, 226, 175, 0.55);
+}
+
+/* Markers: rings for commits, squares for runs, diamonds for raised questions and ADRs. */
+.tl-mark {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+}
+.tl-mark.m-commit,
+.tl-swatch.m-commit {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--canvas);
+}
+.tl-mark.m-run-pass,
+.tl-mark.m-run-fail,
+.tl-swatch.m-run-pass,
+.tl-swatch.m-run-fail {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.tl-mark.m-run-pass,
+.tl-swatch.m-run-pass {
+  background: var(--st-success);
+}
+.tl-mark.m-run-fail,
+.tl-swatch.m-run-fail {
+  background: var(--st-danger);
+}
+.tl-mark.m-question,
+.tl-mark.m-adr,
+.tl-swatch.m-question {
+  width: 12px;
+  height: 12px;
+  background: var(--st-draft);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.tl-mark-label,
+.tl-action {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.tl-mark-label {
+  color: var(--label-red);
+}
+.tl-action {
+  color: var(--ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Legend and the earlier line */
+.tl-legend {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+.tl-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tl-swatch {
+  flex: none;
+  box-sizing: border-box;
+}
+.tl-swatch.k-running,
+.tl-swatch.k-waiting,
+.tl-swatch.k-done,
+.tl-swatch.k-open {
+  width: 18px;
+  height: 8px;
+  border-radius: 2px;
+}
+.tl-swatch.m-question {
+  width: 10px;
+  height: 10px;
+}
+.tl-earlier {
+  color: var(--ink-tertiary);
+}
+.tl-earlier a {
+  color: var(--ink-subtle);
+  text-decoration: none;
+}
+.tl-earlier a:hover {
+  color: var(--ink);
+}
