@@ -152,13 +152,15 @@ export function timelineWindow(range: TimelineRange, now: number): TimelineWindo
 }
 
 const QUARTER = 15 * 60_000;
+/** The least time after the now line, so running rows' actions have room after it (BUG-0078). */
+const LEAD = 10 * 60_000;
 
-/** Ends at the first local quarter hour strictly after `now`; starts 75 minutes earlier. */
+/**
+ * Ends at the first local quarter hour at least 10 minutes after `now`; starts 75 minutes
+ * earlier.
+ */
 function recentWindow(now: number): TimelineWindow {
-  const next = new Date(now);
-  next.setSeconds(0, 0);
-  next.setMinutes(next.getMinutes() - (next.getMinutes() % 15) + 15);
-  const end = next.getTime();
+  const end = quarterFrom(now + LEAD);
   const start = end - 5 * QUARTER;
   const ticks = [0, 1, 2, 3, 4].map((i) => tick(start + i * QUARTER, start, end, clockOf));
   // "Today" or "Yesterday", from the heading of the start's day.
@@ -170,6 +172,33 @@ function recentWindow(now: number): TimelineWindow {
     ticks,
     label: `${day}, ${clockOf(start)} – ${clockOf(end)}`,
   };
+}
+
+/** `ms` when it is a local quarter hour, else the next one. */
+function quarterFrom(ms: number): number {
+  const d = new Date(ms);
+  const past = (d.getMinutes() % 15) * 60_000 + d.getSeconds() * 1000 + d.getMilliseconds();
+  return past === 0 ? ms : ms - past + QUARTER;
+}
+
+/** The action label's font size (timeline.css .tl-action) and its gap from the span. */
+const ACTION_FONT_PX = 11;
+const ACTION_GAP_PX = 8;
+/**
+ * Average advance of the system UI font per character, in ems. Set above the real average so a
+ * label estimated to fit is never cut; one that would have fitted just goes left instead.
+ */
+const ACTION_CHAR_EM = 0.6;
+
+/**
+ * Whether a running row's action fits after its span, which ends at `end` percent of a track
+ * `trackWidth` px wide. The label's width is estimated from its length at its font size. Until
+ * the track is measured (server render, tests, exports) the label goes after the span.
+ */
+export function actionFitsAfter(trackWidth: number | null, end: number, action: string): boolean {
+  if (trackWidth === null) return true;
+  const room = (trackWidth * (100 - end)) / 100 - ACTION_GAP_PX;
+  return action.length * ACTION_FONT_PX * ACTION_CHAR_EM <= room;
 }
 
 const isoOf = (ms: number) => new Date(ms).toISOString();

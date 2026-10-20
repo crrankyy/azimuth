@@ -144,6 +144,27 @@ describe("F-016 the Agent timeline", () => {
     );
   });
 
+  it("BUG-0078 puts each action after its span until the track is measured", () => {
+    const html = render();
+    const actions = [...html.matchAll(/<span [^>]*class="tl-action[^"]*"[^>]*>([^<]*)<\/span>/g)];
+    expect(actions.map(([, label]) => label)).toEqual([
+      "Edit policy.ts",
+      "pnpm vitest run",
+      "Edit attempts.ts",
+      "Read attempts.ts",
+    ]);
+    for (const [tag] of actions) {
+      expect(attr(tag, "class")).toBe("tl-action");
+      expect(attr(tag, "style")).toMatch(
+        /^left:calc\([\d.]+% \+ 8px\);max-width:calc\([\d.]+% - 8px\)$/,
+      );
+    }
+    // Session …1201's span ends at the now line, 86.66% across.
+    expect(attr(actions[0]?.[0] ?? "", "style")).toMatch(
+      /^left:calc\(86\.66% \+ 8px\);max-width:calc\(13\.34\d*% - 8px\)$/,
+    );
+  });
+
   it("S-016.4.5 says so when no session falls in the range", () => {
     const html = render(fixtureIndex([]), Date.parse("2026-10-18T20:00:00Z"));
     expect(text(html)).toContain("Today, 19:00 – 20:15");

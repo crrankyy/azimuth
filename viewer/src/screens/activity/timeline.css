@@ -269,6 +269,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* No room after the span (AgentTimeline's actionPlace): it ends just before the now line, over
+   the span, so it sits on the card's surface to stay legible on a solid subagent bar. */
+.tl-action.before {
+  box-sizing: border-box;
+  padding: 0 4px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-1);
+}
 
 /* Legend and the earlier line */
 .tl-legend {

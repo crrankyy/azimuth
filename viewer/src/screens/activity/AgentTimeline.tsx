@@ -1,8 +1,17 @@
-import { Fragment, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { Segmented, Tag } from "../../components/primitives";
 import { StatusGlyph } from "../../components/Status";
 import { AGENT_LOOK } from "../../lib/status";
 import {
+  actionFitsAfter,
   RANGES,
   type TimelineLayout,
   type TimelineMarker,
@@ -23,6 +32,8 @@ export function AgentTimeline({
   onRange: (range: TimelineRange) => void;
 }): ReactNode {
   const { window, rows, earlier } = layout;
+  const grid = useRef<HTMLDivElement>(null);
+  const trackWidth = useWidth(grid);
   return (
     <section className="az-card tl" aria-label="Agent timeline">
       <div className="tl-head">
@@ -34,7 +45,7 @@ export function AgentTimeline({
         <Segmented options={RANGES} value={range} onChange={onRange} label="Range" />
       </div>
       <div className="tl-chart">
-        <div className="tl-grid" aria-hidden="true">
+        <div className="tl-grid" aria-hidden="true" ref={grid}>
           {window.ticks
             .filter((t) => t.left > 0)
             .map((t) => (
@@ -62,7 +73,9 @@ export function AgentTimeline({
           </div>
         </div>
         {rows.length > 0 ? (
-          groupClasses(rows).map(({ row, group }) => <Row key={row.key} row={row} group={group} />)
+          groupClasses(rows).map(({ row, group }) => (
+            <Row key={row.key} row={row} group={group} trackWidth={trackWidth} />
+          ))
         ) : (
           <p className="tl-empty">No agent sessions in this range.</p>
         )}
@@ -111,9 +124,42 @@ function tickRoom(left: number, now: number): string {
   return `calc((${-gap}% - 18px) * 1000)`;
 }
 
-function Row({ row, group }: { row: TimelineRow; group: string }) {
+/** The grid's width in px, which is every track's; null until measured (server render). */
+function useWidth(ref: RefObject<HTMLDivElement | null>): number | null {
+  const [width, setWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    // ResizeObserver also reports the first size, so this needs no synchronous update.
+    const observer = new ResizeObserver(() => setWidth(box.clientWidth));
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width;
+}
+
+/**
+ * After the span; or, when it wouldn't fit there (actionFitsAfter), right-aligned to end 8 px
+ * before the span's end, which on a running row is the now line.
+ */
+function actionPlace(end: number, after: boolean): CSSProperties {
+  if (after) return { left: `calc(${end}% + 8px)`, maxWidth: `calc(${100 - end}% - 8px)` };
+  const right = Math.round((100 - end) * 100) / 100;
+  return { right: `calc(${right}% + 8px)`, maxWidth: `calc(${end}% - 8px)` };
+}
+
+function Row({
+  row,
+  group,
+  trackWidth,
+}: {
+  row: TimelineRow;
+  group: string;
+  trackWidth: number | null;
+}) {
   const base = row.spans[0];
   const end = base ? base.left + base.width : 0;
+  const after = row.action === null || actionFitsAfter(trackWidth, end, row.action);
   return (
     <a className={`tl-row d${row.depth} s-${row.status} g-${group}`} href={row.href} title={row.id}>
       <span className="tl-label">
@@ -128,9 +174,9 @@ function Row({ row, group }: { row: TimelineRow; group: string }) {
         ))}
         {row.action && (
           <span
-            className="tl-action"
+            className={after ? "tl-action" : "tl-action before"}
             title={row.actionTitle ?? undefined}
-            style={{ left: `calc(${end}% + 8px)`, maxWidth: `calc(${100 - end}% - 8px)` }}
+            style={actionPlace(end, after)}
           >
             {row.action}
           </span>

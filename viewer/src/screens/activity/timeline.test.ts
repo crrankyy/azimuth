@@ -3,6 +3,7 @@ import type { Index, Session } from "../../../../src/core/types";
 import { FIXTURE_NOW, fixtureIndex } from "../../../../test/fixtures/live/timeline";
 import type { ActivityKind } from "./feed";
 import {
+  actionFitsAfter,
   layoutTimeline,
   timelineWindow,
   type TimelineLayout,
@@ -117,6 +118,82 @@ describe("F-016 timeline window", () => {
     } finally {
       process.env.TZ = saved;
     }
+  });
+});
+
+describe("BUG-0078 room for running rows' actions", () => {
+  const at = (time: string) => Date.parse(`2026-10-18T${time}Z`);
+
+  it("BUG-0078 ends Last 75 min at the first quarter hour at least 10 minutes after now", () => {
+    const cases: [string, string][] = [
+      ["12:05:00", "12:15"],
+      ["12:14:00", "12:30"],
+      ["12:20:00", "12:30"],
+      ["12:21:00", "12:45"],
+      ["12:50:00", "13:00"],
+      ["12:52:00", "13:15"],
+      // Ten minutes and a half after 12:05:30 is past 12:15.
+      ["12:05:30", "12:30"],
+    ];
+    for (const [now, end] of cases) {
+      const w = timelineWindow("75m", at(now));
+      expect(iso(w.end), now).toBe(`2026-10-18T${end}:00.000Z`);
+      expect(w.end - w.start, now).toBe(75 * 60_000);
+    }
+  });
+
+  it("BUG-0078 keeps quarter-hour ticks and puts the now line before the last 10 minutes", () => {
+    const w = timelineWindow("75m", at("12:14:00"));
+    expect(iso(w.start)).toBe("2026-10-18T11:15:00.000Z");
+    expect(w.ticks).toEqual([
+      { left: 0, label: "11:15" },
+      { left: 20, label: "11:30" },
+      { left: 40, label: "11:45" },
+      { left: 60, label: "12:00" },
+      { left: 80, label: "12:15" },
+    ]);
+    expect(w.label).toBe("Today, 11:15 – 12:30");
+    expect(layout(fixtureIndex(), { now: at("12:14:00") }).now).toBe(78.67);
+  });
+
+  it("BUG-0078 leaves Today and 3 days as they were", () => {
+    const now = at("12:52:00");
+    const today = timelineWindow("today", now);
+    expect(iso(today.start)).toBe("2026-10-18T00:00:00.000Z");
+    expect(iso(today.end)).toBe("2026-10-19T00:00:00.000Z");
+    expect(today.ticks.map((t) => t.label)).toEqual([
+      "00:00",
+      "03:00",
+      "06:00",
+      "09:00",
+      "12:00",
+      "15:00",
+      "18:00",
+      "21:00",
+    ]);
+    const days = timelineWindow("3d", now);
+    expect(iso(days.start)).toBe("2026-10-16T00:00:00.000Z");
+    expect(iso(days.end)).toBe("2026-10-19T00:00:00.000Z");
+    expect(days.ticks.map((t) => t.label)).toEqual(["Fri Oct 16", "Sat Oct 17", "Sun Oct 18"]);
+  });
+
+  it("BUG-0078 fits an action after its span when the track leaves room for it", () => {
+    // 1000 px track, span ending at 80%: 200 px to the edge, 192 px after the 8 px gap.
+    expect(actionFitsAfter(1000, 80, "Edit policy.ts")).toBe(true);
+    expect(actionFitsAfter(1000, 80, "Read attempts.ts")).toBe(true);
+  });
+
+  it("BUG-0078 doesn't fit an action the room after its span would cut", () => {
+    // 50 px to the edge, 42 px after the gap: too narrow for 14 characters at 11 px.
+    expect(actionFitsAfter(1000, 95, "Edit policy.ts")).toBe(false);
+    // The same room takes a short label but not a long one.
+    expect(actionFitsAfter(600, 80, "Edit a.ts")).toBe(true);
+    expect(actionFitsAfter(600, 80, "Edit src/retry/policy.ts and more")).toBe(false);
+  });
+
+  it("BUG-0078 puts an action after its span while the track's width is unknown", () => {
+    expect(actionFitsAfter(null, 80, "Edit policy.ts")).toBe(true);
+    expect(actionFitsAfter(null, 99, "Edit src/retry/policy.ts and more")).toBe(true);
   });
 });
 
