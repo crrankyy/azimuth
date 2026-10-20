@@ -2,7 +2,7 @@
 id: F-019
 title: Refuse or adopt changed files outside a finished task
 summary: task finish refuses, before it writes anything, an unlisted changed test that adds a marker for a scenario the task covers or an unlisted impact path no other task lists; --adopt adds such files to the task and commits them; the output separates source files, other tasks' files and records, and warns when a shared file carries another task's work.
-status: approved
+status: in-progress
 priority: P0
 size: M
 mode: brownfield

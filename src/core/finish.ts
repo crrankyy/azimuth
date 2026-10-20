@@ -2,11 +2,14 @@ import { spawnSync } from "node:child_process";
 import { analyzeProject } from "./build-index";
 import { AzimuthError, isAzimuthError } from "./errors";
 import { headSha, isGitRepo, readBlobs, readCommits } from "./git";
+import { globToRegExp, matchesAny, testFileMatcher } from "./glob";
 import { featureOf, idKind } from "./ids";
 import type { FeatureEntity } from "./model";
 import { addNote } from "./notes";
 import { parsePlan, type TaskRaw } from "./parse/feature";
+import { AZ_DIR } from "./paths";
 import { inScope, runScope } from "./run-scope";
+import { scanTestFile } from "./trace";
 import { addLogEntry, moveTask, type Who } from "./transitions";
 import type { Commit, Id, Problem } from "./types";
 import { verifyBatch, verifyTargets, type VerifyBatchResult } from "./verify";
@@ -62,6 +65,45 @@ export interface PathSelection {
   not_staged: string[];
 }
 
+export interface SharedStaged {
+  path: string;
+  /** The other in-progress tasks that list it, in model order (feature ID, then plan order). */
+  tasks: Id[];
+}
+
+export interface NotStagedSplit {
+  outside: string[];
+  other_tasks: string[];
+  records: string[];
+}
+
+/** Why the check refuses a changed path. */
+export type UnlistedReason =
+  /** Rule (a): scenarios the task covers that the working copy marks and HEAD's copy doesn't. */
+  | { kind: "marker"; scenarios: Id[] }
+  /** Rule (b): the impact.md entry the path equals or lies under. */
+  | { kind: "impact"; change: "create" | "modify" | "test" };
+
+export interface UnlistedFile {
+  path: string;
+  reason: UnlistedReason;
+}
+
+export interface UnlistedContext {
+  /** The task being finished; `files` includes the paths being adopted. */
+  task: Pick<TaskRaw, "id" | "files" | "covers">;
+  feature: Pick<FeatureEntity, "id" | "dir" | "impact">;
+  /** Every other in-progress task, of any feature. */
+  others: Pick<TaskRaw, "id" | "files">[];
+  /** config.tests.globs, matched with testFileMatcher (glob.ts). */
+  testGlobs: string[];
+  /**
+   * A changed test path's text in the working tree and at HEAD; null where the file doesn't
+   * exist (deleted from the working tree; untracked, renamed or no HEAD).
+   */
+  texts: (path: string) => { working: string | null; head: string | null };
+}
+
 const TRAILER = /^[A-Za-z][A-Za-z0-9-]*: \S/;
 const isBlank = (line: string) => line.trim() === "";
 
@@ -106,6 +148,95 @@ export function selectPaths(
     staged: unique.filter(belongs),
     not_staged: unique.filter((path) => !belongs(path)),
   };
+}
+
+/** Whether `files` list a path (equal to one, or under it as a directory), as selectPaths decides. */
+function listedIn(files: string[]): (path: string) => boolean {
+  const scope = runScope({ files }, { impact: [] }, [], []);
+  return (path) => scope !== null && inScope(path, scope);
+}
+
+/** The scenarios a test file's text marks; a missing file (null) marks none. */
+function markedScenarios(text: string | null, path: string): Set<Id> {
+  if (text === null) return new Set();
+  // Only markers count: trace hides mention-only fallbacks, so they never prove a scenario.
+  const marked = [...scanTestFile(text, path)].filter(([, refs]) =>
+    refs.some((r) => r.confidence === "marker"),
+  );
+  return new Set(marked.map(([id]) => id));
+}
+
+/**
+ * The changed paths the check refuses, sorted by path. A path is a candidate when it is outside
+ * the task's files and doesn't start with `feature.dir` (selectPaths' not_staged). A candidate
+ * is refused:
+ * (a) when it is a test file (testFileMatcher) whose working copy marks a scenario of
+ *     task.covers that HEAD's copy doesn't mark; reason { kind: "marker", scenarios } sorted;
+ * (b) otherwise, when it equals or lies under a create, modify or test entry of feature.impact
+ *     and no task in `others` lists it; reason { kind: "impact", change } of the first such entry.
+ * `texts` is called only for candidates that match testGlobs.
+ */
+export function unlistedFiles(changed: string[], ctx: UnlistedContext): UnlistedFile[] {
+  const isTest = testFileMatcher(ctx.testGlobs);
+  const covers = new Set(ctx.task.covers);
+  const impact = ctx.feature.impact.flatMap((e) =>
+    e.change === "read" ? [] : [{ change: e.change, holds: listedIn([e.path]) }],
+  );
+  const claims = ctx.others.map((t) => listedIn(t.files));
+  const newMarkers = (path: string): Id[] => {
+    const { working, head } = ctx.texts(path);
+    const before = markedScenarios(head, path);
+    return [...markedScenarios(working, path)]
+      .filter((id) => covers.has(id) && !before.has(id))
+      .sort();
+  };
+  const reasonFor = (path: string): UnlistedReason | null => {
+    const scenarios = isTest(path) ? newMarkers(path) : [];
+    if (scenarios.length > 0) return { kind: "marker", scenarios };
+    const entry = impact.find((e) => e.holds(path));
+    if (!entry || claims.some((lists) => lists(path))) return null;
+    return { kind: "impact", change: entry.change };
+  };
+  return selectPaths(changed, ctx.task, ctx.feature.dir).not_staged.flatMap((path) => {
+    const reason = reasonFor(path);
+    return reason ? [{ path, reason }] : [];
+  });
+}
+
+/**
+ * Splits the paths left out of the commit: `records` start with ".azimuth/"; of the rest,
+ * `other_tasks` are listed by a task in `others`; `outside` is everything else. Each is sorted.
+ */
+export function splitNotStaged(
+  notStaged: string[],
+  others: Pick<TaskRaw, "files">[],
+): NotStagedSplit {
+  const claims = others.map((t) => listedIn(t.files));
+  const split: NotStagedSplit = { outside: [], other_tasks: [], records: [] };
+  for (const path of [...notStaged].sort()) {
+    if (path.startsWith(`${AZ_DIR}/`)) split.records.push(path);
+    else if (claims.some((lists) => lists(path))) split.other_tasks.push(path);
+    else split.outside.push(path);
+  }
+  return split;
+}
+
+/**
+ * The staged paths matching one of `sharedFiles` (globToRegExp) that a task in `others` lists,
+ * sorted by path, each with those tasks in the order of `others`.
+ */
+export function sharedStaged(
+  staged: string[],
+  sharedFiles: string[],
+  others: Pick<TaskRaw, "id" | "files">[],
+): SharedStaged[] {
+  const shared = sharedFiles.map(globToRegExp);
+  const claims = others.map((t) => ({ id: t.id, lists: listedIn(t.files) }));
+  return [...new Set(staged)]
+    .sort()
+    .filter((path) => matchesAny(path, shared))
+    .map((path) => ({ path, tasks: claims.filter((t) => t.lists(path)).map((t) => t.id) }))
+    .filter((entry) => entry.tasks.length > 0);
 }
 
 interface GitResult {

@@ -37,6 +37,17 @@ export function matchesAny(path: string, globs: RegExp[]): boolean {
 }
 
 /**
+ * Whether a repo-relative path is a test file under `globs` (tests.globs): some glob not starting
+ * with "!" matches it and no "!" glob does, so sample projects kept as fixtures can be excluded.
+ * The globs are compiled once.
+ */
+export function testFileMatcher(globs: string[]): (path: string) => boolean {
+  const include = globs.filter((g) => !g.startsWith("!")).map(globToRegExp);
+  const exclude = globs.filter((g) => g.startsWith("!")).map((g) => globToRegExp(g.slice(1)));
+  return (path) => matchesAny(path, include) && !matchesAny(path, exclude);
+}
+
+/**
  * Whether a file belongs to one of the architecture's module paths: the path itself, anything
  * under it, or a file named after it, so `src/buffer` covers `src/buffer.rs` as well as
  * `src/buffer/gap.rs` (Rust's file modules, `src/buffer.ts`, `pkg/buffer.py`).

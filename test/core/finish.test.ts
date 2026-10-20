@@ -5,9 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   finishTask,
   selectPaths,
+  sharedStaged,
+  splitNotStaged,
+  unlistedFiles,
   withRefsTrailer,
   type FinishOptions,
   type FinishResult,
+  type UnlistedContext,
 } from "../../src/core/finish";
 import { acquireVerifyLock } from "../../src/core/lock";
 import { loadProject } from "../../src/core/model";
@@ -78,6 +82,104 @@ describe("ST-009.2 selectPaths", () => {
       staged: [`${DIR}notes.md`],
       not_staged: ["src/a.ts"],
     });
+  });
+});
+
+const KEYMAP_HEAD = 'it("S-001.1.1 maps keys", () => {});\n';
+
+/** S-019.1.1's context: T-001.1 of F-001, whose impact.md modifies src/c.ts and reads src/d.ts. */
+function unlistedContext(
+  others: UnlistedContext["others"],
+  texts: Record<string, { working: string | null; head: string | null }>,
+): UnlistedContext {
+  return {
+    task: { id: "T-001.1", files: ["src/a.ts"], covers: ["S-001.1.1", "S-001.1.2"] },
+    feature: {
+      id: "F-001",
+      dir: DIR,
+      impact: [
+        { path: "src/c.ts", change: "modify", note: "", symbols: [] },
+        { path: "src/d.ts", change: "read", note: "", symbols: [] },
+      ],
+    },
+    others,
+    testGlobs: ["test/**/*.test.ts"],
+    texts: (path) => texts[path] ?? { working: null, head: null },
+  };
+}
+
+describe("ST-019.1 unlistedFiles", () => {
+  it("S-019.1.1 refuses a test adding a covered marker and an impact path no task lists", () => {
+    const changed = [`${DIR}plan.md`, "src/a.ts", "src/c.ts", "src/d.ts", "test/keymap.test.ts"];
+    const ctx = unlistedContext([], {
+      "test/keymap.test.ts": {
+        working: `${KEYMAP_HEAD}it("S-001.1.2 maps the palette", () => {});\n`,
+        head: KEYMAP_HEAD,
+      },
+    });
+    expect(unlistedFiles(changed, ctx)).toEqual([
+      { path: "src/c.ts", reason: { kind: "impact", change: "modify" } },
+      { path: "test/keymap.test.ts", reason: { kind: "marker", scenarios: ["S-001.1.2"] } },
+    ]);
+  });
+
+  it("S-019.1.2 passes changes that add no covered marker or that another lane lists", () => {
+    const changed = ["src/c.ts", "test/keymap.test.ts", "test/other.test.ts"];
+    const ctx = unlistedContext([{ id: "T-002.1", files: ["src/c.ts"] }], {
+      "test/keymap.test.ts": {
+        working: `${KEYMAP_HEAD}it("S-001.1.1 maps more keys", () => {});\n`,
+        head: KEYMAP_HEAD,
+      },
+      "test/other.test.ts": {
+        working: '// S-001.1.2 is proved in keymap\nit("S-001.2.1 opens", () => {});\n',
+        head: null,
+      },
+    });
+    expect(unlistedFiles(changed, ctx)).toEqual([]);
+  });
+});
+
+describe("ST-019.2 splitNotStaged and sharedStaged", () => {
+  it("S-019.2.1 splits the paths left out into outside, other tasks' and records", () => {
+    const notStaged = [
+      ".azimuth/features/F-002-more/log.md",
+      ".azimuth/sessions/SES-20261020-0900.md",
+      "src/b.ts",
+      "src/other.ts",
+      "src/parser/x.ts",
+    ];
+    expect(
+      splitNotStaged(notStaged, [{ files: ["src/b.ts"] }, { files: ["src/parser/"] }]),
+    ).toEqual({
+      outside: ["src/other.ts"],
+      other_tasks: ["src/b.ts", "src/parser/x.ts"],
+      records: [".azimuth/features/F-002-more/log.md", ".azimuth/sessions/SES-20261020-0900.md"],
+    });
+  });
+
+  it("S-019.2.2 lets another task's directory entry claim only the files under it", () => {
+    expect(
+      splitNotStaged(["src/parser.ts", "src/parserx/a.ts"], [{ files: ["./src/parser/"] }]),
+    ).toEqual({
+      outside: ["src/parser.ts", "src/parserx/a.ts"],
+      other_tasks: [],
+      records: [],
+    });
+  });
+
+  it("S-019.2.3 warns about a staged shared file that other lanes list", () => {
+    const others = [
+      { id: "T-001.2", files: ["src/registry.ts", "src/b.ts"] },
+      { id: "T-002.1", files: ["src/registry.ts"] },
+    ];
+    expect(sharedStaged(["src/a.ts", "src/registry.ts"], ["src/registry.ts"], others)).toEqual([
+      { path: "src/registry.ts", tasks: ["T-001.2", "T-002.1"] },
+    ]);
+  });
+
+  it("S-019.2.4 gives no warning when no other lane lists the shared file", () => {
+    const others = [{ id: "T-001.2", files: ["src/a.ts"] }];
+    expect(sharedStaged(["src/a.ts", "src/registry.ts"], ["src/registry.ts"], others)).toEqual([]);
   });
 });
 
