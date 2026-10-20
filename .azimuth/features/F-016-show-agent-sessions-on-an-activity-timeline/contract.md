@@ -152,8 +152,11 @@ export interface TimelineRow {
   spans: TimelineSpan[];
   /** Session rows only, by time. */
   markers: TimelineMarker[];
-  /** The row's own agent's current.summary while that agent is running, else null. */
+  /** While the row's own agent is running: "<tool> <file name>" for a file action, else its
+   * summary; else null. */
   action: string | null;
+  /** The full action (actionLabel) shown as the label's title, else null. */
+  actionTitle: string | null;
 }
 
 export interface EarlierSession {

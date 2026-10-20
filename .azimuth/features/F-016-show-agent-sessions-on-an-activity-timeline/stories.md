@@ -93,7 +93,7 @@ with the live sessions of contract.md's Live fixture (c1201, c1202, c1140, c1100
 ### S-016.2.8 · Running rows name their current action and link to the transcript {happy}
 - **GIVEN** the layout of S-016.2.3
 - **WHEN** its actions and links are read
-- **THEN** the actions are "Edit src/retry/policy.ts" for `SES-20261018-1201`, "pnpm vitest run" for `SES-20261018-1201/a2` and "Read src/api/attempts.ts" for `SES-20261018-1202/a4`, and `null` for `SES-20261018-1140` and `SES-20261018-1100`
+- **THEN** the actions are "Edit policy.ts" for `SES-20261018-1201`, "pnpm vitest run" for `SES-20261018-1201/a2` and "Read attempts.ts" for `SES-20261018-1202/a4` (their `actionTitle`s "Edit src/retry/policy.ts", "pnpm vitest run" and "Read src/api/attempts.ts"), and `null` for `SES-20261018-1140` and `SES-20261018-1100`
 - **AND** the hrefs are `#/activity/SES-20261018-1100` for `SES-20261018-1100`, `#/agents/c1201` for `SES-20261018-1201` and `#/agents/c1201/a2` for `SES-20261018-1201/a2`
 
 ### S-016.2.9 · An ADR is marked only when its time is known {edge}
@@ -130,7 +130,7 @@ with the live sessions of contract.md's Live fixture (c1201, c1202, c1140, c1100
 ### S-016.4.2 · Rows say their status in words {happy}
 - **GIVEN** the rendering of S-016.4.1
 - **WHEN** the row links (class `tl-row`) are read
-- **THEN** there are 9, the row titled `SES-20261018-1140` contains "…1140", "pm-spec", "F-010" and "waiting on you", the one titled `SES-20261018-1100` contains "done", the one titled `SES-20261018-1201` contains "running" and "Edit src/retry/policy.ts", and the one titled `a3` contains "└", "researcher" and "survey log fields"
+- **THEN** there are 9, the row titled `SES-20261018-1140` contains "…1140", "pm-spec", "F-010" and "waiting on you", the one titled `SES-20261018-1100` contains "done", the one titled `SES-20261018-1201` contains "running" and "Edit policy.ts" with the title "Edit src/retry/policy.ts", and the one titled `a3` contains "└", "researcher" and "survey log fields"
 
 ### S-016.4.3 · Every span and marker carries its meaning in text {happy}
 - **GIVEN** the rendering of S-016.4.1
