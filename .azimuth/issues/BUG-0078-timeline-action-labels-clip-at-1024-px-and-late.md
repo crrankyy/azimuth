@@ -2,7 +2,7 @@
 id: BUG-0078
 type: bug
 title: Timeline action labels clip at 1024 px and late in each quarter hour
-status: open
+status: resolved
 severity: low
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: [F-016]
 files: [viewer/src/screens/activity/timeline.ts]
 found_by: SES-20261019-2021
 created: 2026-10-20
-resolved_at: null
+resolved_at: 2026-10-20
 ---
 ## Repro
 Open Activity at 1024 px wide, or at 1440 px in the last minutes before a quarter hour, while

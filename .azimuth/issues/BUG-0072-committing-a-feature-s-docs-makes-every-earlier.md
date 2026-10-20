@@ -2,7 +2,7 @@
 id: BUG-0072
 type: bug
 title: Committing a feature's docs makes every earlier task run of the feature stale
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: [F-006]
 files: [src/core/run-scope.ts]
 found_by: SES-20261019-2021
 created: 2026-10-19
-resolved_at: null
+resolved_at: 2026-10-20
 ---
 ## Repro
 1. Build a feature's code tasks and verify them.
