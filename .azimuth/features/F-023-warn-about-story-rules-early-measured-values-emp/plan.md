@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-023.2
     title: Milestones ready for release in check and next (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-023.5.1, S-023.5.2, S-023.5.3, S-023.5.4, S-023.6.1, S-023.6.2, S-023.6.3]
     files: [src/core/derive.ts, src/core/validate.ts, src/core/next.ts, test/core/milestone-ready.test.ts, test/cli/milestone.test.ts]

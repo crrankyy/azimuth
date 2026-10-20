@@ -1,7 +1,19 @@
 import { splitFrontmatter } from "../frontmatter";
+import { placeholderParts } from "../placeholders";
 import { SCENARIO_KINDS, type ScenarioKind } from "../types";
 import { problem } from "./common";
 import type { Problem } from "../types";
+
+/** One line of stories.md as the parser read it. */
+export interface SourceLine {
+  /**
+   * The clause text after `**THEN**` or `**AND**` (and an optional ":"), trimmed, with indented
+   * continuation lines joined by a single space, as the parser joins them into the clause.
+   */
+  text: string;
+  /** 1-based line number in the file, frontmatter included. */
+  line: number;
+}
 
 export interface ScenarioRaw {
   id: string;
@@ -12,6 +24,13 @@ export interface ScenarioRaw {
   then: string;
   line: number;
   thenLine: number | null;
+  /**
+   * The THEN line, then every AND line that follows it up to the scenario's end, in file order.
+   * An AND after GIVEN or WHEN extends that clause and isn't listed. Lines in fenced code are
+   * never read. [] when the scenario has no THEN. Not part of the index (build-index maps
+   * scenario fields one by one).
+   */
+  thenLines: SourceLine[];
 }
 
 export interface StoryRaw {
@@ -37,11 +56,24 @@ const VAGUE = [
   "as expected",
   "gracefully",
 ];
+/** A number or range: `24`, `9..12`, `2..=5`. */
+const NUMBER = /\d+(?:\.\.=?\d+)?/.source;
+/** A range that isn't the tail of a longer number, a version or an identifier. */
+const RANGE = /(?<![a-z\d_.])\d+\.\.=?\d+/.source;
+/**
+ * A measuring word that isn't the tail of a longer word, then a number, range or `Name(n)`. A
+ * separator is required after a longer identifier, so `byte_to_char(5)` and `byte_to_utf16`
+ * stay function names.
+ */
+const WORD = `(?<![a-z])(?:offset|caret|byte|column|position)(?:[a-z_]*[ :=\`]+(?:${NUMBER}|[a-z]\\w*\\(${NUMBER}\\))|${NUMBER})`;
+const MEASURED = new RegExp(`${RANGE}|${WORD}`, "i");
 
 interface Clause {
   name: "GIVEN" | "WHEN" | "THEN";
   text: string;
   line: number;
+  /** The clause's own line, then each AND line that extends it. */
+  lines: SourceLine[];
 }
 
 interface Draft {
@@ -55,6 +87,33 @@ interface Draft {
 export function isVague(then: string): boolean {
   const lower = then.toLowerCase();
   return VAGUE.some((phrase) => lower.includes(phrase));
+}
+
+/**
+ * The first fragment of a THEN or AND line that looks like a value only the code can measure,
+ * exactly as written, or null. Only the plain-text parts of placeholderParts(line) are tested,
+ * each on its own, so an open or settled placeholder never matches. Within a part, the earliest
+ * match of either pattern wins:
+ * - a range: one or more digits, "..", an optional "=", one or more digits, not right after a
+ *   letter, digit, "_" or "." (`9..12`, `2..=5`);
+ * - a word: "offset", "caret", "byte", "column" or "position" in any case, not right after a
+ *   letter, then either
+ *   - any letters or "_" (`byte_range`), one or more spaces, ":", "=" or backticks, and a
+ *     number or range, or a name (a letter, then word characters) with "(" before the number
+ *     or range and ")" after it (`offset: Some(63)`, `caret: 24`, `byte_range: 34..39`,
+ *     `position = 7`), or
+ *   - right after the word, a number or range.
+ *   A number or range is one or more digits, optionally followed by "..", an optional "=" and
+ *   one or more digits.
+ * `byte-for-byte`, `byte_to_char(5)`, `byte_to_utf16`, `0.3.0` and `S-023.1.1` don't match.
+ */
+export function measuredValue(line: string): string | null {
+  for (const part of placeholderParts(line)) {
+    if (part.kind !== "text") continue;
+    const match = MEASURED.exec(part.text);
+    if (match) return match[0];
+  }
+  return null;
 }
 
 export function parseStories(
@@ -167,18 +226,29 @@ export function parseStories(
       const body = (clause[2] ?? "").trim();
       const last = current.clauses.at(-1);
       if (name === "AND") {
-        if (last) last.text = `${last.text} and ${body}`;
-        else
+        if (last) {
+          last.text = `${last.text} and ${body}`;
+          last.lines.push({ text: body, line: lineNo });
+        } else
           problems.push(
             problem("E-STORY-FORMAT", file, lineNo, `${current.id}: AND before GIVEN.`, current.id),
           );
         return;
       }
-      current.clauses.push({ name: name as Clause["name"], text: body, line: lineNo });
+      current.clauses.push({
+        name: name as Clause["name"],
+        text: body,
+        line: lineNo,
+        lines: [{ text: body, line: lineNo }],
+      });
       return;
     }
     const last = current.clauses.at(-1);
-    if (last && /^\s+\S/.test(raw)) last.text = `${last.text} ${raw.trim()}`;
+    const source = last?.lines.at(-1);
+    if (last && source && /^\s+\S/.test(raw)) {
+      last.text = `${last.text} ${raw.trim()}`;
+      source.text = `${source.text} ${raw.trim()}`;
+    }
   });
   closeScenario();
 
@@ -229,5 +299,6 @@ function finishScenario(draft: Draft, file: string, problems: Problem[]): Scenar
     then: then?.text ?? "",
     line: draft.line,
     thenLine: then?.line ?? null,
+    thenLines: then?.lines ?? [],
   };
 }
