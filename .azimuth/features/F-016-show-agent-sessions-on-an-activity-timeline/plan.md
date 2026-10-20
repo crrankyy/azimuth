@@ -50,7 +50,7 @@ tasks:
     note: null
   - id: T-016.7
     title: SessionCard shows the thread, tally and pick-up (red → green)
-    status: in-progress
+    status: done
     after: [T-016.6]
     covers: [S-016.6.5, S-016.6.6, S-016.6.7]
     files: [viewer/src/components/SessionCard.tsx, viewer/src/components/session-card.css, viewer/src/components/SessionCard.test.tsx]
