@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
 import { compareIds } from "../../src/core/ids";
 import type { Index } from "../../src/core/types";
+import { sortProblems } from "../../src/core/validate";
 import { expectedIndex } from "../fixtures/hookline/expected-index";
 import { createDemoRepo, type DemoRepo } from "../helpers/demo-repo";
 
@@ -58,6 +59,23 @@ function expectedWithDeviations(): Index {
   // W-ARCH-STALE counts only code commits (BUG-0028). Four of the 11 commits after the
   // reconciliation only change .azimuth/ (specs), and 7 code commits are within the limit of 10.
   e.problems = e.problems.filter((p) => p.code !== "W-ARCH-STALE");
+  // The sample predates the W-NO-COVERS hint (F-023), which the drafts' tasks covering nothing get.
+  const noCovers = (feature: string, task: string) => ({
+    code: "W-NO-COVERS",
+    severity: "warning" as const,
+    file: `.azimuth/features/${feature}/plan.md`,
+    line: null,
+    ref: task,
+    message: `${task} covers no scenario: list the scenarios it makes pass, unless it only scaffolds, wires or documents.`,
+  });
+  e.problems = sortProblems([
+    ...e.problems,
+    noCovers("F-008-delivery-replay", "T-008.1"),
+    noCovers("F-008-delivery-replay", "T-008.5"),
+    noCovers("F-008-delivery-replay", "T-008.6"),
+    noCovers("F-009-endpoint-rate-limits", "T-009.4"),
+    noCovers("F-009-endpoint-rate-limits", "T-009.5"),
+  ]);
   return e;
 }
 

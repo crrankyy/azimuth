@@ -6,6 +6,7 @@ import { idKind } from "./ids";
 import { printedName } from "./junit";
 import type { FeatureEntity, Model } from "./model";
 import { problem } from "./parse/common";
+import { measuredValue } from "./parse/stories";
 import { sessionStale } from "./session";
 import type { FeatureStatus, Problem } from "./types";
 
@@ -175,7 +176,9 @@ function featureProblems(
       ),
     );
   }
-  if (specified) {
+  // An idea gets the story rule too, so `check` before the draft move catches what the approval
+  // gate would refuse.
+  if (specified || f.status === "idea") {
     for (const story of f.stories) {
       const kinds = new Set(story.scenarios.map((s) => s.kind));
       if (!kinds.has("happy") || !(kinds.has("negative") || kinds.has("edge"))) {
@@ -190,6 +193,8 @@ function featureProblems(
         );
       }
     }
+  }
+  if (specified) {
     const covered = new Set(f.tasks.flatMap((t) => t.covers));
     for (const sc of f.stories.flatMap((s) => s.scenarios)) {
       if (covered.has(sc.id)) continue;
@@ -229,6 +234,7 @@ function featureProblems(
       );
     }
   }
+  if (f.status === "draft") out.push(...measuredHints(f), ...noCoversHints(f));
   const taskEdges = new Map(f.tasks.map((t) => [t.id, t.after]));
   const cyclic = hasCycle(taskEdges);
   if (cyclic.length > 0) {
@@ -256,6 +262,51 @@ function featureProblems(
     );
   }
   return out;
+}
+
+/**
+ * A value only the code can measure is a guess while drafting, which the build corrects with a
+ * reapprove; left open, the first passing test settles it.
+ */
+function measuredHints(f: FeatureEntity): Problem[] {
+  const file = f.files.stories ?? f.files.feature;
+  return f.stories.flatMap((story) =>
+    story.scenarios.flatMap((sc) =>
+      sc.thenLines.flatMap((l) => {
+        const value = measuredValue(l.text);
+        if (value === null) return [];
+        return [
+          problem(
+            "W-MEASURED",
+            file,
+            l.line,
+            `"${value}" looks like a value only the code can measure. If it is, write {?} instead: the first passing test settles it.`,
+            sc.id,
+          ),
+        ];
+      }),
+    ),
+  );
+}
+
+/**
+ * A task covering nothing reaches its lane without a THEN to hold it to. A task whose files are
+ * all Markdown only documents, so it needs none.
+ */
+function noCoversHints(f: FeatureEntity): Problem[] {
+  const onlyMarkdown = (files: string[]) =>
+    files.length > 0 && files.every((path) => path.endsWith(".md"));
+  return f.tasks
+    .filter((t) => t.covers.length === 0 && !onlyMarkdown(t.files))
+    .map((t) =>
+      problem(
+        "W-NO-COVERS",
+        f.files.plan ?? f.files.feature,
+        null,
+        `${t.id} covers no scenario: list the scenarios it makes pass, unless it only scaffolds, wires or documents.`,
+        t.id,
+      ),
+    );
 }
 
 function pathProblems(model: Model, facts: Facts, f: FeatureEntity): Problem[] {

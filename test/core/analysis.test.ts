@@ -780,6 +780,7 @@ describe("validate", () => {
         "E-TASK-CYCLE F-002",
         "E-TASK-REF T-002.2",
         "W-IMPACT-MISSING F-002",
+        "W-NO-COVERS T-002.1",
         "W-NO-NEGATIVE ST-002.1",
         "W-PATH F-002",
         "W-UNCOVERED-SCENARIO S-002.1.1",
