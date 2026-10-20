@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-20
-reconciled_at: 37467ad
+reconciled_at: 83d5cba
 modules:
   - name: core
     path: src/core
@@ -20,7 +20,7 @@ modules:
     depends_on: [core]
   - name: viewer
     path: viewer/src
-    responsibility: The React viewer, rendered from the index only
+    responsibility: The React viewer, rendered from the index and, in the live viewer only, the transcript route
     depends_on: [core]
   - name: plugin
     path: plugin
@@ -144,3 +144,13 @@ prints and the server pushes to the viewer over SSE.
 - Viewer: each issue has a page at `#/issues/<id>/page` (`viewer/src/screens/issues/`), whose
   related work (`related.ts`) and history (`history.ts`) are derived from the index on every
   render.
+- Agents in the viewer: `#/agents` (`viewer/src/screens/Agents.tsx` and `screens/agents/`) reads
+  only the index's live sessions. `agentRows` (`viewer/src/data/agents.ts`, shared with F-016)
+  turns a session into its main agent and subagents, and `screens/agents/model.ts` derives the
+  status groups, counts, files being edited (conflicts outside `project.shared_files`), planned
+  overlaps from `derived.file_conflicts` and open permission waits. The transcript page
+  `#/agents/<claude-session>[/<agent-id>]` also reads one agent's transcript: `useTranscript`
+  (`viewer/src/data/transcript.ts`) fetches `GET /api/transcript` with the page's token
+  (`pageToken()`), then the next page from `next` whenever a `live` push changes `index.live`, one
+  request at a time, and keeps the entries in memory only. Exports and the Vite dev server have no
+  token and never fetch, and neither screen writes or answers a permission prompt.

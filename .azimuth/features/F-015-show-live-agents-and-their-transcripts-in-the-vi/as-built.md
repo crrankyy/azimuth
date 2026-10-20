@@ -57,7 +57,7 @@ deviations:
   - { path: viewer/src/data/transcript.ts, kind: clarification, reason: "fetchTranscript treats a body that isn't JSON (a proxy's error page, say) as no body, so the failure keeps its HTTP status. A failure whose body has neither message nor error, or a 200 whose body isn't a transcript page, reads The server sent no transcript page., a message contract.md doesn't list" }
   - { path: viewer/src/data/transcript.ts, kind: clarification, reason: "useTranscript returns EMPTY_TRANSCRIPT whenever it is disabled, even for a view it loaded earlier, and ignores an answer that arrives after the view or enabled changed; enabled again, it starts over from the first page" }
   - { path: viewer/src/data/transcript.ts, kind: omission, reason: "useTranscript's queueing (one request in flight, at most one more queued, answers for a view no longer shown ignored) has no unit test: effects don't run under renderToStaticMarkup and the viewer tests have no DOM. The live check covered it" }
-follow_ups: []
+follow_ups: [DEBT-0010, BUG-0077]
 ---
 # F-015: As built
 
@@ -160,4 +160,5 @@ Otherwise the files match `impact.md`. T-015.10 is writing `docs/viewer.md` and
 impact.md plans them, ahead of their commit.
 
 ## Follow-ups
-None filed.
+- DEBT-0010: `useTranscript` and `useScreenKeys` have no tests.
+- BUG-0077: the top bar's key hints wrap at 1024 px.

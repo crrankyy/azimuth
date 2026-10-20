@@ -74,7 +74,7 @@ tasks:
     note: null
   - id: T-015.10
     title: Docs, screenshots, live check and full verification
-    status: in-progress
+    status: done
     after: [T-015.5, T-015.8, T-015.9]
     covers: []
     files: [docs/viewer.md, docs/getting-started.md]

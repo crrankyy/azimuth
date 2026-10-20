@@ -2,7 +2,7 @@
 id: F-015
 title: Show live agents and their transcripts in the viewer
 summary: An Agents screen lists every live session and its subagents by status (running, waiting on you, finished today) with their current action, the files they edit and the permission prompts waiting on you, and a live transcript page follows one agent's messages, edits and commands as they happen.
-status: in-progress
+status: verifying
 priority: P1
 size: L
 mode: brownfield
@@ -11,7 +11,7 @@ depends_on: [F-014]
 superseded_by: null
 tags: []
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-20
 approved_at: 2026-10-19
 approved_by: agent
 approved_hash: sha256:f5eff0bdd7062d41d8e85d460ac54a2cbaad3f0a2f5a28cea8f210bf423451ee
