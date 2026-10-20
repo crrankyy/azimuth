@@ -10,7 +10,8 @@ build, and viewer screens for watching live agents.
 
 ### Upgrading
 
-- Update the installed plugin, then restart Claude Code: `claude plugin update azimuth@azimuth`.
+- In your clone, run `pnpm install && pnpm build`, then start a new Claude Code session (or run
+  `/reload-plugins`): Claude Code reads a plugin installed from a local folder from that folder.
 - Run `azimuth init --refresh` in each project to update `.azimuth/PROTOCOL.md` and the templates.
 - In the viewer, `g a` now opens Agents; Activity moved to `g t`.
 - `azimuth new` prints only the new ID on stdout (paths and notes go to stderr). `azimuth check`
