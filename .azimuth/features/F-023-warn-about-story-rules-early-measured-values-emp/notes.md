@@ -11,3 +11,7 @@ T-023.3: for each scenario loop over sc.thenLines and push W-MEASURED at l.line 
 ### T-023.3 · 2026-10-20
 
 T-023.4: put HINT_CODES and isHint near the top of validate.ts; the two codes come only from measuredHints and noCoversHints. Hookline has strict: false, so the golden test is unaffected. W-VAGUE is a parse problem in model.problems, so S-023.4.2's gate context must include it, as analyze() in analysis.test.ts does. check.test.ts's project() now has T-001.2 covering S-001.1.1 so F-013's pinned output stays true.
+
+### T-023.4 · 2026-10-20
+
+Docs (T-023.5): word the strict comments as 'hints aside'; codes outside HINT_CODES (W-NO-NEGATIVE, W-VAGUE, W-MILESTONE-READY) still count toward strict. S-023.4.1's warnings come out W-NO-COVERS first (sortProblems puts plan.md before stories.md); the THEN fixes no order and the test compares them sorted. gates.ts now imports isHint from validate.ts (no cycle).

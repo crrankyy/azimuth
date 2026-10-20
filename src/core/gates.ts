@@ -6,6 +6,7 @@ import type { TaskRaw } from "./parse/feature";
 import { openPlaceholderScenarios } from "./placeholders";
 import { inScope, runScope } from "./run-scope";
 import type { FeatureStatus, Gate, GateCheck, Problem } from "./types";
+import { isHint } from "./validate";
 
 /** The forward transition each status is waiting for. */
 export const NEXT_STATUS: Partial<Record<FeatureStatus, FeatureStatus>> = {
@@ -157,7 +158,9 @@ function approveGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
     ),
   ];
   if (ctx.model.config.autonomy.strict) {
-    const warnings = featureProblems(ctx, f, "warning");
+    // Nothing silences a hint and it goes away at approval, so counting one would block a spec
+    // whose scaffolding task or decided offset is deliberate.
+    const warnings = featureProblems(ctx, f, "warning").filter((p) => !isHint(p));
     checks.push(
       check(
         "approve.no-warnings",

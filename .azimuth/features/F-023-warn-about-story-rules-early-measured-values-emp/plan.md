@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-023.3
     title: Story rule for ideas, W-MEASURED and W-NO-COVERS in drafts (red → green)
-    status: in-progress
+    status: done
     after: [T-023.1, T-023.2]
     covers: [S-023.1.1, S-023.1.2, S-023.1.3, S-023.2.4, S-023.2.5, S-023.3.1, S-023.3.2, S-023.3.3, S-023.3.4]
     files: [src/core/validate.ts, test/core/check-hints.test.ts, test/cli/check.test.ts, test/core/analysis.test.ts, test/golden/index.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-023.4
     title: Hints don't count toward strict approval (red → green)
-    status: todo
+    status: in-progress
     after: [T-023.3]
     covers: [S-023.4.1, S-023.4.2, S-023.4.3]
     files: [src/core/validate.ts, src/core/gates.ts, test/core/strict-hints.test.ts]

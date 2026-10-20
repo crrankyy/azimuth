@@ -12,6 +12,18 @@ import type { FeatureStatus, Problem } from "./types";
 
 const SPECIFIED: FeatureStatus[] = ["draft", ...ACTIVE_STATUSES];
 
+/**
+ * Warning codes that are hints: likely improvements of a draft that may be deliberate and that
+ * nothing silences. `check`, `status --brief` and the index show them like any warning;
+ * `autonomy.strict`'s approval check (`approve.no-warnings`) doesn't count them.
+ */
+export const HINT_CODES: readonly string[] = ["W-MEASURED", "W-NO-COVERS"];
+
+/** Whether the problem's code is in HINT_CODES. */
+export function isHint(problem: Pick<Problem, "code">): boolean {
+  return HINT_CODES.includes(problem.code);
+}
+
 /** Cross-entity rules (links, cycles, drift, coverage, paths, staleness). Parse rules live in parse/. */
 export function validate(model: Model, facts: Facts, derived: Derived): Problem[] {
   return [
