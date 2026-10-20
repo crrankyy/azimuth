@@ -2,7 +2,7 @@
 id: F-022
 title: Brief subagents on shared files, conventions and what to report
 summary: azimuth brief adds the shared-file rules when a task lists a shared file, the project's conventions.md, and a closing request for lessons, files changed outside the list and proven placeholder values.
-status: verifying
+status: done
 priority: P1
 size: S
 mode: brownfield
