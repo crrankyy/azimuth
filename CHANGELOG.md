@@ -36,6 +36,11 @@ build, and viewer screens for watching live agents.
 - `parallel.shared_files` lists registry files that tasks extend with one insertion each. They no
   longer count as file conflicts, and `azimuth next F-NNN` groups the ready tasks that can run
   together.
+- `verify.ignore_paths` lists files whose change never makes a verify run stale, such as a README
+  or guides the code doesn't read. Empty by default (BUG-0072).
+- `azimuth session start` and `azimuth doctor` warn when Azimuth's hooks haven't run in the
+  current Claude Code session, which happens when it started before the plugin was enabled
+  (BUG-0080).
 - `autonomy.questions: proceed` lets an agent's non-blocking question with `--recommend` be
   answered with its recommendation. It shows in your Review list until `azimuth ack Q-…`, and your
   own answer replaces it. The default stays `ask`.
@@ -65,6 +70,11 @@ build, and viewer screens for watching live agents.
 
 - The installed plugin couldn't find its own CLI and viewer, so `azimuth view` failed and autostart
   stopped a running viewer without starting another (BUG-0079).
+- On the Activity timeline, the current action after a running agent's row was cut off near each
+  quarter hour and at 1024 px. The last-75-minutes view now ends at least 10 minutes after now,
+  and a label that still doesn't fit is drawn before the now line (BUG-0078).
+- `azimuth doctor` counted the records `azimuth session start` writes as hook activity, so it said
+  hooks were recording when none ran (BUG-0080).
 - Autostart left a new viewer running for each session instead of reusing the busy one (BUG-0068).
 - Each hook spent about 40 ms finding the shared cache folder; 100 hook writes went from 4.3 s to
   41 ms (BUG-0073).
