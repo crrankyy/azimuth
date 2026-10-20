@@ -289,6 +289,23 @@ function scenariosPassing(ctx: GateContext, f: FeatureEntity): GateCheck {
   };
 }
 
+/**
+ * A generated as-built.md starts every deviation with an empty reason, so the file existing isn't
+ * enough: each deviation must say why, and one that doesn't parse can't be read for reasons.
+ */
+function asBuiltCheck(f: FeatureEntity): GateCheck {
+  const id = "done.as-built";
+  const rule = "as-built.md written";
+  if (f.files.asBuilt === null) return fail(id, rule);
+  if (f.asBuilt === null)
+    return fail(id, rule, `as-built.md has errors (see azimuth check ${f.id})`);
+  const unexplained = f.asBuilt.deviations
+    .filter((d) => d.reason.trim() === "")
+    .map((d) => `${d.path} (${d.kind})`);
+  if (unexplained.length === 0) return pass(id, rule);
+  return fail(id, rule, `No reason for ${unexplained.join(", ")}`);
+}
+
 function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
   const head = ctx.facts.git.head;
   const failed: string[] = [];
@@ -329,7 +346,7 @@ function doneGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
       open.length === 0,
       open.join(", "),
     ),
-    check("done.as-built", "as-built.md written", f.files.asBuilt !== null),
+    asBuiltCheck(f),
     check(
       "done.architecture-reconciled",
       "Architecture reconciled after the feature's last commit",

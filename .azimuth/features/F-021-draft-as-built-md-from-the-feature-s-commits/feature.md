@@ -14,8 +14,8 @@ created: 2026-10-20
 updated: 2026-10-20
 approved_at: 2026-10-20
 approved_by: agent
-approved_hash: sha256:f4daf8fc8d49f02d3c3fb130ea54703c24bf13f000bc6db95e4634457063a99f
-approved_commit: 7f7a8c2
+approved_hash: sha256:805471ac91958ffc1ae5a76f38ebd00e87bbf2d2f2b173e4686a42b626d8a14c
+approved_commit: 3f10795
 review_ack_at: null
 ---
 # F-021: Draft as-built.md from the feature's commits

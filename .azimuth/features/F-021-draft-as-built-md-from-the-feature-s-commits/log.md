@@ -11,3 +11,9 @@ draft → approved
 
 ## 2026-10-20T18:10:02Z · agent · transition · SES-20261020-1730
 approved → in-progress
+
+## 2026-10-20T18:13:04Z · agent · note · SES-20261020-1730
+T-021.1: in-progress → done. Committed 3f10795; R-0241 passed.
+
+## 2026-10-20T18:13:09Z · agent · note · SES-20261020-1730 · auto
+Re-approved the changed spec.

@@ -2,7 +2,7 @@
 tasks:
   - id: T-021.1
     title: files_changed and deviation rules (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-021.1.1, S-021.1.2, S-021.1.3, S-021.3.1, S-021.3.2, S-021.3.3]
     files: [src/core/as-built.ts, src/core/run-scope.ts, test/core/as-built.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-021.2
     title: The done gate needs a reason for every deviation (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-021.6.1, S-021.6.2, S-021.6.3, S-021.6.4]
     files: [src/core/gates.ts, test/core/as-built-gate.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-021.3
     title: Read the feature's commits and write as-built.md (red → green)
-    status: todo
+    status: in-progress
     after: [T-021.1]
     covers: [S-021.2.1, S-021.2.2, S-021.2.3, S-021.4.1, S-021.4.2, S-021.4.3, S-021.4.4, S-021.4.5]
     files: [src/core/as-built.ts, src/core/git.ts, src/core/frontmatter.ts, src/core/create.ts, test/core/as-built.test.ts]
