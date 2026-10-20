@@ -23,7 +23,7 @@ export interface Created {
 }
 
 /** The project's copy of a template when present, otherwise the built-in one. */
-function template(root: string, name: string): string {
+export function template(root: string, name: string): string {
   const custom = azPath(root, "templates", name);
   if (existsSync(custom)) return readFileSync(custom, "utf8");
   const builtin = TEMPLATES[name];

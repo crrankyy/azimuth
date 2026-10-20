@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-021.2
     title: The done gate needs a reason for every deviation (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-021.6.1, S-021.6.2, S-021.6.3, S-021.6.4]
     files: [src/core/gates.ts, test/core/as-built-gate.test.ts]

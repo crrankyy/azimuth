@@ -1,9 +1,9 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { featureBodyOf, type FeatureEntity, type Model } from "./model";
 import { emptyGitFacts, type GitFacts } from "./facts";
-import { MENTION_PATTERN } from "./ids";
+import { featureOf, MENTION_PATTERN } from "./ids";
 import { specHash } from "./spec-hash";
-import type { ApprovalChange, Commit } from "./types";
+import type { ApprovalChange, Commit, Id } from "./types";
 import { ACTIVE_STATUSES } from "./flows";
 
 const SEP = "\x1f";
@@ -48,6 +48,11 @@ function scopeRefs(subject: string): string[] {
   return scope.match(MENTION_PATTERN) ?? [];
 }
 
+/** The unique IDs in a commit's Refs trailer value, else those in its subject's scope. */
+function commitRefs(trailer: string, subject: string): Id[] {
+  return [...new Set(trailer.match(MENTION_PATTERN) ?? scopeRefs(subject))];
+}
+
 export function readCommits(root: string, depth: number): RawCommit[] {
   const format = [
     `${REC}%h`,
@@ -71,12 +76,70 @@ export function readCommits(root: string, depth: number): RawCommit[] {
         actor: "you" as const,
         session: null,
         subject,
-        refs: [...new Set(refs.match(MENTION_PATTERN) ?? scopeRefs(subject))],
+        refs: commitRefs(refs, subject),
         files_changed: files.length,
         coAuthors,
         files,
       };
     });
+}
+
+/** One commit of a feature, as `git log --name-status --no-renames` prints it. */
+export interface CommitChanges {
+  /** 7-character SHA. */
+  sha: string;
+  subject: string;
+  /** readCommits' rule: the Refs trailer's IDs, else the IDs in the Conventional Commits scope. */
+  refs: Id[];
+  /** One per path line, in git's order: status A, M, D or T, and the repo-relative path. */
+  changes: { status: string; path: string }[];
+}
+
+/** `<status>\t<path>` lines; with --no-renames no line carries a second path. */
+function parseNameStatus(lines: string[]): { status: string; path: string }[] {
+  return lines.flatMap((line) => {
+    const [status, path] = line.split("\t");
+    return status && path ? [{ status, path }] : [];
+  });
+}
+
+/**
+ * The commits reachable from HEAD that name the feature (featureOf(ref) === featureId for one of
+ * their refs), oldest first, with their changes. Reads the whole history, without
+ * git.log_depth's limit. [] when HEAD has no commit; null when git log fails.
+ */
+export function readFeatureCommits(root: string, featureId: Id): CommitChanges[] | null {
+  if (headSha(root) === null) return isGitRepo(root) ? [] : null;
+  const format = [`${REC}%h`, "%s", "%(trailers:key=Refs,valueonly,separator=%x2C)"].join(SEP);
+  // The greps only narrow git's output to commits that could name the feature; commitRefs below
+  // applies the exact rule, so a match in the body alone doesn't count.
+  const out = git(root, [
+    "log",
+    "--topo-order",
+    "--reverse",
+    "--no-renames",
+    "--name-status",
+    "--abbrev=7",
+    "--fixed-strings",
+    `--grep=${featureId}`,
+    `--grep=-${featureId.slice(2)}.`,
+    `--format=${format}`,
+  ]);
+  if (out === null) return null;
+  return out
+    .split(REC)
+    .filter((chunk) => chunk.trim())
+    .map((chunk) => {
+      const [header = "", ...rest] = chunk.split("\n");
+      const [sha = "", subject = "", trailer = ""] = header.split(SEP);
+      return {
+        sha,
+        subject,
+        refs: commitRefs(trailer, subject),
+        changes: parseNameStatus(rest.filter(Boolean)),
+      };
+    })
+    .filter((c) => c.refs.some((ref) => featureOf(ref) === featureId));
 }
 
 /** Reads many `rev:path` blobs with one `git cat-file --batch`. Missing blobs map to null. */

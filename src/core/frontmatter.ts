@@ -109,8 +109,11 @@ export function parseFrontmatter(text: string): ParsedFrontmatter {
   return { ...parts, data: toJS(doc.contents) as Record<string, unknown>, errors, keyLines };
 }
 
-/** Serialize a value for a single `key: value` line; collections use flow style. */
-export function inlineYaml(value: unknown): string {
+/**
+ * Serialize a value for a single `key: value` line; collections use flow style. `padded` puts a
+ * space inside flow collections, `{ path: src/a.ts, change: create }`.
+ */
+export function inlineYaml(value: unknown, opts: { padded?: boolean } = {}): string {
   const doc = new Document(value);
   visit(doc, {
     Map: (_, node) => {
@@ -124,7 +127,9 @@ export function inlineYaml(value: unknown): string {
       if (typeof node.value === "string" && node.value.includes("\n")) node.type = "QUOTE_DOUBLE";
     },
   });
-  return doc.toString({ lineWidth: 0, flowCollectionPadding: false }).replace(/\n$/, "");
+  return doc
+    .toString({ lineWidth: 0, flowCollectionPadding: opts.padded ?? false })
+    .replace(/\n$/, "");
 }
 
 function isPlainScalar(value: unknown): boolean {
