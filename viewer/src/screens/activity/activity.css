@@ -1,4 +1,4 @@
-/* Activity: Live strip, day-grouped timeline and feature filter (handoff screens/Activity.html). */
+/* Activity: Live strip, the feed by period and the feature filter (handoff screens/Activity.html). */
 
 .act-layout {
   display: flex;
@@ -211,24 +211,24 @@
   flex: 1;
 }
 
-/* Timeline */
+/* Feed: Today, Yesterday and Earlier, with the cards first under Today */
 .feed {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
-.feed-day {
+.feed-period {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
 }
-.feed-day-title {
-  margin: 8px 0 0;
+.feed-period-title {
+  margin: 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-muted);
 }
-.feed-day-title span {
+.feed-period-title span {
   font-weight: 400;
   color: var(--ink-tertiary);
 }
@@ -238,76 +238,44 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 14px;
 }
-.feed-item {
-  display: grid;
-  grid-template-columns: 52px 20px minmax(0, 1fr);
-  gap: 0 12px;
+/* Commits, runs and your actions: a mark, the row, and its time at the end. */
+.feed-item:not(.k-session) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 16px;
+  font-size: 13px;
 }
 .feed-time {
-  padding-top: 9px;
-  text-align: right;
-  font-size: 12px;
+  flex: none;
   color: var(--ink-tertiary);
-}
-.feed-item.k-session .feed-time {
-  padding-top: 14px;
-}
-.feed-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.feed-rail > .az-g {
-  margin-top: 12px;
-}
-.feed-line {
-  flex: 1;
-  width: 1.5px;
-  background: var(--hairline);
-}
-.feed-day:last-child .feed-item:last-child .feed-line {
-  visibility: hidden;
+  white-space: nowrap;
 }
 .feed-mark {
   flex: none;
   box-sizing: border-box;
-  margin-top: 12px;
-}
-.feed-mark.m-session {
-  width: 10px;
-  height: 10px;
-  margin-top: 17px;
-  border-radius: 3px;
-  background: var(--ink-subtle);
-}
-.feed-mark.m-session.open {
-  background: var(--ink);
 }
 .feed-mark.m-commit {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  border: 1.5px solid var(--ink-subtle);
+  border: 2px solid var(--ink-subtle);
 }
 .feed-mark.m-action {
   width: 8px;
   height: 8px;
-  margin-top: 13px;
   border: 1.5px solid var(--ink-muted);
   transform: rotate(45deg);
 }
-.feed-body {
-  min-width: 0;
-  padding-bottom: 14px;
-}
 .feed-row {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
-  padding: 8px 0 0;
-  font-size: 13px;
 }
 .feed-kind {
   flex: none;

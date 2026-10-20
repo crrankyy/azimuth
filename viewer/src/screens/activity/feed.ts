@@ -59,7 +59,8 @@ export function buildFeed(index: Index, data: ActivityData): FeedItem[] {
       kind: "session" as const,
       key: session.id,
       at: session.ended_at ?? session.started_at,
-      features: unique(session.touched.map(featureOf)),
+      // The same features the timeline and the cards filter on, so all three show the same work.
+      features: data.byKey.get(session.id)?.features ?? unique(session.touched.map(featureOf)),
       session,
     })),
     ...index.commits
@@ -136,18 +137,6 @@ export function byPeriod(items: FeedItem[], now: number): PeriodGroup[] {
     const heading = period === "earlier" ? "Earlier" : dayHeading(first.at, now);
     return [{ period, heading, items: grouped }];
   });
-}
-
-/** Items grouped by local day, keeping the newest-first order. */
-export function byDay(items: FeedItem[]): { day: string; items: FeedItem[] }[] {
-  const groups: { day: string; items: FeedItem[] }[] = [];
-  for (const item of items) {
-    const day = localDay(item.at);
-    const last = groups.at(-1);
-    if (last?.day === day) last.items.push(item);
-    else groups.push({ day, items: [item] });
-  }
-  return groups;
 }
 
 const LIVE_WINDOW_MS = 120_000;

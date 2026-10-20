@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-016.4
     title: The Agent timeline component (red → green)
-    status: in-progress
+    status: done
     after: [T-016.3]
     covers: [S-016.4.1, S-016.4.2, S-016.4.3, S-016.4.4, S-016.4.5]
     files: [viewer/src/screens/activity/AgentTimeline.tsx, viewer/src/screens/activity/timeline.css, viewer/src/screens/activity/AgentTimeline.test.tsx]
