@@ -44,7 +44,7 @@ be on your PATH).
 | `azimuth show <ID> [--brief \| --json]`     | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log.                                                                                           |
 | `azimuth next [F-ID] [--json]`              | The highest-priority unblocked work across the project (critical bugs and debt, then feature work by status and priority, then high-severity ones), or a feature's ready tasks and which of them can run together (below).     |
 | `azimuth check [ID…] [--warnings] [--json]` | Validation problems (all, or those concerning the given IDs). Every error is listed; without an ID or `--warnings`, warnings are only counted by code on one line. `--json` lists every problem. Exit 1 when there are errors. |
-| `azimuth trace [F-ID] [--all] [--json]`     | Scenario → test coverage. References that only mention a scenario ID (outside a test name or marker) are hidden and counted on the last line; `--all` shows them, marked `(mention)`, and `--json` keeps them.                 |
+| `azimuth trace [F-ID] [--all] [--json]`     | Scenario → test coverage (below). References that only mention a scenario ID (outside a test name or marker) are hidden and counted on the last line; `--all` shows them, marked `(mention)`, and `--json` keeps them.         |
 | `azimuth brief <T-ID> [--json]`             | The prompt for a subagent building the task, in Markdown, from the records alone (below). `--json` prints `{task, feature, text}`.                                                                                             |
 | `azimuth docs [formats\|concepts\|cli]`     | Prints this reference: the file formats, the concepts, or this page. It is bundled into the CLI, so agents read it instead of Azimuth's code.                                                                                  |
 | `azimuth index [--out <file>]`              | Writes the index JSON (default `.azimuth/cache/index.json`).                                                                                                                                                                   |
@@ -70,6 +70,24 @@ On its own: T-005.4
 when there are none. With an F-ID, `--json` prints `{items, groups}`: `items` is the list the
 command prints, and `groups` a list of `{tasks, shared}`, `[]` unless the feature is in progress.
 Without an ID, `--json` prints the array of items.
+
+`azimuth trace` marks a test `(uncommitted)` when it is only in the working tree: its file is
+modified, staged or untracked, and HEAD's copy of the file has no test with the same scenario ID
+and name. A test whose body changed still counts as committed; one whose name changed doesn't
+until the change is committed. The done gate doesn't count an uncommitted test (see
+[Traceability](concepts.md#traceability)), so commit its file first. A mention shown with `--all`
+can carry both marks: `(mention) (uncommitted)`. Without git, every test counts as committed.
+
+```
+$ azimuth trace F-001
+S-001.1.1 passing Scenario
+    test/keymap.test.ts: S-001.1.1 opens the palette
+S-001.1.2 passing Scenario
+    test/keymap.test.ts: S-001.1.2 lists keys in every preset (uncommitted)
+```
+
+`--json` prints one row per scenario (`feature`, `scenario`, `title`, `status`, `tests`), and
+every test carries `committed`, `false` for one marked `(uncommitted)`.
 
 `azimuth brief <T-ID>` prints, in this order: the task's title, its feature and the status of its
 `after` tasks; the lines of each scenario it covers, as written in `stories.md`, with settled

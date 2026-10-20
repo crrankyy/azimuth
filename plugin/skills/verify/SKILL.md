@@ -21,8 +21,11 @@ Target: $ARGUMENTS
    (`T-006.2 last passed at abc1234; def5678 changed src/core/gates.ts`). When the check passes,
    rerun nothing. If a run fails, fix it (`azimuth move <F-ID> in-progress --reason "…"` first if
    it needs real work), commit, verify that task again.
-3. `azimuth trace <F-ID>`: every scenario must have a passing test. Add missing tests (named
-   with the scenario ID), commit them and rerun the runs the done gate then names.
+3. `azimuth trace <F-ID>`: every scenario must have a passing test that is committed. A test
+   that trace marks `(uncommitted)` is only in the working tree, and the done gate doesn't count it.
+   Add missing tests (named with the scenario ID), commit them and every file holding an
+   uncommitted test (with `Refs: <T-ID>` naming the task that covers the scenario), and rerun the
+   runs the done gate then names.
 4. Write `.azimuth/features/<F-ID>-<slug>/as-built.md` from
    `.azimuth/templates/feature/as-built.md`: compare the files actually changed
    (`git log --name-only` for commits with `Refs:` to this feature) with impact.md; list

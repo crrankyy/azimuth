@@ -23,3 +23,7 @@ Docs (T-020.7): both marks can appear in a fixed order, '<file>: <name> (mention
 ### T-020.6 · 2026-10-20
 
 The tag shows on #/features/F-NNN/stories (chip 'passing · N tests · 1 uncommitted', tag after the test name) and on #/verification in the Test column. The Test cell clips overflow, so a long file name can hide the tag there. verification.css sets font-family var(--font-text) on the tag because the cell is monospace.
+
+### T-020.7 · 2026-10-20
+
+If git status fails while git is available, changed is [] and every test counts as committed (documented). The viewer tags uncommitted mentions too, though mentions don't count when a scenario has marked tests (as the spec asks).

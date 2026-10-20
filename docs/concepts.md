@@ -42,13 +42,13 @@ side states: deferred · cancelled · superseded
 Every status change goes through `azimuth move` (or a viewer action), which checks the lifecycle
 table, who is acting, and the gate for forward moves. A gate is a list of checks; all must pass.
 
-| Move                    | Gate checks                                                                                                                                                                                                                                                                                                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| idea → draft            | Spec files written: impact, stories, contract and plan exist, with at least one story and one task.                                                                                                                                                                                                                                                               |
-| draft → approved        | No errors in the feature · every story has a happy and a negative or edge scenario · every scenario has GIVEN, WHEN and THEN · every scenario is covered by a task · every task has a verify command · the spec is committed · no open blocking question · dependencies exist and form no cycle · size is not XL. (With `autonomy.strict`: no warnings either.)   |
-| approved → in-progress  | The spec is unchanged since approval · every dependency is done (you may override this one with a reason).                                                                                                                                                                                                                                                        |
-| in-progress → verifying | Every task is done or skipped with a note · no open blocking question.                                                                                                                                                                                                                                                                                            |
-| verifying → done        | The latest verify run of every task passed at HEAD · every scenario has a passing test · no `{?}` placeholder is left in `stories.md` · `as-built.md` exists · `architecture.md` was reconciled after the feature's last commit. Commits that only change `.azimuth/` (the as-built, the reconciliation, recorded decisions) don't count for either commit check. |
+| Move                    | Gate checks                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| idea → draft            | Spec files written: impact, stories, contract and plan exist, with at least one story and one task.                                                                                                                                                                                                                                                                         |
+| draft → approved        | No errors in the feature · every story has a happy and a negative or edge scenario · every scenario has GIVEN, WHEN and THEN · every scenario is covered by a task · every task has a verify command · the spec is committed · no open blocking question · dependencies exist and form no cycle · size is not XL. (With `autonomy.strict`: no warnings either.)             |
+| approved → in-progress  | The spec is unchanged since approval · every dependency is done (you may override this one with a reason).                                                                                                                                                                                                                                                                  |
+| in-progress → verifying | Every task is done or skipped with a note · no open blocking question.                                                                                                                                                                                                                                                                                                      |
+| verifying → done        | The latest verify run of every task passed at HEAD · every scenario has a committed passing test · no `{?}` placeholder is left in `stories.md` · `as-built.md` exists · `architecture.md` was reconciled after the feature's last commit. Commits that only change `.azimuth/` (the as-built, the reconciliation, recorded decisions) don't count for either commit check. |
 
 For the done gate, a passing verify run stays current until a later commit changes a path the run
 depends on: the task's `files`, the feature's impact paths with change create, modify or test
@@ -198,7 +198,13 @@ What needs you, grouped by urgency:
 
 - **Scenario → test:** test names start with the scenario ID (`it("S-005.1.2 …")`), or use
   `@pytest.mark.scenario("S-005.1.2")` or a `// scenario: S-005.1.2` comment. `azimuth trace`
-  shows the matrix.
+  shows the matrix and marks a test that is only in the working tree `(uncommitted)`: its file is
+  modified, staged or untracked, and HEAD's copy of the file has no test with the same scenario
+  ID and name. The done gate counts a passing scenario only when one of the tests that count for
+  it is committed: its marked tests when it has any, else the lines that only mention its ID, so a
+  committed comment can't stand in for an uncommitted test. The check names each scenario it
+  leaves out: `1 of 2; S-001.1.2 only in uncommitted test/keymap.test.ts`. Without git, every
+  test counts as committed.
 - **Verify run → scenarios:** a run records each covered scenario as passing or failing, from
   the scenario IDs and marked tests' function names its output shows (see
   [`azimuth verify`](cli.md#verify)); a JUnit report written to `$AZIMUTH_JUNIT` makes that exact

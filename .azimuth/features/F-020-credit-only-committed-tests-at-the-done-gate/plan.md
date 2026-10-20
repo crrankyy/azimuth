@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-020.6
     title: The viewer tags an uncommitted test (red → green)
-    status: in-progress
+    status: done
     after: [T-020.1]
     covers: [S-020.5.1, S-020.5.2, S-020.5.3, S-020.5.4]
     files: [viewer/src/screens/feature/StoriesTab.tsx, viewer/src/screens/Verification.tsx, viewer/src/screens/feature/feature.css, viewer/src/screens/verification.css, viewer/src/screens/feature/StoriesTab.test.tsx, viewer/src/screens/Verification.test.tsx]
@@ -50,10 +50,10 @@ tasks:
     note: null
   - id: T-020.7
     title: Docs, the verify skill and full verification
-    status: todo
+    status: in-progress
     after: [T-020.5, T-020.6]
     covers: []
-    files: [docs/cli.md, docs/concepts.md, plugin/skills/verify/SKILL.md]
+    files: [docs/cli.md, docs/concepts.md, plugin/skills/verify/SKILL.md, docs/viewer.md]
     verify: pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm exec vitest run
     note: null
 ---

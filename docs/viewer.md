@@ -100,8 +100,9 @@ T-005.2: …", "An agent on T-005.2 is waiting for you: …"), or, without such 
 last one ended.
 
 On a feature's Stories tab, a value settled with `azimuth settle` carries a ✓ titled "settled by
-test", and an open `{?}` reads "to be settled". The As-built tab shows the feature's notes after
-the close-out record, and opens as soon as the feature has notes.
+test", and an open `{?}` reads "to be settled". A test that is only in the working tree is tagged
+`uncommitted` there and in the Verification table's Test column. The As-built tab shows the
+feature's notes after the close-out record, and opens as soon as the feature has notes.
 
 Activity opens with the agent timeline: a row per session in the range (Last 75 min, the
 default, Today or 3 days) and an indented row per subagent, each saying its status in words. Spans
