@@ -3,8 +3,10 @@ import { Page } from "../components/AppShell";
 import { EmptyState, FilterChip } from "../components/primitives";
 import { useIndexState } from "../data/IndexProvider";
 import { featureById } from "../data/selectors";
+import { plural } from "../lib/format";
 import { href, type Route } from "../lib/router";
 import { ActivityFeed } from "./activity/ActivityFeed";
+import { AgentTimeline } from "./activity/AgentTimeline";
 import {
   buildFeed,
   featureCounts,
@@ -13,13 +15,14 @@ import {
   type FeatureFilter,
 } from "./activity/feed";
 import { liveCards } from "./activity/LiveCards";
-import { LiveStrip } from "./activity/LiveStrip";
-import { activityData } from "./activity/sessions";
+import { activityData, sessionMatchesFeature } from "./activity/sessions";
 import { sessionThreads } from "./activity/thread";
+import { layoutTimeline, type TimelineRange } from "./activity/timeline";
 import "./activity/activity.css";
 
 const KINDS: { kind: ActivityKind; label: string }[] = [
   { kind: "session", label: "Sessions" },
+  { kind: "subagent", label: "Subagents" },
   { kind: "commit", label: "Commits" },
   { kind: "run", label: "Verify runs" },
   { kind: "action", label: "Your actions" },
@@ -34,6 +37,7 @@ export function ActivityScreen({ route }: { route: Route }) {
   const routed = sessionIdOf(route);
   const [kinds, setKinds] = useState<Set<ActivityKind>>(() => new Set(KINDS.map((k) => k.kind)));
   const [feature, setFeature] = useState<FeatureFilter>("all");
+  const [range, setRange] = useState<TimelineRange>("75m");
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const first = routed ?? feed.find((i) => i.kind === "session")?.key;
     return new Set(first ? [first] : []);
@@ -53,6 +57,11 @@ export function ActivityScreen({ route }: { route: Route }) {
   const shown = typed.filter((i) => matchesFeature(i, feature));
   const untracked = typed.filter((i) => matchesFeature(i, "untracked")).length;
   const threads = sessionThreads(index, data, { now, kinds });
+  const timeline = layoutTimeline(index, { now, range, kinds, feature }, data);
+  // The header counts every running or waiting session; the filters narrow only what's listed.
+  const active = liveCards(data);
+  const cards = kinds.has("session") ? active.filter((s) => sessionMatchesFeature(s, feature)) : [];
+  const anything = feed.length > 0 || active.length > 0;
   const toggleKind = (kind: ActivityKind) =>
     setKinds((prev) => {
       const next = new Set(prev);
@@ -72,62 +81,70 @@ export function ActivityScreen({ route }: { route: Route }) {
   ];
   return (
     <Page crumbs={crumbs}>
-      <div className="act-layout">
-        <div className="act-main">
-          <div className="act-header">
-            <h1 className="page-title">Activity</h1>
-            <span className="spacer" />
-            {KINDS.map(({ kind, label }) => (
-              <FilterChip key={kind} on={kinds.has(kind)} onClick={() => toggleKind(kind)}>
-                {label}
-              </FilterChip>
-            ))}
-          </div>
-          <LiveStrip live={index.live} now={now} />
-          {shown.length > 0 ? (
-            <ActivityFeed
-              items={shown}
-              cards={liveCards(data)}
-              state={{ now, expanded, onToggle: toggleSession, changed, threads }}
-            />
-          ) : (
-            <EmptyState title={feed.length ? "Nothing matches these filters" : "No activity yet"}>
-              {feed.length
-                ? "Turn a type back on or pick another feature."
-                : "Sessions, commits and verify runs show up here as agents work."}
-            </EmptyState>
+      <div className="act">
+        <div className="act-header">
+          <h1 className="page-title">Activity</h1>
+          {active.length > 0 && (
+            <span className="act-active">
+              <span className="az-live" />
+              {`${plural(active.length, "session")} active`}
+            </span>
           )}
-        </div>
-        <aside className="act-aside" aria-label="Filter by feature">
-          <div className="az-eyebrow">Feature</div>
-          <FeatureOption
-            value="all"
-            current={feature}
-            onPick={setFeature}
-            label="All features"
-            count={typed.length}
-          />
-          {featureCounts(typed).map(({ id, count }) => (
-            <FeatureOption
-              key={id}
-              value={id}
-              current={feature}
-              onPick={setFeature}
-              id={id}
-              label={featureById(index, id)?.title ?? ""}
-              count={count}
-            />
+          <span className="spacer" />
+          {KINDS.map(({ kind, label }) => (
+            <FilterChip key={kind} on={kinds.has(kind)} onClick={() => toggleKind(kind)}>
+              {label}
+            </FilterChip>
           ))}
-          {untracked > 0 && (
+        </div>
+        <AgentTimeline layout={timeline} range={range} onRange={setRange} />
+        <div className="act-layout">
+          <div className="act-main">
+            {shown.length > 0 || cards.length > 0 ? (
+              <ActivityFeed
+                items={shown}
+                cards={cards}
+                state={{ now, expanded, onToggle: toggleSession, changed, threads }}
+              />
+            ) : (
+              <EmptyState title={anything ? "Nothing matches these filters" : "No activity yet"}>
+                {anything
+                  ? "Turn a type back on or pick another feature."
+                  : "Sessions, commits and verify runs show up here as agents work."}
+              </EmptyState>
+            )}
+          </div>
+          <aside className="act-aside" aria-label="Filter by feature">
+            <div className="az-eyebrow">Feature</div>
             <FeatureOption
-              value="untracked"
+              value="all"
               current={feature}
               onPick={setFeature}
-              label="Untracked"
-              count={untracked}
+              label="All features"
+              count={typed.length}
             />
-          )}
-        </aside>
+            {featureCounts(typed).map(({ id, count }) => (
+              <FeatureOption
+                key={id}
+                value={id}
+                current={feature}
+                onPick={setFeature}
+                id={id}
+                label={featureById(index, id)?.title ?? ""}
+                count={count}
+              />
+            ))}
+            {untracked > 0 && (
+              <FeatureOption
+                value="untracked"
+                current={feature}
+                onPick={setFeature}
+                label="Untracked"
+                count={untracked}
+              />
+            )}
+          </aside>
+        </div>
       </div>
     </Page>
   );

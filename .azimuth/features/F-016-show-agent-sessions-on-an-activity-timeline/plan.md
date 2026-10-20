@@ -66,7 +66,7 @@ tasks:
     note: null
   - id: T-016.9
     title: ActivityFeed by period with the cards first (red → green)
-    status: in-progress
+    status: done
     after: [T-016.5, T-016.7, T-016.8]
     covers: [S-016.7.3, S-016.7.4]
     files: [viewer/src/screens/activity/ActivityFeed.tsx, viewer/src/screens/activity/activity.css, viewer/src/screens/activity/feed.ts, viewer/src/screens/activity/ActivityFeed.test.tsx]
