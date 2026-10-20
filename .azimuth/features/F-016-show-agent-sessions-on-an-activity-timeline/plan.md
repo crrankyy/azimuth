@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-016.6
     title: Session threads (red → green)
-    status: in-progress
+    status: done
     after: [T-016.2]
     covers: [S-016.6.1, S-016.6.2, S-016.6.3, S-016.6.4]
     files: [viewer/src/screens/activity/thread.ts, viewer/src/screens/activity/thread.test.ts]

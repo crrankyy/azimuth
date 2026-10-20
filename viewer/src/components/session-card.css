@@ -82,6 +82,16 @@
   color: var(--ink-tertiary);
   white-space: nowrap;
 }
+.ses-transcript {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.ses-transcript:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
 .ses-body {
   display: flex;
   flex-direction: column;
@@ -114,6 +124,12 @@
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: var(--ink);
+}
+.ses-picked-up {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-subtle);
 }
 .az-prose.ses-handoff-prose {
   font-size: 14px;
@@ -182,7 +198,7 @@
   margin: 0;
   min-width: 0;
 }
-.ses-facts .ses-commits-label {
+.ses-facts .ses-thread-label {
   padding-top: 6px;
 }
 .ses-chips {
@@ -190,41 +206,72 @@
   flex-wrap: wrap;
   gap: 6px;
 }
-.ses-commits {
+
+/* The thread: time, mark, text and a trailing chip or duration per entry. */
+.ses-thread {
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.ses-commit {
+.ses-entry {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto auto;
+  grid-template-columns: 44px 18px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 5px 0;
+  gap: 8px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--hairline);
 }
-.ses-commit:last-child {
+.ses-entry:last-child {
   border-bottom: 0;
 }
-.ses-sha {
+.ses-entry-time {
   font-size: 12px;
-  color: var(--ink);
+  color: var(--ink-tertiary);
 }
-.ses-subject {
+.ses-mark.m-subagent {
+  color: var(--ink-tertiary);
+}
+.ses-mark.m-commit {
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+.ses-mark.m-raised {
+  width: 10px;
+  height: 10px;
+  background: var(--st-draft);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.ses-entry-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--ink-muted);
 }
-.ses-refs {
+.ses-sha,
+.ses-agent {
+  font-size: 12px;
+  color: var(--ink);
+}
+.ses-agent {
+  text-decoration: none;
+}
+.ses-agent:hover {
+  text-decoration: underline;
+}
+.ses-entry-end {
   display: flex;
+  align-items: center;
   gap: 4px;
+  font-size: 12px;
+  color: var(--ink-tertiary);
 }
 .ses-untracked {
   font-size: 11px;
   color: var(--label-yellow);
-}
-.ses-time {
-  font-size: 12px;
-  color: var(--ink-tertiary);
 }
