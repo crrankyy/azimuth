@@ -43,8 +43,19 @@
   font-weight: 500;
   color: var(--ink);
 }
-.ses-tally {
+/* A collapsed card's goal fills the gap itself (its spacer stays empty), so it is the first to give
+   way: the tally shrinks only once the goal has no room left. */
+.ses-card.collapsed .ses-goal-inline {
+  flex: 1 1 0;
+}
+.ses-card.collapsed .spacer {
   flex: none;
+}
+/* Gives way in a narrow window (the dated tallies of Earlier) instead of pushing the card wider. */
+.ses-tally {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--ink-subtle);
   white-space: nowrap;
 }

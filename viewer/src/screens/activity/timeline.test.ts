@@ -265,10 +265,15 @@ describe("F-016 timeline rows, spans and markers", () => {
 
   it("S-016.2.8 names running rows' current action and links rows to their pages", () => {
     const l = layout();
-    expect(row(l, "SES-20261018-1201").action).toBe("Edit src/retry/policy.ts");
+    // The row shows the file's name, as the design does; its title keeps the whole path.
+    expect(row(l, "SES-20261018-1201").action).toBe("Edit policy.ts");
+    expect(row(l, "SES-20261018-1201").actionTitle).toBe("Edit src/retry/policy.ts");
     expect(row(l, "SES-20261018-1201/a2").action).toBe("pnpm vitest run");
-    expect(row(l, "SES-20261018-1202/a4").action).toBe("Read src/api/attempts.ts");
+    expect(row(l, "SES-20261018-1201/a2").actionTitle).toBe("pnpm vitest run");
+    expect(row(l, "SES-20261018-1202/a4").action).toBe("Read attempts.ts");
+    expect(row(l, "SES-20261018-1202/a4").actionTitle).toBe("Read src/api/attempts.ts");
     expect(row(l, "SES-20261018-1140").action).toBeNull();
+    expect(row(l, "SES-20261018-1140").actionTitle).toBeNull();
     expect(row(l, "SES-20261018-1100").action).toBeNull();
 
     expect(row(l, "SES-20261018-1100").href).toBe("#/activity/SES-20261018-1100");

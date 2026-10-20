@@ -79,6 +79,22 @@ describe("F-016 the Agent timeline", () => {
     expect(html).toContain('<div class="tl-now" style="left:86.67%"><span>now</span></div>');
   });
 
+  it("S-016.4.1 gives each tick label only the room the now label leaves it", () => {
+    // Today at 12:05: the now line is at 50.35%, just after the 12:00 tick.
+    const today = render(fixtureIndex(), FIXTURE_NOW, "today");
+    const room = (html: string, label: string) =>
+      new RegExp(`<span class="tl-tick" style="[^"]*max-width:([^"]*)">${label}</span>`).exec(
+        html,
+      )?.[1];
+    // Before the line: up to the now label, which reaches 20 px left of it.
+    expect(room(today, "09:00")).toBe("calc(12.85% - 26px)");
+    expect(room(today, "12:00")).toBe("calc(0.35% - 26px)");
+    // After it: none while the label would start under the now label, else plenty.
+    expect(room(today, "15:00")).toBe("calc((12.15% - 18px) * 1000)");
+    const threeDays = render(fixtureIndex(), FIXTURE_NOW, "3d");
+    expect(room(threeDays, "Sun Oct 18")).toBe("calc(16.78% - 26px)");
+  });
+
   it("S-016.4.2 says each row's status in words", () => {
     const html = render();
     expect(rows(html)).toHaveLength(9);
@@ -88,7 +104,8 @@ describe("F-016 the Agent timeline", () => {
     expect(rowTitled(html, "SES-20261018-1100")).toContain("done");
     const running = rowTitled(html, "SES-20261018-1201");
     expect(running).toContain("running");
-    expect(running).toContain("Edit src/retry/policy.ts");
+    expect(running).toContain("Edit policy.ts");
+    expect(html).toContain('<span class="tl-action" title="Edit src/retry/policy.ts"');
     const subagent = rowTitled(html, "a3");
     for (const part of ["└", "researcher", "survey log fields"]) expect(subagent).toContain(part);
   });

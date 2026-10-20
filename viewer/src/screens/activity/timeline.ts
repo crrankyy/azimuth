@@ -92,8 +92,13 @@ export interface TimelineRow {
   spans: TimelineSpan[];
   /** Session rows only, by time. */
   markers: TimelineMarker[];
-  /** The row's own agent's current.summary while that agent is running, else null. */
+  /**
+   * The row's own agent's current action while that agent is running, else null: "<tool> <file
+   * name>" ("Edit policy.ts", as in the design) when it has a file, else its summary.
+   */
   action: string | null;
+  /** The whole action (F-015's actionLabel, "Edit src/retry/policy.ts") for its title. */
+  actionTitle: string | null;
 }
 
 export interface EarlierSession {
@@ -230,7 +235,7 @@ export function layoutTimeline(
         ...waitSpans(main?.waits ?? [], from, to, options.now, place),
       ],
       markers: markers(s, data, window, percent, options.kinds),
-      action: s.status === "running" && main ? runningAction(main) : null,
+      ...runningAction(s.status === "running" ? main : null),
     });
     if (!options.kinds.has("subagent")) continue;
     const subagents = rows
@@ -290,9 +295,16 @@ function sessionHref(s: ActivitySession): string {
   return s.live ? href("agents", s.live.claude_session) : href("activity", s.key);
 }
 
-/** The agent's own latest action while it runs. */
-const runningAction = (agent: AgentRow) =>
-  agent.status === "running" && agent.current ? actionLabel(agent.current) : null;
+/** The agent's own latest action while it runs, short for the row and whole for its title. */
+function runningAction(agent: AgentRow | null): Pick<TimelineRow, "action" | "actionTitle"> {
+  const current = agent?.status === "running" ? agent.current : null;
+  if (!current) return { action: null, actionTitle: null };
+  const name = current.file?.split(/[\\/]/).pop();
+  return {
+    action: name ? `${current.tool} ${name}` : actionLabel(current),
+    actionTitle: actionLabel(current),
+  };
+}
 
 function subagentRow(
   s: ActivitySession,
@@ -327,7 +339,7 @@ function subagentRow(
       ...waitSpans(agent.waits, from, to, now, place),
     ],
     markers: [],
-    action: runningAction(agent),
+    ...runningAction(agent),
   };
 }
 

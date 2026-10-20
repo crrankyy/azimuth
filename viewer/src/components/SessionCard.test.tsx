@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { Index, Session } from "../../../src/core/types";
@@ -205,6 +206,15 @@ describe("F-016 session cards show the session's thread", () => {
     });
     expect(textOf(earlier)).toContain("Oct 16, 13:20–13:40 · 1 commit");
     expect(earlier).toContain("Changed an approved spec");
+  });
+
+  it("S-016.6.6 lets a collapsed card's tally give way with an ellipsis in a narrow window", () => {
+    const css = readFileSync(new URL("./session-card.css", import.meta.url), "utf8");
+    const tally = /\.ses-tally \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(tally).toMatch(/min-width: 0;/);
+    expect(tally).toMatch(/overflow: hidden;/);
+    expect(tally).toMatch(/text-overflow: ellipsis;/);
+    expect(tally).not.toMatch(/flex: none;/);
   });
 
   it("S-016.6.7 links the header to the transcript only while it can be served", () => {

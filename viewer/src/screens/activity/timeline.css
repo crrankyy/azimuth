@@ -62,7 +62,7 @@
   font-weight: 600;
   line-height: 16px;
   color: var(--primary);
-  /* Covers a tick label the now line falls on (Today, 3 days). */
+  /* Tick labels keep clear of it (tickRoom); the background keeps it legible if one touches it. */
   background: var(--surface-1);
 }
 .tl-axis,
@@ -82,10 +82,23 @@
   font-size: 11px;
   color: var(--ink-tertiary);
 }
+/* A label wider than its room (AgentTimeline's tickRoom) wraps past the zero-width ::before onto a
+   second line, which is clipped: it disappears whole instead of being cut by the now label. The
+   ::before holds a zero-width space because Chrome won't wrap after an empty item. */
 .tl-tick {
   position: absolute;
   top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  width: max-content;
+  height: 16px;
+  overflow: hidden;
+  line-height: 16px;
   white-space: nowrap;
+}
+.tl-tick::before {
+  content: "\200b";
+  width: 0;
 }
 .tl-empty {
   margin: 0;

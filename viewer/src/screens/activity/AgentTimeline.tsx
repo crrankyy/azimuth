@@ -51,7 +51,10 @@ export function AgentTimeline({
               <span
                 key={t.label}
                 className="tl-tick"
-                style={{ left: t.left > 0 ? `calc(${t.left}% + 4px)` : 0 }}
+                style={{
+                  left: t.left > 0 ? `calc(${t.left}% + 4px)` : 0,
+                  maxWidth: tickRoom(t.left, layout.now),
+                }}
               >
                 {t.label}
               </span>
@@ -95,6 +98,19 @@ function groupClasses(rows: TimelineRow[]): { row: TimelineRow; group: string }[
   });
 }
 
+/**
+ * How wide a tick label may be so the now label (20 px either side of the line) never covers it.
+ * Before the line, the room runs from the label (4 px past its tick) to 2 px short of the now
+ * label. After it, a label that would start under the now label gets none: calc() can't branch,
+ * so the gap is scaled up, which a negative max-width clamps to 0 and any clearance makes ample. A
+ * label without room wraps out of sight (timeline.css) instead of being cut.
+ */
+function tickRoom(left: number, now: number): string {
+  const gap = Math.round((now - left) * 100) / 100;
+  if (gap > 0) return `calc(${gap}% - 26px)`;
+  return `calc((${-gap}% - 18px) * 1000)`;
+}
+
 function Row({ row, group }: { row: TimelineRow; group: string }) {
   const base = row.spans[0];
   const end = base ? base.left + base.width : 0;
@@ -113,6 +129,7 @@ function Row({ row, group }: { row: TimelineRow; group: string }) {
         {row.action && (
           <span
             className="tl-action"
+            title={row.actionTitle ?? undefined}
             style={{ left: `calc(${end}% + 8px)`, maxWidth: `calc(${100 - end}% - 8px)` }}
           >
             {row.action}
