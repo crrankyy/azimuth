@@ -2,7 +2,7 @@
 id: F-024
 title: Log on issues, cross-feature task groups, a kept viewer port and clearer wording
 summary: azimuth log takes issue IDs; azimuth next groups ready tasks across features; autostart keeps a replaced viewer's port; skills and the reapprove refusal explain when no reapproval is needed and show --option's syntax.
-status: draft
+status: approved
 priority: P2
 size: M
 mode: brownfield
@@ -12,6 +12,11 @@ superseded_by: null
 tags: []
 created: 2026-10-20
 updated: 2026-10-20
+approved_at: 2026-10-20
+approved_by: agent
+approved_hash: sha256:3b5b06be470b1410501950797221d8634d1513333732d88249a8178cdc554cdf
+approved_commit: 415a3f9
+review_ack_at: null
 ---
 # F-024: Log on issues, cross-feature task groups, a kept viewer port and clearer wording
 
