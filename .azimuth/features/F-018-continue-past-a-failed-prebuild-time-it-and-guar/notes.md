@@ -11,3 +11,7 @@ T-018.5: run files written without a prebuild key read as null; { ok: false, dur
 ### T-018.7 · 2026-10-20
 
 Docs (T-018.8): doctor also checks free disk space now, though its summary string ('Check that Node, the plugin, hooks and the viewer are wired up') wasn't changed. verify warns only when it has targets; task finish warns after its argument checks, before finishTask.
+
+### T-018.3 · 2026-10-20
+
+All runs of one call share one prebuild object, so run.prebuild?.ok === false means 'after a failed prebuild'. The run keeps only { ok, duration_ms }: T-018.6's '(exit 2, 3.1s)' must come from PrebuildResult. Under continue a failed prebuilt event is followed by target and run events (T-018.4). S-018.3.7 has 1 s of margin (2 s sleep, 3 s limit) and may flake under load.

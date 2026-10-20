@@ -50,7 +50,7 @@ tasks:
     note: null
   - id: T-018.7
     title: Disk guard in verify, task finish and doctor (red → green)
-    status: in-progress
+    status: done
     after: [T-018.1]
     covers: [S-018.7.1, S-018.7.2, S-018.7.3, S-018.7.4, S-018.7.5, S-018.7.6, S-018.7.7, S-018.7.8, S-018.7.9, S-018.7.10]
     files: [src/core/disk.ts, src/cli/commands/work.ts, src/cli/commands/task.ts, src/cli/commands/harness.ts, test/core/disk.test.ts, test/cli/disk.test.ts, test/cli/doctor.test.ts]

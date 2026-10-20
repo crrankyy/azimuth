@@ -248,3 +248,109 @@ describe("verifyBatch runs", () => {
     expect(existsSync(lockPath())).toBe(false);
   });
 });
+
+const FAILING_PREBUILD = `  prebuild: ${yaml("echo no compiler; exit 2")}\n`;
+
+describe("verifyBatch and verify.prebuild_failure", () => {
+  it("S-018.3.1 records a passing prebuild in every run", async () => {
+    project(F001_TASKS, { verify: `  prebuild: ${yaml("echo built")}\n` });
+    const result = await batch(["T-001.1", "T-001.2"]);
+    const duration_ms = result.prebuild?.duration_ms;
+    expect(duration_ms).toEqual(expect.any(Number));
+    for (const id of ["R-0001", "R-0002"]) {
+      expect(runJson(id).prebuild).toEqual({ ok: true, duration_ms });
+    }
+  });
+
+  it("S-018.3.2 records a null prebuild when it is skipped", async () => {
+    project(F001_TASKS, { verify: `  prebuild: ${yaml("touch prebuilt")}\n` });
+    await batch(["T-001.1"], { prebuild: false });
+    expect(runJson("R-0001")).toHaveProperty("prebuild", null);
+    expect(exists("prebuilt")).toBe(false);
+  });
+
+  it("S-018.3.3 runs nothing after a failed prebuild under stop, the default", async () => {
+    project([{ id: "T-001.1", verify: "touch ran" }], { verify: FAILING_PREBUILD });
+    const result = await batch(["T-001.1"]);
+    expect(result.prebuild).toMatchObject({ ok: false, exit_code: 2, timed_out: false });
+    expect(result.runs).toEqual([]);
+    expect(runFiles()).toEqual([]);
+    expect(exists("ran")).toBe(false);
+  });
+
+  it("S-018.3.4 runs each target after a failed prebuild under continue", async () => {
+    project(F001_TASKS, { verify: `${FAILING_PREBUILD}  prebuild_failure: continue\n` });
+    const result = await batch(["T-001.1"]);
+    expect(result.prebuild).toMatchObject({ ok: false, exit_code: 2, timed_out: false });
+    expect(result.interrupted).toBe(false);
+    expect(result.runs.map((r) => [r.id, r.target, r.ok, r.exit_code])).toEqual([
+      ["R-0001", "T-001.1", true, 0],
+    ]);
+    const duration_ms = result.prebuild?.duration_ms;
+    expect(duration_ms).toEqual(expect.any(Number));
+    expect(runJson("R-0001").prebuild).toEqual({ ok: false, duration_ms });
+  });
+
+  it("S-018.3.5 runs nothing after a timed-out prebuild under continue", async () => {
+    project([{ id: "T-001.1", verify: "touch ran" }], {
+      verify: "  prebuild: sleep 30\n  build_timeout_seconds: 1\n  prebuild_failure: continue\n",
+    });
+    const result = await batch(["T-001.1"]);
+    expect(result.prebuild).toMatchObject({ ok: false, exit_code: 124, timed_out: true });
+    expect(result.runs).toEqual([]);
+    expect(runFiles()).toEqual([]);
+    expect(exists("ran")).toBe(false);
+  });
+
+  it("S-018.3.6 records nothing when an interruption stops the prebuild under continue", async () => {
+    const prebuild = `${LONG_SLEEP} & echo $! > child.pid; wait`;
+    project(F001_TASKS, {
+      verify: `  prebuild: ${yaml(prebuild)}\n  prebuild_failure: continue\n`,
+    });
+    const controller = new AbortController();
+    const running = batch(["T-001.1"], { signal: controller.signal });
+    const pid = await until(childPid, "child.pid");
+    controller.abort();
+    const result = await running;
+    expect(result.interrupted).toBe(true);
+    expect(result.prebuild).toBeNull();
+    expect(result.runs).toEqual([]);
+    expect(runFiles()).toEqual([]);
+    expect((await killError(pid)).code).toBe("ESRCH");
+  });
+
+  it("S-018.3.7 gives each command the build's time too after a failed prebuild", async () => {
+    project(
+      [
+        { id: "T-001.1", covers: ["S-001.1.1"], verify: "sleep 2 && echo S-001.1.1 ok" },
+        { id: "T-001.2", covers: ["S-001.1.2"], verify: "sleep 30" },
+      ],
+      {
+        verify: [
+          `  prebuild: ${yaml("exit 2")}`,
+          "  prebuild_failure: continue",
+          "  timeout_seconds: 1",
+          "  build_timeout_seconds: 2\n",
+        ].join("\n"),
+      },
+    );
+    const result = await batch(["T-001.1", "T-001.2"]);
+    expect(result.runs[0]).toMatchObject({ id: "R-0001", ok: true, exit_code: 0 });
+    expect(result.runs[1]).toMatchObject({ id: "R-0002", ok: false, exit_code: 124 });
+    expect(result.runs[1]?.output_tail.endsWith("[azimuth] timed out after 3s")).toBe(true);
+  });
+
+  it("S-018.3.8 keeps each command's own timeout after a passing prebuild", async () => {
+    project([{ id: "T-001.1", verify: "sleep 30" }], {
+      verify: [
+        `  prebuild: ${yaml("echo built")}`,
+        "  prebuild_failure: continue",
+        "  timeout_seconds: 1",
+        "  build_timeout_seconds: 2\n",
+      ].join("\n"),
+    });
+    const result = await batch(["T-001.1"]);
+    expect(result.runs[0]).toMatchObject({ id: "R-0001", ok: false, exit_code: 124 });
+    expect(result.runs[0]?.output_tail.endsWith("[azimuth] timed out after 1s")).toBe(true);
+  });
+});

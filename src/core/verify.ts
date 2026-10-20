@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { allocateId } from "./allocate";
-import { loadConfig } from "./config";
+import { loadConfig, type PrebuildFailure } from "./config";
 import { AzimuthError } from "./errors";
 import { headSha, toUtc } from "./git";
 import { featureOf, idKind } from "./ids";
@@ -72,7 +72,7 @@ export interface VerifyBatchResult {
   waited_ms: number;
   /** null when no prebuild is configured, it was skipped, or it was interrupted. */
   prebuild: PrebuildResult | null;
-  /** In target order; [] when the prebuild failed. */
+  /** In target order; [] when the prebuild failed under prebuild_failure: stop, or timed out. */
   runs: VerifyRun[];
   interrupted: boolean;
 }
@@ -211,9 +211,34 @@ async function runPrebuild(
   };
 }
 
+/** Whether a prebuild that ended keeps every target from running. */
+function stopsBatch(prebuild: PrebuildResult, failure: PrebuildFailure): boolean {
+  if (prebuild.ok) return false;
+  // continue never covers a timeout: each command would redo a build that outlasted its limit.
+  return prebuild.timed_out || failure === "stop";
+}
+
+/** What each target records and runs under after `prebuild` (null when none ran). */
+function afterPrebuild(
+  prebuild: PrebuildResult | null,
+  verify: { timeout_seconds: number; build_timeout_seconds: number },
+): Pick<RunContext, "prebuild" | "timeout_seconds"> {
+  if (!prebuild) return { prebuild: null, timeout_seconds: verify.timeout_seconds };
+  const { ok, duration_ms } = prebuild;
+  // After a failed prebuild each command builds what the prebuild didn't, so it gets its time too.
+  const timeout_seconds = ok
+    ? verify.timeout_seconds
+    : verify.build_timeout_seconds + verify.timeout_seconds;
+  return { prebuild: { ok, duration_ms }, timeout_seconds };
+}
+
 /**
  * Takes the verify lock, runs verify.prebuild once (unless skipped), then each target in order,
  * and releases the lock. No targets: returns at once without waiting or building.
+ * - Passing prebuild: every run records { ok: true, duration_ms } and keeps timeout_seconds.
+ * - Prebuild exits non-zero: under stop, returns with no runs; under continue, runs every target
+ *   under build_timeout_seconds + timeout_seconds, each run recording { ok: false, duration_ms }.
+ * - Prebuild times out: returns with no runs. Interrupted: returns interrupted, prebuild null.
  */
 export async function verifyBatch(
   root: string,
@@ -236,12 +261,21 @@ export async function verifyBatch(
       prebuild = await runPrebuild(root, command, verify, signal);
       if (!prebuild) return { waited_ms, prebuild, runs, interrupted: true };
       onProgress({ kind: "prebuilt", result: prebuild });
-      if (!prebuild.ok) return { waited_ms, prebuild, runs, interrupted: false };
+      if (stopsBatch(prebuild, verify.prebuild_failure)) {
+        return { waited_ms, prebuild, runs, interrupted: false };
+      }
     }
+    const context: RunContext = {
+      waited_ms,
+      ses,
+      signal,
+      now: options.now,
+      ...afterPrebuild(prebuild, verify),
+    };
     for (const target of targets) {
       if (signal?.aborted) return { waited_ms, prebuild, runs, interrupted: true };
       onProgress({ kind: "target", target });
-      const run = await runVerify(root, target, { waited_ms, ses, signal, now: options.now });
+      const run = await runVerify(root, target, context);
       if (!run) return { waited_ms, prebuild, runs, interrupted: true };
       runs.push(run);
       onProgress({ kind: "run", run });
