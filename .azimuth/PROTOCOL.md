@@ -19,18 +19,31 @@ Azimuth viewer. Follow this protocol whenever you work in this repository.
 - Only the user answers questions, releases milestones and overrides gates. You may approve
   specs and accept decisions only when the project's autonomy settings allow it; the CLI
   enforces this.
+- When `azimuth status --brief` shows `questions proceed`, the user has let the CLI answer a
+  non-blocking question you raise with `--recommend` with that recommendation, and
+  `azimuth new question` says so. Proceed with it and record it (`azimuth resolve Q-…`).
+  The user can answer differently later; that answer reaches you like any other. Under
+  `questions ask`, and for blocking questions, every question waits for the user.
 - The user's answers and change requests from the viewer reach you in Azimuth's session-start
   and prompt context ("Decided by the user…"). Apply each one, then record it
   (`azimuth resolve Q-…`), before approving or building on the spec it affects.
 
 ## Sessions and progress
 
-- Start each unit of work with `azimuth session start --skill <skill> --goal "<goal>"` and
-  finish it with `azimuth session handoff "<what the next session should do>"` and
-  `azimuth session close`.
-- Keep the viewer current during long work: move a task to `in-progress` when you start it
-  and to `done` when its verify passes, and add `azimuth log <ID> "<progress>"` notes at
-  meaningful points.
+- Start each unit of work with `azimuth session start --skill <skill> --goal "<goal>"`. Inside
+  one Claude Code session every start continues the same Azimuth session and adds its goal, so
+  start again whenever you take up a new skill or goal.
+- Record progress as you go with `azimuth session note "<progress>"`, and end each unit of work
+  with `azimuth session handoff "<what the next session should do>"`, which replaces the
+  previous handoff.
+- The Azimuth plugin closes the session when the Claude Code session ends. Without the plugin,
+  finish with `azimuth session close`.
+- Keep the viewer current during long work: move a task to `in-progress` when you start it,
+  and add `azimuth log <ID> "<progress>"` notes at meaningful points.
+- Finish each task with `azimuth task finish <T-ID> --commit "<message>"`: it commits the
+  task's files and the feature's records with a `Refs: <T-ID>` trailer, runs the task's verify
+  command and moves the task to `done` when it passes.
+- `azimuth brief <T-ID>` prints the prompt for a subagent building a task, from the records.
 - Commit with Conventional Commits and a `Refs:` trailer naming the task or feature
   (`Refs: T-005.2`). Commit pending `.azimuth/` changes as well
   (`chore(azimuth): record decisions`).
@@ -43,10 +56,16 @@ lives in `.azimuth/features/F-NNN-<slug>/`; `.azimuth/templates/` shows each fil
 - feature.md: objective, out of scope, integration points, invariants, assumptions.
 - impact.md: every file to create, modify, read or test.
 - stories.md: stories with BDD scenarios. Every story needs a happy scenario and a negative or
-  edge scenario; every THEN names an exact value, state, error or status code.
+  edge scenario; every THEN names an exact value, state, error or status code. A value only the
+  code can measure (a byte offset, a count) may be written `{?}` in a THEN or AND line, never
+  for undecided behaviour. When a test proves it, `azimuth settle <S-ID> "<value>"` fills it
+  in; the feature can't be done while a `{?}` is left.
 - contract.md: types, signatures and errors in the target language, without bodies.
 - plan.md: a task graph (`after`) in test-first order. Every scenario is covered by a task and
   every task has a verify command that exits 0 on success.
+- notes.md: what a task taught, written with `azimuth note <T-ID> "<text>"`, never in
+  feature.md. Notes and settled values never make the approval stale, so they need no
+  `azimuth reapprove`; every other spec edit, a corrected THEN included, does.
 - When a decision is ambiguous and costly to reverse, raise a question with options and a
   recommendation (`azimuth new question "<question>" --feature F-NNN --blocking`) instead of
   guessing. Record smaller assumptions in feature.md.
@@ -56,4 +75,5 @@ lives in `.azimuth/features/F-NNN-<slug>/`; `.azimuth/templates/` shows each fil
 - Start each test name with the scenario it covers: `it("S-005.1.2 rejects an expired token", …)`
   (pytest: `@pytest.mark.scenario("S-005.1.2")`; other languages: a `// scenario: S-005.1.2`
   comment above the test).
-- After committing a task, run `azimuth verify <T-ID>`; the result appears in the viewer.
+- `azimuth task finish` runs the task's verify command after committing it; the result
+  appears in the viewer.
