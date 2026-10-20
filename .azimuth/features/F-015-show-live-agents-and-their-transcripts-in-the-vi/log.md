@@ -35,3 +35,9 @@ T-015.5: in-progress → done. Committed 1a0de16; R-0195 passed.
 
 ## 2026-10-19T23:53:58Z · agent · note · SES-20261019-2021
 T-015.7: in-progress → done. Committed cc5139c; R-0198 passed.
+
+## 2026-10-19T23:54:01Z · agent · note · SES-20261019-2021
+T-015.8: in-progress → done. Committed 5e90bdd; R-0199 passed.
+
+## 2026-10-20T00:01:37Z · agent · note · SES-20261019-2021
+T-015.10: Screenshots at 1440x900 against screens/Agents.html and screens/AgentTranscript.html (scratchpad shots/F-015): close matches; differences come from data the index doesn't carry (claude-code label, paused time, line ranges). Live check on port 4402: transcript entries 9 → 11 → 13 without a reload, following live scrolled to the newest, Pause held the view, f resumed, [ and ] switched to the subagent and back, Esc returned to Agents. A real claude -p smoke session (Claude Code 2.1.304) earlier confirmed the hook fields and the transcript route.

@@ -1,8 +1,9 @@
 # Viewer
 
-The viewer is a local web app showing one project's full state: what needs you, features and
-their specs, the roadmap, decisions, questions, issues, agent activity, verification and project
-knowledge. It works offline (no web fonts, CDNs or network requests) and is dark-themed.
+The viewer is a local web app showing one project's full state: what needs you, what agents are
+doing right now, features and their specs, the roadmap, decisions, questions, issues, agent
+activity, verification and project knowledge. It works offline (no web fonts, CDNs or network
+requests) and is dark-themed.
 
 - [Live and export modes](#live-and-export-modes)
 - [Staying current](#staying-current)
@@ -42,20 +43,61 @@ connection drops, a banner says so, actions are disabled, and the page reconnect
 
 ## Screens
 
-| Screen       | Route                          | Shows                                                                                                                                                                                                   |
-| ------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Inbox        | `#/inbox`                      | What needs you, grouped by urgency, with the action inline (answer, approve, re-approve, review, open run, show problems, acknowledge).                                                                 |
-| Overview     | `#/overview`                   | Status across features, the active milestone, coverage, questions, issues, verify runs, architecture freshness, recent activity.                                                                        |
-| Roadmap      | `#/roadmap`, `#/roadmap/graph` | Milestones on a timeline; the feature dependency graph.                                                                                                                                                 |
-| Features     | `#/features`                   | Table (filter, group, sort) or board by lifecycle.                                                                                                                                                      |
-| Feature      | `#/features/F-005/<tab>`       | Header, lifecycle and next gate with actions, and tabs: Context, Impact, Stories, Contract, Plan (task graph, runs; `plan/T-005.4` selects a task), Activity, As-built.                                 |
-| Decisions    | `#/decisions/ADR-0004`         | ADRs with supersession chains; accept or reject proposed ones.                                                                                                                                          |
-| Questions    | `#/questions/Q-0003`           | Open (blocking first) and answered questions; answer with an option and/or text. An agent's answer is labelled "Answered by an agent with its recommendation", with "Answer differently" to give yours. |
-| Issues       | `#/issues/BUG-0001`            | Bugs, debt and risks; risk matrix; triage severity and status. A row, its ID or title, Enter or the preview's "Open full page" opens the issue's page.                                                  |
-| Issue        | `#/issues/BUG-0001/page`       | One issue: header with its age, Triage card, description, related work and history (both derived from the index), facts, linked features, files with the changes planned for them, and its source file. |
-| Activity     | `#/activity/SES-…`             | Live agents (a lane per subagent with its task, and every feature in flight), then sessions with handoffs, goals, notes, commits and verify runs by day.                                                |
-| Verification | `#/verification/R-0142`        | Scenario coverage matrix and verify runs with output.                                                                                                                                                   |
-| Knowledge    | `#/knowledge/architecture`     | Vision, architecture with the module map, conventions, glossary.                                                                                                                                        |
+| Screen           | Route                                  | Shows                                                                                                                                                                                                          |
+| ---------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inbox            | `#/inbox`                              | What needs you, grouped by urgency, with the action inline (answer, approve, re-approve, review, open run, show problems, acknowledge).                                                                        |
+| Agents           | `#/agents`                             | Live sessions and their subagents: running and waiting ones as cards, those finished today as rows; files being edited, planned overlaps and the permission prompts waiting on you.                            |
+| Agent transcript | `#/agents/<claude-session>/<agent-id>` | One agent's live transcript: a tab per agent, messages, tool calls with diffs and output, subagent cards; the session's agents, covered scenarios, files and commits. Without `/<agent-id>`, the main agent's. |
+| Overview         | `#/overview`                           | Status across features, the active milestone, coverage, questions, issues, verify runs, architecture freshness, recent activity.                                                                               |
+| Roadmap          | `#/roadmap`, `#/roadmap/graph`         | Milestones on a timeline; the feature dependency graph.                                                                                                                                                        |
+| Features         | `#/features`                           | Table (filter, group, sort) or board by lifecycle.                                                                                                                                                             |
+| Feature          | `#/features/F-005/<tab>`               | Header, lifecycle and next gate with actions, and tabs: Context, Impact, Stories, Contract, Plan (task graph, runs; `plan/T-005.4` selects a task), Activity, As-built.                                        |
+| Decisions        | `#/decisions/ADR-0004`                 | ADRs with supersession chains; accept or reject proposed ones.                                                                                                                                                 |
+| Questions        | `#/questions/Q-0003`                   | Open (blocking first) and answered questions; answer with an option and/or text. An agent's answer is labelled "Answered by an agent with its recommendation", with "Answer differently" to give yours.        |
+| Issues           | `#/issues/BUG-0001`                    | Bugs, debt and risks; risk matrix; triage severity and status. A row, its ID or title, Enter or the preview's "Open full page" opens the issue's page.                                                         |
+| Issue            | `#/issues/BUG-0001/page`               | One issue: header with its age, Triage card, description, related work and history (both derived from the index), facts, linked features, files with the changes planned for them, and its source file.        |
+| Activity         | `#/activity/SES-…`                     | Live agents (a lane per subagent with its task, and every feature in flight), then sessions with handoffs, goals, notes, commits and verify runs by day.                                                       |
+| Verification     | `#/verification/R-0142`                | Scenario coverage matrix and verify runs with output.                                                                                                                                                          |
+| Knowledge        | `#/knowledge/architecture`             | Vision, architecture with the module map, conventions, glossary.                                                                                                                                               |
+
+Agents shows the project's live Claude Code sessions. A session that is running or waiting on you
+gets a card: its status, its SES ID (else the first 8 characters of its Claude Code session ID),
+skill, start and duration, goal, the feature and task it works on, what it's doing (its latest
+tool and file, the lines added and removed, how long ago) or what it's waiting for, a Transcript
+link, and a tree of its subagents. Sessions that finished today follow as rows that open the
+session in Activity (or its transcript when it has no SES). The filters are Active (the default:
+all of these), Running, Waiting on you and Finished today. `j` / `k` select a session and `Enter`
+opens it. The side panel counts what is running, waiting and done today, lists the files agents
+are editing (and flags a file two agents edit unless it matches `project.shared_files`), the
+planned overlaps between features in flight, and the permission prompts waiting on you, oldest
+first. Answer those in the Claude Code terminal running the session: the viewer never answers,
+allows or denies them.
+
+A transcript (from a card's Transcript link, a subagent row, or a waiting prompt) follows one
+agent's messages, tool calls and subagents as they happen, under the session's header ("Copy
+session ID" copies the ID `claude --resume` takes). A tab per agent switches between the main
+agent and its subagents (`[` and `]`). Each tool call is a row (an edit with its diff and the
+lines added and removed, a command with the tail of its output); rows with a diff, a failure or a
+call still running start open, a click toggles one, and "Show all tool output" opens them all. A
+subagent's card links to its own transcript, and a "now" line says what the agent is doing or
+waiting for.
+New entries are fetched whenever agent activity changes (`live`) and appear at the bottom without
+a reload. "Following live", on when the page opens, keeps the newest in view; Pause or `f` stops
+the scrolling, not the fetching, and Resume or `f` turns it back on. The view starts in the
+transcript's last 512 KiB and says so when earlier entries are left out. The side panel lists the
+session's agents, the scenarios the agent's task covers with their coverage, the files the loaded
+entries edited or read, and the session's commits.
+
+Agents and transcripts appear only in the live viewer. An export shows "Agents are only shown in
+the live viewer" and "Transcripts are only available in the live viewer" instead and never
+contains a transcript; the page keeps transcripts in memory only, never in browser storage.
+
+The sidebar's Agents item counts the sessions that aren't done, which includes one waiting for
+your next prompt. While there is one, the strip at the foot of the sidebar shows the most recently
+active one: its status mark, its task (else feature), and what it's doing or waiting for; it opens
+Agents. When nothing needs you, the Inbox says the same in a line ("An agent is working on
+T-005.2: …", "An agent on T-005.2 is waiting for you: …"), or, without such a session, when the
+last one ended.
 
 On a feature's Stories tab, a value settled with `azimuth settle` carries a ✓ titled "settled by
 test", and an open `{?}` reads "to be settled". The As-built tab shows the feature's notes after
@@ -68,22 +110,24 @@ Hovering any ID shows a summary card. The problems panel lists `azimuth check` r
 "Copy path" and, when `viewer.editor_url` is set (schemes `vscode:`, `cursor:`, `zed:`, `idea:`,
 `file:`), "Open in editor".
 
-Times are shown in your machine's time zone, and "Today" and "Yesterday" in Activity are local
-days; files store UTC. Dates without a time (created, due, released) are shown as written. Layouts are designed at 1440 pixels wide, hold up from 1280 to 1920 and stay usable
+Times are shown in your machine's time zone, and "Today" and "Yesterday" in Activity and
+"Finished today" in Agents are local days; files store UTC. Dates without a time (created, due, released) are shown as written. Layouts are designed at 1440 pixels wide, hold up from 1280 to 1920 and stay usable
 down to 1024, where side panels move under the main content.
 
 ## Keyboard
 
-| Keys                                             | Action                                                                                                                     |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| ⌘K / Ctrl-K                                      | Command palette: jump to any ID or title, run what needs you, copy CLI commands (↑↓, ↵, ⌘C copies the ID)                  |
-| `g` then `i` `o` `r` `f` `d` `q` `s` `a` `v` `k` | Inbox, Overview, Roadmap, Features, Decisions, Questions, Issues (`s`), Activity, Verification, Knowledge                  |
-| `g p`                                            | Problems panel                                                                                                             |
-| `j` / `k`                                        | Next / previous item in lists (features on a feature page, tasks on its Plan tab, issues in list order on an issue's page) |
-| `Enter`                                          | Open the selected item (in Issues, the issue's page)                                                                       |
-| `a`                                              | The selected Inbox item's primary action                                                                                   |
-| ⌘↵                                               | Send an answer                                                                                                             |
-| `Esc`                                            | Close dialogs, the palette and the problems panel; on an issue's page, go back to the list                                 |
+| Keys                                                 | Action                                                                                                                        |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| ⌘K / Ctrl-K                                          | Command palette: jump to any ID or title, run what needs you, copy CLI commands (↑↓, ↵, ⌘C copies the ID)                     |
+| `g` then `i` `a` `o` `r` `f` `d` `q` `s` `t` `v` `k` | Inbox, Agents, Overview, Roadmap, Features, Decisions, Questions, Issues (`s`), Activity (`t`), Verification, Knowledge       |
+| `g p`                                                | Problems panel                                                                                                                |
+| `j` / `k`                                            | Next / previous item in lists (features on a feature page, tasks on its Plan tab, issues in list order on an issue's page)    |
+| `Enter`                                              | Open the selected item (in Issues, the issue's page)                                                                          |
+| `a`                                                  | The selected Inbox item's primary action                                                                                      |
+| ⌘↵                                                   | Send an answer                                                                                                                |
+| `[` / `]`                                            | In a transcript, the previous / next agent's tab (main agent first, then the subagents; stops at the ends)                    |
+| `f`                                                  | In a transcript, turn "Following live" off or on                                                                              |
+| `Esc`                                                | Close dialogs, the palette and the problems panel; on an issue's page, go back to the list; from a transcript, back to Agents |
 
 ## Write actions
 

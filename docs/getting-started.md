@@ -54,11 +54,15 @@ scenarios, and closes it out. Or run the stages yourself: `/azimuth:idea`, `/azi
 ## 4. Watch and steer
 
 The viewer starts with each Claude Code session (`/azimuth:view` prints its URL). Start in the
-Inbox: answer questions, review automatic approvals, look at failing runs. While the agent works,
-Activity shows what it's doing; feature pages show tasks, scenario coverage and gates as they
-change. Your answers and change requests reach the running agent.
+Inbox: answer questions, review automatic approvals, look at failing runs. While agents work,
+Agents (`g a`) shows what each session and subagent is doing and which permission prompts wait for
+you in the Claude Code terminal, with a live transcript of each agent's messages, edits and
+commands. Activity (`g t`) keeps each session's goals, handoff and commits; feature pages show
+tasks, scenario coverage and gates as they change. Your answers and change requests reach the
+running agent.
 
-To share a snapshot, run `azimuth export -o status.html`.
+To share a snapshot, run `azimuth export -o status.html`. Snapshots don't show the Agents screen or
+transcripts; only the live viewer does.
 
 ## Next
 

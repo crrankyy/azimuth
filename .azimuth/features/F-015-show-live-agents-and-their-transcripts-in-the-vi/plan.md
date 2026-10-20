@@ -58,7 +58,7 @@ tasks:
     note: null
   - id: T-015.8
     title: The live transcript page (red → green)
-    status: in-progress
+    status: done
     after: [T-015.3, T-015.6, T-015.7]
     covers: [S-015.4.1, S-015.4.2, S-015.4.4, S-015.4.5, S-015.4.6, S-015.4.9, S-015.4.10, S-015.4.11, S-015.4.12, S-015.4.13, S-015.4.14, S-015.4.15]
     files: [viewer/src/screens/agents/AgentTranscript.tsx, viewer/src/screens/agents/TranscriptEntries.tsx, viewer/src/screens/agents/TranscriptAside.tsx, viewer/src/screens/agents/transcript.css, viewer/src/screens/agents/AgentTranscript.test.tsx]
