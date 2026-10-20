@@ -1,11 +1,18 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AzimuthError } from "../../src/core/errors";
+import { initProject } from "../../src/core/init";
 import { loadProject } from "../../src/core/model";
 import { taskBrief } from "../../src/core/task-brief";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
 
-let cleanup: (() => void) | null = null;
-afterEach(() => cleanup?.());
+// A list, since some tests write several folders.
+const cleanups: (() => void)[] = [];
+afterEach(() => {
+  vi.useRealTimers();
+  for (const cleanup of cleanups.splice(0)) cleanup();
+});
 
 const DIR = ".azimuth/features/F-001-thing/";
 
@@ -185,9 +192,19 @@ const EXAMPLE_BRIEF = [
  * leaves out: without one the model has no spec, and so no stories or contract text.
  */
 function exampleFiles(
-  options: { languages?: string; stories?: string; sharedFiles?: string; plan?: string } = {},
+  options: {
+    languages?: string;
+    stories?: string;
+    sharedFiles?: string;
+    plan?: string;
+    conventions?: string;
+  } = {},
 ): Record<string, string> {
   const parallel = options.sharedFiles ? `parallel:\n  shared_files: ${options.sharedFiles}\n` : "";
+  const conventions: Record<string, string> =
+    options.conventions === undefined
+      ? {}
+      : { ".azimuth/project/conventions.md": options.conventions };
   return {
     ".azimuth/config.yaml": `${MINIMAL_CONFIG}stack:\n  languages: ${options.languages ?? "[typescript]"}\n${parallel}`,
     [`${DIR}feature.md`]: FEATURE,
@@ -196,14 +213,18 @@ function exampleFiles(
     [`${DIR}contract.md`]: CONTRACT,
     [`${DIR}plan.md`]: options.plan ?? PLAN,
     [`${DIR}notes.md`]: NOTES,
+    ...conventions,
   };
 }
 
-function load(files: Record<string, string>) {
-  const tree = writeTree(files);
-  cleanup = tree.cleanup;
-  return loadProject(tree.root);
+/** Writes `files` to a new folder, removed after the test. */
+function tree(files: Record<string, string>) {
+  const written = writeTree(files);
+  cleanups.push(written.cleanup);
+  return written;
 }
+
+const load = (files: Record<string, string>) => loadProject(tree(files).root);
 
 const lines = (text: string) => text.split("\n");
 
@@ -369,5 +390,201 @@ describe("ST-022.3 The brief closes with what to report", () => {
     expect(lines(brief).at(-1)).toBe(CLOSING_RULE);
     expect(lines(brief)).toContain("- **THEN** one heading starts at byte 0");
     expect(lines(brief).filter((line) => line.startsWith("- `{?}` marks"))).toEqual([]);
+  });
+});
+
+/** The conventions.md of contract.md's "Brief example". */
+const CONVENTIONS = [
+  "---",
+  "updated: 2026-10-01",
+  "---",
+  "# Conventions",
+  "",
+  "## Testing",
+  "Vitest, one test file per module.",
+  "",
+  "~~~sh",
+  "# run one file",
+  "pnpm exec vitest run test/x.test.ts",
+  "~~~",
+  "",
+].join("\n");
+
+/** The brief of F-022's contract.md "Brief example", without a trailing newline. */
+const F022_EXAMPLE_BRIEF = [
+  "# T-001.2 · Heading recognizer (red → green)",
+  "",
+  "Feature: F-001 · Parse headings",
+  "After: T-001.1 (done)",
+  "",
+  "## Scenarios",
+  "",
+  "### S-001.1.1 · Finds an ATX heading {happy}",
+  "- **GIVEN** the text `# Hi`",
+  "- **WHEN** it is parsed",
+  "- **THEN** one heading of level 1 is returned",
+  "- **AND** its text is `Hi`",
+  "",
+  "### S-001.1.2 · Ignores a hash without a space {negative}",
+  "- **GIVEN** the text `#Hi`",
+  "- **WHEN** it is parsed",
+  "- **THEN** no heading is returned",
+  "",
+  "## Contract",
+  "",
+  "### Public signatures",
+  "",
+  "```ts",
+  "export function headings(text: string): Heading[];",
+  "```",
+  "",
+  "### Config",
+  "",
+  "```yaml",
+  "# headings.yaml",
+  "max_level: 6",
+  "```",
+  "",
+  "## Invariants",
+  "",
+  "- The parser never allocates per character.",
+  "",
+  "## Files you may change",
+  "",
+  "- src/headings.ts",
+  "- test/headings.test.ts",
+  "",
+  "## Verify",
+  "",
+  "```sh",
+  "pnpm exec vitest run test/headings.test.ts --reporter=verbose",
+  "```",
+  "",
+  "## Notes from earlier tasks",
+  "",
+  "### T-001.1 · 2026-10-20",
+  "",
+  "Heading levels are 1-based.",
+  "",
+  "## Conventions",
+  "",
+  "### Testing",
+  "Vitest, one test file per module.",
+  "",
+  "~~~sh",
+  "# run one file",
+  "pnpm exec vitest run test/x.test.ts",
+  "~~~",
+  "",
+  "## Rules",
+  "",
+  '- Start each test name with the scenario it covers: `it("S-001.1.1 <what it checks>", …)`.',
+  "- Give every test a name that no other test in the project has.",
+  "- Write the tests first and run them to see them fail for the right reason, then implement until the verify command passes. Keep to the contract and the invariants.",
+  '- Change only the files under "Files you may change".',
+  "- Never run git or azimuth, and never edit anything under .azimuth/.",
+  "- `src/headings.ts` is shared: other tasks may be adding to it at the same time. Add one complete insertion to it (a whole enum variant, match arm, registry entry or module line).",
+  "- Never edit or reorder another task's insertion in a shared file.",
+  "- Don't run a formatter over a shared file or its package.",
+  '- When you are done, report: the files you changed; the verify command\'s result; what the task taught that later tasks should know (a constraint the code revealed, a choice the spec left open); each file you had to change outside "Files you may change", and why.',
+].join("\n");
+
+/** The brief's text after the last line of the notes. */
+const afterNotes = (brief: string) => brief.split("Heading levels are 1-based.")[1] ?? "";
+
+/** The brief of the example project with `conventions` as its conventions.md. */
+const briefWithConventions = (conventions: string) =>
+  taskBrief(load(exampleFiles({ conventions })), "T-001.2");
+
+/** The conventions.md `azimuth init` writes on 2025-01-01. */
+function initConventions(): string {
+  const { root } = tree({});
+  initProject(root, { now: new Date("2025-01-01T00:00:00Z") });
+  return readFileSync(join(root, ".azimuth/project/conventions.md"), "utf8");
+}
+
+const conventionsOfWords = (count: number) =>
+  `---\nupdated: 2026-10-01\n---\n# Conventions\n\n${Array<string>(count).fill("rule").join(" ")}\n`;
+
+describe("ST-022.2 The project's conventions are in the brief", () => {
+  it("S-022.2.1 nests the conventions under their own section, fenced code untouched", () => {
+    const brief = briefWithConventions(CONVENTIONS);
+    const expected =
+      "\n\n## Conventions\n\n### Testing\nVitest, one test file per module.\n\n~~~sh\n# run one file\npnpm exec vitest run test/x.test.ts\n~~~\n\n## Rules\n\n";
+    expect(afterNotes(brief).slice(0, expected.length)).toBe(expected);
+  });
+
+  it("S-022.2.2 leaves the section out without a conventions file or without a body", () => {
+    const briefs = [
+      taskBrief(load(exampleFiles()), "T-001.2"),
+      briefWithConventions("---\nupdated: 2026-10-01\n---\n# Conventions\n"),
+    ];
+    for (const brief of briefs) {
+      expect(lines(brief)).not.toContain("## Conventions");
+      expect(afterNotes(brief).slice(0, "\n\n## Rules\n\n".length)).toBe("\n\n## Rules\n\n");
+    }
+  });
+
+  it("S-022.2.3 leaves out the template init wrote, with or without Prettier's blank lines", () => {
+    const template = initConventions();
+    expect(template.startsWith("---\nupdated: 2025-01-01\n---\n")).toBe(true);
+    const prettier = template.replace(/^(## .*)$/gm, "$1\n");
+    expect(prettier).not.toBe(template);
+    for (const conventions of [template, prettier]) {
+      expect(lines(briefWithConventions(conventions))).not.toContain("## Conventions");
+    }
+  });
+
+  it("S-022.2.4 includes the template with one line added as the project's conventions", () => {
+    const conventions = initConventions().replace(
+      "## Error handling\n",
+      "## Error handling\nErrors are values.\n",
+    );
+    expect(briefWithConventions(conventions)).toContain(
+      "## Conventions\n\n### Error handling\nErrors are values.\n\n### Testing\nStart each test name with the scenario ID it covers.\n\n### Naming\n\n### Logging\n\n### Dependencies\n\n### Commits\nConventional Commits with a `Refs:` trailer naming the task or feature.\n\n## Rules",
+    );
+  });
+
+  it("S-022.2.5 points to conventions over 1,500 words instead of including them", () => {
+    expect(briefWithConventions(conventionsOfWords(1501))).toContain(
+      "## Conventions\n\nThe project's conventions are too long to include here: read `.azimuth/project/conventions.md` and follow what applies to this task.\n\n## Rules",
+    );
+  });
+
+  it("S-022.2.6 includes conventions of exactly 1,500 words in full", () => {
+    const brief = lines(briefWithConventions(conventionsOfWords(1500)));
+    const heading = brief.indexOf("## Conventions");
+    expect(heading).toBeGreaterThan(-1);
+    expect(brief.slice(heading + 1, heading + 3)).toEqual([
+      "",
+      Array<string>(1500).fill("rule").join(" "),
+    ]);
+    expect(
+      brief.filter((line) => line.startsWith("The project's conventions are too long")),
+    ).toEqual([]);
+  });
+});
+
+describe("ST-022.4 The full brief is the same for the same records", () => {
+  const fullExample = () =>
+    exampleFiles({ sharedFiles: "[src/headings.ts]", conventions: CONVENTIONS });
+
+  it("S-022.4.1 builds the full brief of the example", () => {
+    expect(taskBrief(load(fullExample()), "T-001.2")).toBe(F022_EXAMPLE_BRIEF);
+  });
+
+  it("S-022.4.2 gives the same text in another folder on another date", () => {
+    const first = tree(fullExample()).root;
+    const second = tree(fullExample()).root;
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-20T12:00:00Z"));
+    const firstBrief = taskBrief(loadProject(first), "T-001.2");
+    vi.setSystemTime(new Date("2027-03-01T08:00:00Z"));
+    const secondBrief = taskBrief(loadProject(second), "T-001.2");
+    expect(firstBrief).toBe(secondBrief);
+    expect(firstBrief).toBe(F022_EXAMPLE_BRIEF);
+    for (const brief of [firstBrief, secondBrief]) {
+      for (const root of [first, second]) expect(brief).not.toContain(root);
+    }
   });
 });

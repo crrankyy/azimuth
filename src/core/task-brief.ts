@@ -2,14 +2,17 @@ import { AzimuthError } from "./errors";
 import { splitFrontmatter } from "./frontmatter";
 import { globToRegExp, matchesAny } from "./glob";
 import { featureOf, idKind } from "./ids";
+import { CONVENTIONS_TEMPLATE } from "./init";
 import type { FeatureEntity, Model } from "./model";
 import type { TaskRaw } from "./parse/feature";
 import { OPEN_PLACEHOLDER, placeholderParts } from "./placeholders";
+import { stripTitle } from "./sections";
+import type { KnowledgeDoc } from "./types";
 
 const FENCE = /^\s*(```|~~~)/;
 const SCENARIO_HEADING = /^###\s+(S-\d{3}\.\d+\.\d+)/;
 const SECTION_HEADING = /^#{2,3} /;
-const CONTRACT_HEADING = /^#{1,5} /;
+const NESTABLE_HEADING = /^#{1,5} /;
 
 /** Asks for no report: the closing request does, so the request is made once. */
 const OPEN_RULE =
@@ -37,6 +40,13 @@ const CLOSING_RULE =
 
 const CLOSING_OPEN_CLAUSE =
   "; the value each `{?}` took in a passing test, as `<scenario ID>: <value>`.";
+
+/** Above this the conventions would crowd the task's own records out of the brief. */
+const CONVENTIONS_MAX_WORDS = 1500;
+
+/** `file` is knowledge.conventions.file: ".azimuth/project/conventions.md". */
+const conventionsPointer = (file: string) =>
+  `The project's conventions are too long to include here: read \`${file}\` and follow what applies to this task.`;
 
 const normalize = (text: string) => text.replace(/\r\n?/g, "\n");
 
@@ -92,22 +102,56 @@ function scenarioText(stories: string, scenarioId: string): ScenarioText | null 
 }
 
 /**
- * contract.md without its frontmatter and its `# ` title line, trimmed, every heading outside
- * fenced code one level deeper so that it nests under the brief's `## Contract`.
+ * Every heading line (`#` to `#####`, then a space) outside fenced code one `#` deeper, so the
+ * text nests under a `## ` section of the brief.
  */
+function nestHeadings(text: string): string {
+  let inFence = false;
+  return text
+    .split("\n")
+    .map((line) => {
+      if (FENCE.test(line)) {
+        inFence = !inFence;
+        return line;
+      }
+      return !inFence && NESTABLE_HEADING.test(line) ? `#${line}` : line;
+    })
+    .join("\n");
+}
+
+/** contract.md without its frontmatter and its `# ` title line, nested and trimmed. */
 function contractText(contract: string): string {
   const lines = normalize(splitFrontmatter(contract).body).split("\n");
   const first = lines.findIndex((line) => line.trim() !== "");
   if (first !== -1 && (lines[first] ?? "").startsWith("# ")) lines.splice(first, 1);
-  let inFence = false;
-  const nested = lines.map((line) => {
-    if (FENCE.test(line)) {
-      inFence = !inFence;
-      return line;
-    }
-    return !inFence && CONTRACT_HEADING.test(line) ? `#${line}` : line;
-  });
-  return nested.join("\n").trim();
+  return nestHeadings(lines.join("\n")).trim();
+}
+
+/** The non-blank lines without trailing whitespace, so Prettier's blank lines don't count. */
+const contentLines = (text: string) =>
+  text
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter((line) => line !== "")
+    .join("\n");
+
+/**
+ * Whether `body` is stripTitle(CONVENTIONS_TEMPLATE) once both lose trailing whitespace on each
+ * line and their blank lines. The `updated` date is in the frontmatter, so it never counts.
+ */
+function isConventionsTemplate(body: string): boolean {
+  return contentLines(body) === contentLines(stripTitle(CONVENTIONS_TEMPLATE));
+}
+
+/**
+ * The Conventions section's body: null when `doc.body` is "" or the template `init` wrote; the
+ * pointer line above CONVENTIONS_MAX_WORDS whitespace-separated words; else the body nested.
+ */
+function conventionsBody(doc: KnowledgeDoc): string | null {
+  if (doc.body === "" || isConventionsTemplate(doc.body)) return null;
+  const words = doc.body.match(/\S+/g)?.length ?? 0;
+  if (words > CONVENTIONS_MAX_WORDS) return conventionsPointer(doc.file);
+  return nestHeadings(doc.body);
 }
 
 /** The test-name rules for the project's languages, one per form, in a fixed order. */
@@ -197,6 +241,8 @@ export function taskBrief(model: Model, taskId: string): string {
   const verify = task.verify.trim();
   parts.push(section("Verify", verify ? `\`\`\`sh\n${verify}\n\`\`\`` : "None."));
   if (f.notes) parts.push(section("Notes from earlier tasks", f.notes));
+  const conventions = conventionsBody(model.knowledge.conventions);
+  if (conventions) parts.push(section("Conventions", conventions));
   const open = scenarios.some((s) => s.open);
   const rules = [
     ...testNameRules(model.config.stack.languages, task.covers[0] ?? "S-NNN.1.1"),

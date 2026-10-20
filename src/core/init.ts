@@ -166,6 +166,13 @@ viewer:
 `;
 }
 
+/**
+ * conventions.md as `azimuth init` writes it after the frontmatter. Exported so the brief can
+ * tell a project's own conventions from the untouched template.
+ */
+export const CONVENTIONS_TEMPLATE =
+  "# Conventions\n\n## Error handling\n\n## Testing\nStart each test name with the scenario ID it covers.\n\n## Naming\n\n## Logging\n\n## Dependencies\n\n## Commits\nConventional Commits with a `Refs:` trailer naming the task or feature.\n";
+
 function projectDocs(d: Detected, date: string): Record<string, string> {
   return {
     "project/vision.md": `---\nupdated: ${date}\n---\n# Vision\n\n## Problem\n\n## Users\n\n## Goals\n\n## Non-goals\n\n## Success metrics\n\n## Constraints\n`,
@@ -175,7 +182,7 @@ function projectDocs(d: Detected, date: string): Record<string, string> {
     )
       .map(([k, v]) => `- ${k}: \`${v}\``)
       .join("\n")}\n\n## Boundaries & invariants\n\n## Data flow\n`,
-    "project/conventions.md": `---\nupdated: ${date}\n---\n# Conventions\n\n## Error handling\n\n## Testing\nStart each test name with the scenario ID it covers.\n\n## Naming\n\n## Logging\n\n## Dependencies\n\n## Commits\nConventional Commits with a \`Refs:\` trailer naming the task or feature.\n`,
+    "project/conventions.md": `---\nupdated: ${date}\n---\n${CONVENTIONS_TEMPLATE}`,
     "project/glossary.md": `---\nupdated: ${date}\nterms: [] # - { term: Lease, definition: A time-bounded claim on a job, aliases: [lease_until] }\n---\n# Glossary\n`,
   };
 }

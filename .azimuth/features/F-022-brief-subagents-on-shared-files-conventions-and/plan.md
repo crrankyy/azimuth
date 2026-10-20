@@ -2,7 +2,7 @@
 tasks:
   - id: T-022.1
     title: Shared-file rules and the closing request (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-022.1.1, S-022.1.2, S-022.1.3, S-022.3.1, S-022.3.2, S-022.3.3]
     files: [src/core/task-brief.ts, test/core/task-brief.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-022.2
     title: The Conventions section and the full brief (red → green)
-    status: todo
+    status: in-progress
     after: [T-022.1]
     covers: [S-022.2.1, S-022.2.2, S-022.2.3, S-022.2.4, S-022.2.5, S-022.2.6, S-022.4.1, S-022.4.2]
     files: [src/core/task-brief.ts, src/core/init.ts, test/core/task-brief.test.ts]
