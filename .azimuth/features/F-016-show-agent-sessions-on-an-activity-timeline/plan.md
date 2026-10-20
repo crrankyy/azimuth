@@ -74,7 +74,7 @@ tasks:
     note: null
   - id: T-016.10
     title: The Activity screen wires timeline, cards, threads and filters (red → green)
-    status: in-progress
+    status: done
     after: [T-016.4, T-016.9]
     covers: [S-016.8.1, S-016.8.2, S-016.8.3, S-016.8.4, S-016.8.5]
     files: [viewer/src/screens/Activity.tsx, viewer/src/screens/activity/activity.css, viewer/src/screens/Activity.test.tsx]

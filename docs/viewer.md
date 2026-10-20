@@ -56,7 +56,7 @@ connection drops, a banner says so, actions are disabled, and the page reconnect
 | Questions        | `#/questions/Q-0003`                   | Open (blocking first) and answered questions; answer with an option and/or text. An agent's answer is labelled "Answered by an agent with its recommendation", with "Answer differently" to give yours.        |
 | Issues           | `#/issues/BUG-0001`                    | Bugs, debt and risks; risk matrix; triage severity and status. A row, its ID or title, Enter or the preview's "Open full page" opens the issue's page.                                                         |
 | Issue            | `#/issues/BUG-0001/page`               | One issue: header with its age, Triage card, description, related work and history (both derived from the index), facts, linked features, files with the changes planned for them, and its source file.        |
-| Activity         | `#/activity/SES-…`                     | Live agents (a lane per subagent with its task, and every feature in flight), then sessions with handoffs, goals, notes, commits and verify runs by day.                                                       |
+| Activity         | `#/activity/SES-…`                     | Agent timeline of sessions and subagents (waits on you striped; commits, runs, raised questions and ADRs marked), cards for sessions running or waiting on you, then threads by Today, Yesterday, Earlier.     |
 | Verification     | `#/verification/R-0142`                | Scenario coverage matrix and verify runs with output.                                                                                                                                                          |
 | Knowledge        | `#/knowledge/architecture`             | Vision, architecture with the module map, conventions, glossary.                                                                                                                                               |
 
@@ -102,6 +102,26 @@ last one ended.
 On a feature's Stories tab, a value settled with `azimuth settle` carries a ✓ titled "settled by
 test", and an open `{?}` reads "to be settled". The As-built tab shows the feature's notes after
 the close-out record, and opens as soon as the feature has notes.
+
+Activity opens with the agent timeline: a row per session in the range (Last 75 min, the
+default, Today or 3 days) and an indented row per subagent, each saying its status in words. Spans
+are running, waiting on you (striped), finished, or open when a session has no live data, and
+markers sit at the time of each commit (a ring), verify run (a square, with ✕ when it failed) and
+question or ADR the session raised (a diamond); every span and marker names itself in its title.
+A "now" line marks the current time, the legend names every colour and shape, and "Earlier today"
+lists today's sessions that ended before the range. A session row opens the session below (or the
+transcript of one still at work), and a subagent row opens its transcript. The header counts the
+sessions active. Under Today come a card per session running or waiting on you (how long, its
+goal, features, task and subagents, and its latest action or what it waits for; it opens the
+transcript), then the finished sessions by Today, Yesterday and Earlier. Collapsed, a session
+shows its times (with the date in Earlier), commits, runs with the failed ones counted and what it
+raised; expanded, its handoff and the session that picked it up, its summary, what it touched and
+its thread: its subagents, commits, verify runs and the questions, ADRs and issues it raised, in
+time order. Commits and runs that belong to no listed session, and your own actions, are rows of
+their own, so each appears once. The chips (Sessions, Subagents, Commits, Verify runs, Your
+actions) and the feature filter apply to the timeline, the cards and the feed, and
+`#/activity/SES-…` expands and scrolls to that session. An export shows persisted sessions on the
+timeline and no cards.
 
 An expanded session card lists, after its handoff and summary, the goals later skills added to
 the session and its progress notes, with their times in local time like the rest of the card.
