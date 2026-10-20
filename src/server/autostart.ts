@@ -1,18 +1,19 @@
 import { spawn } from "node:child_process";
 import { closeSync, mkdirSync, openSync, realpathSync, statSync, unlinkSync } from "node:fs";
-import { join, resolve, dirname } from "node:path";
+import { basename, join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { processAlive } from "../core/live";
 import { sharedCacheDir } from "../core/lock";
 import { VERSION } from "../core/version";
 import { readViewerRecord, type ViewerRecord } from "./registry";
 
-/** The bundled CLI: dist/cli.mjs when running from the bundle, else the built copy. */
+/**
+ * The bundled CLI: this file when running from the bundle, else the built copy. The bundle is
+ * known by its name, not its folder: an installed plugin lives in `…/<version>/dist/`.
+ */
 function cliPath(): string {
-  const here = dirname(fileURLToPath(import.meta.url));
-  return here.endsWith(join("plugin", "dist"))
-    ? join(here, "cli.mjs")
-    : resolve(here, "../../plugin/dist/cli.mjs");
+  const self = fileURLToPath(import.meta.url);
+  return basename(self) === "cli.mjs" ? self : resolve(dirname(self), "../../plugin/dist/cli.mjs");
 }
 
 /**

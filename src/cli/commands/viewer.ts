@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import { spawn } from "node:child_process";
 import { existsSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildIndex } from "../../core/build-index";
 import { loadConfig } from "../../core/config";
@@ -13,12 +13,17 @@ import { startServer } from "../../server/server";
 import { print, printJson, runtime } from "../io";
 import type { Command } from "../types";
 
-/** The built viewer: dist/viewer next to the bundle, or plugin/dist/viewer from source. */
+/**
+ * The built viewer: viewer/ next to the bundle (`cli.mjs`, wherever the plugin is installed), or
+ * plugin/dist/viewer from source.
+ */
 export function viewerDir(): string {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const dir = here.endsWith(join("plugin", "dist"))
-    ? join(here, "viewer")
-    : resolve(here, "../../../plugin/dist/viewer");
+  const self = fileURLToPath(import.meta.url);
+  const here = dirname(self);
+  const dir =
+    basename(self) === "cli.mjs"
+      ? join(here, "viewer")
+      : resolve(here, "../../../plugin/dist/viewer");
   if (!existsSync(join(dir, "index.html"))) {
     throw new AzimuthError(
       "not-found",

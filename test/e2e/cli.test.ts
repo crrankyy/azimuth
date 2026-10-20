@@ -1,17 +1,21 @@
 import { spawn, spawnSync } from "node:child_process";
 import {
   copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { VERSION } from "../../src/core/version";
+import { readViewerRecord } from "../../src/server/registry";
 import { featureFiles } from "../helpers/project";
 import { commitAll, gitEnv, initRepo } from "../helpers/git";
 import { writeTree } from "../helpers/tree";
@@ -273,5 +277,42 @@ describe("azimuth CLI (through the launcher, without node on PATH)", () => {
     expect(files).toHaveLength(20);
     expect(files[0]).toBe("Q-0001.md");
     expect(files[19]).toBe("Q-0020.md");
+  });
+});
+
+describe("an installed copy of the plugin", () => {
+  it("BUG-0079 serves its own viewer and reports its own build", async () => {
+    const home = mkdtempSync(join(tmpdir(), "azimuth-installed-"));
+    // Claude Code installs a copy of plugin/ at …/cache/<marketplace>/<plugin>/<version>/.
+    const dist = join(home, "azimuth", "azimuth", VERSION, "dist");
+    cpSync(dirname(CLI), dist, { recursive: true });
+    const cli = join(dist, "cli.mjs");
+    const child = spawn(
+      process.execPath,
+      [cli, "view", "--serve", "--port", "0", "--root", tree.root],
+      { env: env("you"), stdio: "ignore" },
+    );
+    try {
+      const deadline = Date.now() + 10_000;
+      let record = readViewerRecord(tree.root);
+      while (record?.pid !== child.pid && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 100));
+        record = readViewerRecord(tree.root);
+      }
+      expect(record?.pid).toBe(child.pid);
+      const base = `http://127.0.0.1:${record!.port}`;
+      const health = (await (await fetch(`${base}/api/health`)).json()) as { build: string };
+      expect(health.build).toBe(`${VERSION}+${Math.round(statSync(cli).mtimeMs)}`);
+      const page = await fetch(`${base}/`);
+      expect(page.status).toBe(200);
+      expect(await page.text()).toContain("azimuth-boot");
+    } finally {
+      if (child.exitCode === null) {
+        const exited = new Promise((r) => child.once("exit", r));
+        child.kill("SIGTERM");
+        await exited;
+      }
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 });
