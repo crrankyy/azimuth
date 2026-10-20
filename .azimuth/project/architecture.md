@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-20
-reconciled_at: 83d5cba
+reconciled_at: b03346c
 modules:
   - name: core
     path: src/core
@@ -154,3 +154,17 @@ prints and the server pushes to the viewer over SSE.
   (`pageToken()`), then the next page from `next` whenever a `live` push changes `index.live`, one
   request at a time, and keeps the entries in memory only. Exports and the Vite dev server have no
   token and never fetch, and neither screen writes or answers a permission prompt.
+- Activity in the viewer: `#/activity` (`viewer/src/screens/Activity.tsx` and
+  `screens/activity/`) reads only the index, through pure functions given `now`. `activityData`
+  (`sessions.ts`) joins persisted sessions with the live session naming their SES (live-only
+  sessions are keyed by SES, else by Claude Code session ID), and `attribute` decides which session
+  owns each commit (its `session`, else an agent commit inside exactly one session's span), run
+  (its `ses`, else its commit's owner), question, ADR and issue. From that, `layoutTimeline`
+  (`timeline.ts`) lays out the window, a row per session and subagent (`agentRows`), status and
+  wait spans and markers, as percentages; `sessionThreads` (`thread.ts`) gives each persisted
+  session its thread, counts and the session that picked up its handoff; and `buildFeed` and
+  `byPeriod` (`feed.ts`) list the rest once, by Today, Yesterday and Earlier. `AgentTimeline`,
+  `LiveCards` (running and waiting sessions), `SessionCard` and `ActivityFeed` only render these
+  results; live sessions and subagents link to the Agents transcript pages. The kind chips and the
+  feature filter apply to the timeline, the cards and the feed. An export (`live: []`) shows
+  persisted sessions on the timeline and no cards.

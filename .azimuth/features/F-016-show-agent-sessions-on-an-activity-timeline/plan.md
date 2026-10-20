@@ -82,7 +82,7 @@ tasks:
     note: null
   - id: T-016.11
     title: Docs, full verification and a screenshot against the design
-    status: in-progress
+    status: done
     after: [T-016.10]
     covers: []
     files: [docs/viewer.md]
