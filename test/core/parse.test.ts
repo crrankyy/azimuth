@@ -330,6 +330,32 @@ describe("parseConfig", () => {
     expect(config.verify.shared_paths).toEqual(DEFAULT_SHARED);
   });
 
+  it("BUG-0072 leaves verify.ignore_paths empty when the key is absent", () => {
+    const { config, problems } = parseConfig(
+      "project:\n  name: Demo\nverify:\n  timeout_seconds: 600\n",
+    );
+    expect(config.verify.ignore_paths).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  it("BUG-0072 reads a configured verify.ignore_paths as given", () => {
+    const { config, problems } = parseConfig(
+      'project:\n  name: Demo\nverify:\n  ignore_paths: [README.md, "docs/guides/**"]\n',
+    );
+    expect(config.verify.ignore_paths).toEqual(["README.md", "docs/guides/**"]);
+    expect(problems).toEqual([]);
+  });
+
+  it("BUG-0072 rejects a verify.ignore_paths that isn't a list", () => {
+    const { config, problems } = parseConfig(
+      "project:\n  name: Demo\nverify:\n  ignore_paths: README.md\n",
+    );
+    expect(problems.map((p) => [p.code, p.message])).toEqual([
+      ["E-SCHEMA", "verify.ignore_paths must be a list of text values."],
+    ]);
+    expect(config.verify.ignore_paths).toEqual([]);
+  });
+
   it("S-010.1.1 leaves parallel.shared_files empty when the key is absent", () => {
     const { config, problems } = parseConfig("project: { name: Demo }\n");
     expect(config.parallel.shared_files).toEqual([]);

@@ -55,8 +55,9 @@ depends on: the task's `files`, the feature's impact paths with change create, m
 (each with everything under it), the paths of the modules that the modules holding the feature's
 create and modify entries depend on (directly), and the files `verify.shared_paths` matches (root
 build manifests such as `package.json` or `Cargo.lock` by default). Paths under `.azimuth/` never
-count. A task without `files` in a feature without create, modify or test entries has no such
-paths, so any later code commit makes its run stale. A run is also stale after a later commit
+count, and neither do the files `verify.ignore_paths` matches, even among the paths above. A task
+without `files` in a feature without create, modify or test entries has no such paths, so any
+later code commit outside those ignored files makes its run stale. A run is also stale after a later commit
 whose changed files aren't known, and when its commit is older than the history the index reads
 (`git.log_depth`). The check names the commit and the path that made a run stale, so close-out
 reruns only those runs: `T-006.2 last passed at abc1234; def5678 changed src/core/gates.ts`.

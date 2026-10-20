@@ -1,5 +1,6 @@
 import { commitsFor, isCodeCommit, sameCommit, staleCause, type Derived } from "./derive";
 import type { Facts } from "./facts";
+import { globToRegExp, matchesAny } from "./glob";
 import type { FeatureEntity, Model } from "./model";
 import type { TaskRaw } from "./parse/feature";
 import { openPlaceholderScenarios } from "./placeholders";
@@ -226,7 +227,8 @@ function verifyGate(ctx: GateContext, f: FeatureEntity): GateCheck[] {
 
 /**
  * Why a task's passing run isn't current, as the done gate words it; null when it is. A run at
- * HEAD is current, and so is one that no later commit touched within the task's scope.
+ * HEAD is current, and so is one that no later commit touched within the task's scope outside
+ * verify.ignore_paths.
  */
 function staleRun(
   ctx: GateContext,
@@ -244,7 +246,10 @@ function staleRun(
     model.knowledge.architecture.modules,
     model.config.verify.shared_paths,
   );
-  const cause = staleCause(commit, ctx.facts, scope ? (p) => inScope(p, scope) : null);
+  const ignored = model.config.verify.ignore_paths.map(globToRegExp);
+  const cause = staleCause(commit, ctx.facts, scope ? (p) => inScope(p, scope) : null, (p) =>
+    matchesAny(p, ignored),
+  );
   if (!cause) return null;
   const passed = `${task.id} last passed at ${commit}`;
   if (cause.kind === "changed") return `${passed}; ${cause.commit} changed ${cause.path}`;

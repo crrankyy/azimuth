@@ -98,7 +98,10 @@ export function codeChangedSince(sha: string, facts: Facts): boolean | null {
 
 /** Why a passing run is no longer current. */
 export type StaleCause =
-  /** A later code commit changed a path in scope (or, without a scope, outside .azimuth/). */
+  /**
+   * A later code commit changed a path that isn't ignored and is in scope (or, without a scope,
+   * outside .azimuth/).
+   */
   | { kind: "changed"; commit: string; path: string }
   /** A later commit's changed files aren't known. */
   | { kind: "unknown-files"; commit: string }
@@ -106,14 +109,16 @@ export type StaleCause =
   | { kind: "outside-history" };
 
 /**
- * The earliest commit after `sha`, up to HEAD, that changed a path outside .azimuth/ for which
- * `touches` is true (any such path when `touches` is null), or whose changed files aren't known.
- * Within that commit, the first such path in git's order. Null when the run is still current.
+ * The earliest commit after `sha`, up to HEAD, that changed a path outside .azimuth/ that isn't
+ * `ignored` and for which `touches` is true (any such path when `touches` is null), or whose
+ * changed files aren't known. Within that commit, the first such path in git's order. Null when
+ * the run is still current. `ignored` wins over `touches`.
  */
 export function staleCause(
   sha: string,
   facts: Facts,
   touches: ((path: string) => boolean) | null,
+  ignored: (path: string) => boolean = () => false,
 ): StaleCause | null {
   const at = facts.git.commits.findIndex((c) => sameCommit(c.sha, sha));
   if (at === -1) return { kind: "outside-history" };
@@ -121,7 +126,9 @@ export function staleCause(
   for (const commit of facts.git.commits.slice(0, at).reverse()) {
     const files = changedFiles(commit.sha, facts);
     if (!files) return { kind: "unknown-files", commit: commit.sha };
-    const path = files.find((p) => !p.startsWith(".azimuth/") && (touches?.(p) ?? true));
+    const path = files.find(
+      (p) => !p.startsWith(".azimuth/") && !ignored(p) && (touches?.(p) ?? true),
+    );
     if (path !== undefined) return { kind: "changed", commit: commit.sha, path };
   }
   return null;

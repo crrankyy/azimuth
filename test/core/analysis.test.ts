@@ -274,6 +274,52 @@ describe("staleCause", () => {
     ]);
     expect(staleCause("9999999", facts, null)).toEqual({ kind: "outside-history" });
   });
+
+  const ignoreDocs = (path: string) => path.startsWith("docs/");
+
+  it("BUG-0072 keeps the run current when later commits touch only ignored paths in scope", () => {
+    const facts = history([
+      ["bbbbbbb", ["docs/guide.md"]],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("aaaaaaa", facts, only("src/a.ts", "docs/guide.md"), ignoreDocs)).toBeNull();
+  });
+
+  it("BUG-0072 names the first path that isn't ignored", () => {
+    const facts = history([
+      ["bbbbbbb", ["docs/guide.md", "src/a.ts"]],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("aaaaaaa", facts, only("src/a.ts", "docs/guide.md"), ignoreDocs)).toEqual({
+      kind: "changed",
+      commit: "bbbbbbb",
+      path: "src/a.ts",
+    });
+  });
+
+  it("BUG-0072 skips ignored paths without a scope", () => {
+    const facts = history([
+      ["ccccccc", ["src/z.ts"]],
+      ["bbbbbbb", ["docs/readme.md"]],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("aaaaaaa", facts, null, ignoreDocs)).toEqual({
+      kind: "changed",
+      commit: "ccccccc",
+      path: "src/z.ts",
+    });
+  });
+
+  it("BUG-0072 still names a commit whose changed files are unknown", () => {
+    const facts = history([
+      ["bbbbbbb", null],
+      ["aaaaaaa", ["src/a.ts"]],
+    ]);
+    expect(staleCause("aaaaaaa", facts, null, () => true)).toEqual({
+      kind: "unknown-files",
+      commit: "bbbbbbb",
+    });
+  });
 });
 
 describe("gates", () => {
@@ -590,6 +636,59 @@ describe("gates", () => {
       expect(check).toMatchObject({
         ok: false,
         detail: "T-001.1 last passed at aaaaaaa; bbbbbbb changed docs/readme.md",
+      });
+    });
+
+    const IGNORE_DOCS = `${MINIMAL_CONFIG}verify:\n  ignore_paths: [README.md, "docs/**"]\n`;
+    const withDocs = [
+      { path: "src/a.ts", change: "modify" },
+      { path: "docs/guide.md", change: "modify" },
+    ];
+
+    it("BUG-0072 keeps the run current when a later commit changes only an ignored impact path", () => {
+      const check = verifyCheck({
+        config: IGNORE_DOCS,
+        impact: withDocs,
+        later: [["bbbbbbb", ["docs/guide.md"]]],
+      });
+      expect(check?.ok).toBe(true);
+    });
+
+    it("BUG-0072 names the path that isn't ignored when a commit changes both", () => {
+      const check = verifyCheck({
+        config: IGNORE_DOCS,
+        impact: withDocs,
+        later: [["bbbbbbb", ["docs/guide.md", "src/a.ts"]]],
+      });
+      expect(check).toMatchObject({
+        ok: false,
+        detail: "T-001.1 last passed at aaaaaaa; bbbbbbb changed src/a.ts",
+      });
+    });
+
+    it("BUG-0072 skips ignored paths in the fallback for a task without paths", () => {
+      const check = verifyCheck({
+        config: IGNORE_DOCS,
+        impact: [{ path: "src/c.ts", change: "read" }],
+        taskFiles: [],
+        later: [["bbbbbbb", ["README.md", "docs/guide.md"]]],
+      });
+      expect(check?.ok).toBe(true);
+    });
+
+    it("BUG-0072 lets the ignore list win over the task's own files", () => {
+      const check = verifyCheck({
+        config: IGNORE_DOCS,
+        taskFiles: ["src/a.ts", "docs/guide.md"],
+        later: [["bbbbbbb", ["docs/guide.md"]]],
+      });
+      expect(check?.ok).toBe(true);
+    });
+
+    it("BUG-0072 still counts a later commit whose changed files are unknown", () => {
+      expect(verifyCheck({ config: IGNORE_DOCS, later: [["bbbbbbb", null]] })).toMatchObject({
+        ok: false,
+        detail: "T-001.1 last passed at aaaaaaa; bbbbbbb's changed files are unknown",
       });
     });
   });

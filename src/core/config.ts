@@ -23,6 +23,11 @@ export interface Config {
     output_tail_lines: number;
     /** Globs (globToRegExp) of repo-relative files every verify run depends on. */
     shared_paths: string[];
+    /**
+     * Globs (globToRegExp) of repo-relative files whose change never makes a verify run stale,
+     * even when they are a task's own paths.
+     */
+    ignore_paths: string[];
     /** Run once per `azimuth verify` call before the targets; null (or blank) = no prebuild. */
     prebuild: string | null;
     /** Timeout of the prebuild alone. */
@@ -62,6 +67,7 @@ export const DEFAULT_CONFIG: Config = {
       "pyproject.toml",
       "uv.lock",
     ],
+    ignore_paths: [],
     prebuild: null,
     build_timeout_seconds: 1800,
   },
@@ -99,6 +105,7 @@ const SHAPE: Record<string, Record<string, Reader<unknown>> | Reader<unknown>> =
     timeout_seconds: r.int(1),
     output_tail_lines: r.int(1),
     shared_paths: r.strings(),
+    ignore_paths: r.strings(),
     prebuild: r.nullable(r.string()),
     build_timeout_seconds: r.int(1),
   },

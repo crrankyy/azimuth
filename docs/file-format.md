@@ -110,6 +110,7 @@ verify:
   # Files every verify run depends on (globs); replaces the default list, [] turns it off
   shared_paths:
     [package.json, pnpm-lock.yaml, Cargo.toml, Cargo.lock, go.mod, go.sum, pyproject.toml, uv.lock]
+  ignore_paths: [] # e.g. [README.md, "docs/guides/**"]
   prebuild: null # e.g. "cargo test --workspace --no-run"; null or blank: none
   build_timeout_seconds: 1800
 parallel:
@@ -127,6 +128,12 @@ Every key except `project.name` has a default. Unknown keys produce `W-UNKNOWN-K
 runs stale for the done gate. The globs use the `tests.globs` syntax without `!` and match
 repo-relative paths, so `Cargo.toml` matches the root file only and `crates/*/Cargo.toml` the
 manifest of each crate. The example shows the default.
+
+`verify.ignore_paths` lists the files whose change never makes a verify run stale, such as a
+README or guides the code doesn't use. It wins over a task's own paths and its feature's impact
+paths, and uses the same glob syntax as `verify.shared_paths`. The default is `[]`. Don't list a
+docs file the code reads, whether bundled into a build or loaded at runtime: its change can
+change what the tests check.
 
 `verify.prebuild` is a command `azimuth verify` runs once per call, from the project root, before
 the first task's verify command, so a build every command needs runs once instead of in each.
