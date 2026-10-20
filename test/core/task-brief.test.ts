@@ -96,7 +96,23 @@ const PLAN = [
 const NOTES = "# F-001: Notes\n\n### T-001.1 · 2026-10-20\n\nHeading levels are 1-based.\n";
 
 const OPEN_RULE =
-  "- `{?}` marks a value the spec leaves to the first passing test: make the test assert the value the code produces, and report it as `<scenario ID>: <value>`.";
+  "- `{?}` marks a value the spec leaves to the first passing test: make the test assert the value the code produces.";
+
+const CLOSING_RULE =
+  '- When you are done, report: the files you changed; the verify command\'s result; what the task taught that later tasks should know (a constraint the code revealed, a choice the spec left open); each file you had to change outside "Files you may change", and why.';
+
+const CLOSING_OPEN_RULE =
+  '- When you are done, report: the files you changed; the verify command\'s result; what the task taught that later tasks should know (a constraint the code revealed, a choice the spec left open); each file you had to change outside "Files you may change", and why; the value each `{?}` took in a passing test, as `<scenario ID>: <value>`.';
+
+const NEVER_GIT_RULE = "- Never run git or azimuth, and never edit anything under .azimuth/.";
+
+const SHARED_RULES = [
+  "- Never edit or reorder another task's insertion in a shared file.",
+  "- Don't run a formatter over a shared file or its package.",
+];
+
+const sharedFileRule = (path: string) =>
+  `- \`${path}\` is shared: other tasks may be adding to it at the same time. Add one complete insertion to it (a whole enum variant, match arm, registry entry or module line).`;
 
 /** The brief of contract.md's "Brief example", without a trailing newline. */
 const EXAMPLE_BRIEF = [
@@ -161,7 +177,7 @@ const EXAMPLE_BRIEF = [
   "- Write the tests first and run them to see them fail for the right reason, then implement until the verify command passes. Keep to the contract and the invariants.",
   '- Change only the files under "Files you may change".',
   "- Never run git or azimuth, and never edit anything under .azimuth/.",
-  "- When you are done, report the files you changed and the verify command's result.",
+  CLOSING_RULE,
 ].join("\n");
 
 /**
@@ -169,15 +185,16 @@ const EXAMPLE_BRIEF = [
  * leaves out: without one the model has no spec, and so no stories or contract text.
  */
 function exampleFiles(
-  options: { languages?: string; stories?: string } = {},
+  options: { languages?: string; stories?: string; sharedFiles?: string; plan?: string } = {},
 ): Record<string, string> {
+  const parallel = options.sharedFiles ? `parallel:\n  shared_files: ${options.sharedFiles}\n` : "";
   return {
-    ".azimuth/config.yaml": `${MINIMAL_CONFIG}stack:\n  languages: ${options.languages ?? "[typescript]"}\n`,
+    ".azimuth/config.yaml": `${MINIMAL_CONFIG}stack:\n  languages: ${options.languages ?? "[typescript]"}\n${parallel}`,
     [`${DIR}feature.md`]: FEATURE,
     [`${DIR}impact.md`]: "---\nfiles: []\n---\n",
     [`${DIR}stories.md`]: options.stories ?? STORIES,
     [`${DIR}contract.md`]: CONTRACT,
-    [`${DIR}plan.md`]: PLAN,
+    [`${DIR}plan.md`]: options.plan ?? PLAN,
     [`${DIR}notes.md`]: NOTES,
   };
 }
@@ -203,7 +220,7 @@ describe("ST-009.7 taskBrief", () => {
     const brief = taskBrief(load(exampleFiles({ stories })), "T-001.2");
     expect(lines(brief)).toContain("- **THEN** one heading starts at byte {?}");
     expect(lines(brief)).toContain("- **AND** it ends at byte 4");
-    expect(lines(brief).at(-1)).toBe(OPEN_RULE);
+    expect(lines(brief).slice(-2)).toEqual([OPEN_RULE, CLOSING_OPEN_RULE]);
   });
 
   it("S-009.7.3 leaves out the parts with nothing to show", () => {
@@ -267,5 +284,90 @@ describe("ST-009.7 taskBrief", () => {
     });
     expect(unknownFeature).toBeInstanceOf(AzimuthError);
     expect(unknownFeature).toMatchObject({ code: "not-found", message: "F-009 does not exist." });
+  });
+});
+
+/** The lines of the brief's Rules section. */
+const rulesOf = (brief: string) => brief.split("## Rules\n\n")[1]?.split("\n") ?? [];
+
+/** The rules after the "Never run git or azimuth" rule. */
+const rulesAfterNeverGit = (brief: string) => {
+  const rules = rulesOf(brief);
+  return rules.slice(rules.indexOf(NEVER_GIT_RULE) + 1);
+};
+
+describe("ST-022.1 A task that lists a shared file gets the insertion rules", () => {
+  it("S-022.1.1 names a listed shared file in the rules, before the closing request", () => {
+    const brief = taskBrief(load(exampleFiles({ sharedFiles: "[src/headings.ts]" })), "T-001.2");
+    expect(rulesAfterNeverGit(brief)).toEqual([
+      sharedFileRule("src/headings.ts"),
+      ...SHARED_RULES,
+      CLOSING_RULE,
+    ]);
+    expect(lines(brief).at(-1)).toBe(CLOSING_RULE);
+  });
+
+  it("S-022.1.2 names each shared file a glob matches once, in files order", () => {
+    const plan = PLAN.replace(
+      "    files: [src/headings.ts, test/headings.test.ts]",
+      "    files: [src/registry/keys.ts, src/headings.ts, src/registry/nested/deep.ts, src/registry/commands.ts, src/registry/keys.ts]",
+    );
+    const brief = taskBrief(
+      load(exampleFiles({ sharedFiles: '["src/registry/*.ts"]', plan })),
+      "T-001.2",
+    );
+    expect(rulesAfterNeverGit(brief).slice(0, 4)).toEqual([
+      sharedFileRule("src/registry/keys.ts"),
+      sharedFileRule("src/registry/commands.ts"),
+      ...SHARED_RULES,
+    ]);
+    for (const path of ["src/headings.ts", "src/registry/nested/deep.ts"]) {
+      expect(rulesOf(brief).filter((rule) => rule.includes(path))).toEqual([]);
+    }
+  });
+
+  it("S-022.1.3 gives a task without a shared file no shared-file rule", () => {
+    const brief = taskBrief(load(exampleFiles({ sharedFiles: "[src/registry.ts]" })), "T-001.2");
+    expect(rulesOf(brief)).toEqual([
+      '- Start each test name with the scenario it covers: `it("S-001.1.1 <what it checks>", …)`.',
+      "- Give every test a name that no other test in the project has.",
+      "- Write the tests first and run them to see them fail for the right reason, then implement until the verify command passes. Keep to the contract and the invariants.",
+      '- Change only the files under "Files you may change".',
+      NEVER_GIT_RULE,
+      CLOSING_RULE,
+    ]);
+    expect(lines(brief).filter((line) => line.includes("shared"))).toEqual([]);
+  });
+});
+
+describe("ST-022.3 The brief closes with what to report", () => {
+  it("S-022.3.1 ends with the closing request when no scenario holds a placeholder", () => {
+    const brief = taskBrief(load(exampleFiles()), "T-001.2");
+    expect(lines(brief).at(-1)).toBe(CLOSING_RULE);
+    expect(lines(brief)).not.toContain(
+      "- When you are done, report the files you changed and the verify command's result.",
+    );
+    expect(lines(brief).filter((line) => line.startsWith("- `{?}` marks"))).toEqual([]);
+  });
+
+  it("S-022.3.2 adds the value clause once for an open placeholder", () => {
+    const stories = STORIES.replace(
+      "- **THEN** one heading of level 1 is returned\n",
+      "- **THEN** one heading starts at byte {?}\n- **AND** it ends at byte {=4}\n",
+    );
+    const brief = taskBrief(load(exampleFiles({ stories })), "T-001.2");
+    expect(lines(brief).slice(-2)).toEqual([OPEN_RULE, CLOSING_OPEN_RULE]);
+    expect(brief.split("<scenario ID>: <value>")).toHaveLength(2);
+  });
+
+  it("S-022.3.3 adds no value clause for settled values alone", () => {
+    const stories = STORIES.replace(
+      "- **THEN** one heading of level 1 is returned\n",
+      "- **THEN** one heading starts at byte {=0}\n",
+    );
+    const brief = taskBrief(load(exampleFiles({ stories })), "T-001.2");
+    expect(lines(brief).at(-1)).toBe(CLOSING_RULE);
+    expect(lines(brief)).toContain("- **THEN** one heading starts at byte 0");
+    expect(lines(brief).filter((line) => line.startsWith("- `{?}` marks"))).toEqual([]);
   });
 });

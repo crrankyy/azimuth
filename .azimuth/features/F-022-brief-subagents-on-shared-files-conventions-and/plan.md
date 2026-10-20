@@ -2,7 +2,7 @@
 tasks:
   - id: T-022.1
     title: Shared-file rules and the closing request (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-022.1.1, S-022.1.2, S-022.1.3, S-022.3.1, S-022.3.2, S-022.3.3]
     files: [src/core/task-brief.ts, test/core/task-brief.test.ts]

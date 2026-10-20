@@ -1,5 +1,6 @@
 import { AzimuthError } from "./errors";
 import { splitFrontmatter } from "./frontmatter";
+import { globToRegExp, matchesAny } from "./glob";
 import { featureOf, idKind } from "./ids";
 import type { FeatureEntity, Model } from "./model";
 import type { TaskRaw } from "./parse/feature";
@@ -10,16 +11,32 @@ const SCENARIO_HEADING = /^###\s+(S-\d{3}\.\d+\.\d+)/;
 const SECTION_HEADING = /^#{2,3} /;
 const CONTRACT_HEADING = /^#{1,5} /;
 
+/** Asks for no report: the closing request does, so the request is made once. */
 const OPEN_RULE =
-  "- `{?}` marks a value the spec leaves to the first passing test: make the test assert the value the code produces, and report it as `<scenario ID>: <value>`.";
+  "- `{?}` marks a value the spec leaves to the first passing test: make the test assert the value the code produces.";
 
+/** The rules every brief has; the closing request comes last, after the conditional ones. */
 const STANDING_RULES = [
   "- Give every test a name that no other test in the project has.",
   "- Write the tests first and run them to see them fail for the right reason, then implement until the verify command passes. Keep to the contract and the invariants.",
   '- Change only the files under "Files you may change".',
   "- Never run git or azimuth, and never edit anything under .azimuth/.",
-  "- When you are done, report the files you changed and the verify command's result.",
 ];
+
+/** The rule for one shared path, e.g. sharedFileRule("src/registry.ts"). */
+const sharedFileRule = (path: string) =>
+  `- \`${path}\` is shared: other tasks may be adding to it at the same time. Add one complete insertion to it (a whole enum variant, match arm, registry entry or module line).`;
+
+const SHARED_RULES = [
+  "- Never edit or reorder another task's insertion in a shared file.",
+  "- Don't run a formatter over a shared file or its package.",
+];
+
+const CLOSING_RULE =
+  '- When you are done, report: the files you changed; the verify command\'s result; what the task taught that later tasks should know (a constraint the code revealed, a choice the spec left open); each file you had to change outside "Files you may change", and why.';
+
+const CLOSING_OPEN_CLAUSE =
+  "; the value each `{?}` took in a passing test, as `<scenario ID>: <value>`.";
 
 const normalize = (text: string) => text.replace(/\r\n?/g, "\n");
 
@@ -123,6 +140,24 @@ function header(f: FeatureEntity, task: TaskRaw): string {
   return lines.join("\n");
 }
 
+/**
+ * One rule per path of `files` that matches a glob of `sharedFiles`, in `files` order, each path
+ * once; then SHARED_RULES. [] when none matches. Paths compare as written, the rule
+ * parallelGroups uses, so the brief and `azimuth next` agree on which files are shared.
+ */
+function sharedFileRules(files: string[], sharedFiles: string[]): string[] {
+  const shared = sharedFiles.map(globToRegExp);
+  const paths = [...new Set(files.filter((path) => matchesAny(path, shared)))];
+  if (paths.length === 0) return [];
+  return [...paths.map(sharedFileRule), ...SHARED_RULES];
+}
+
+/** CLOSING_RULE; when `open`, its final "." replaced by CLOSING_OPEN_CLAUSE. */
+function closingRule(open: boolean): string {
+  if (!open) return CLOSING_RULE;
+  return `${CLOSING_RULE.slice(0, -1)}${CLOSING_OPEN_CLAUSE}`;
+}
+
 const section = (title: string, body: string) => `## ${title}\n\n${body}`;
 
 /**
@@ -162,10 +197,13 @@ export function taskBrief(model: Model, taskId: string): string {
   const verify = task.verify.trim();
   parts.push(section("Verify", verify ? `\`\`\`sh\n${verify}\n\`\`\`` : "None."));
   if (f.notes) parts.push(section("Notes from earlier tasks", f.notes));
+  const open = scenarios.some((s) => s.open);
   const rules = [
     ...testNameRules(model.config.stack.languages, task.covers[0] ?? "S-NNN.1.1"),
     ...STANDING_RULES,
-    ...(scenarios.some((s) => s.open) ? [OPEN_RULE] : []),
+    ...sharedFileRules(task.files, model.config.parallel.shared_files),
+    ...(open ? [OPEN_RULE] : []),
+    closingRule(open),
   ];
   parts.push(section("Rules", rules.join("\n")));
   return parts.join("\n\n");
