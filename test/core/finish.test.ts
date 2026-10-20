@@ -1,5 +1,12 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmodSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -15,6 +22,7 @@ import {
 } from "../../src/core/finish";
 import { acquireVerifyLock } from "../../src/core/lock";
 import { loadProject } from "../../src/core/model";
+import { parsePlan } from "../../src/core/parse/feature";
 import { parseLog } from "../../src/core/parse/log";
 import { moveTask } from "../../src/core/transitions";
 import { commitAll, git, gitEnv, initRepo } from "../helpers/git";
@@ -747,6 +755,141 @@ describe("finishTask against real git", () => {
       expect(step(result, "check")?.output).toBe(
         "src/c.ts: a modify path in F-001's impact.md that no in-progress task lists",
       );
+    });
+  });
+
+  describe("ST-019.4 --adopt adds changed files to the task and commits them", () => {
+    const PLAN = `${DIR}plan.md`;
+    const ADOPT_REFUSED =
+      "check failed, adopt not-run, stage not-run, commit not-run, verify not-run, done not-run, log not-run";
+    const headTaskFiles = (id: string) =>
+      parsePlan(atHead(PLAN), PLAN, "F-001").tasks.find((t) => t.id === id)?.files;
+
+    it("S-019.4.1 commits the adopted stray test with the task and lists it in plan.md", async () => {
+      repo019();
+      changeTaskFiles();
+      addStrayTest();
+      const result = await finish("T-001.1", {
+        adopt: ["test/keymap.test.ts"],
+        note: "Counts the BOM.",
+      });
+      expect(result.ok).toBe(true);
+      expect(steps(result)).toBe(
+        "check done, adopt done, note done, stage done, commit done, verify done, done done, log done",
+      );
+      expect(step(result, "adopt")?.detail).toBe("added to T-001.1's files: test/keymap.test.ts");
+      expect(headFiles()).toEqual([
+        `${DIR}notes.md`,
+        PLAN,
+        "src/a.ts",
+        "test/a.test.ts",
+        "test/keymap.test.ts",
+      ]);
+      expect(headTaskFiles("T-001.1")).toEqual([
+        "src/a.ts",
+        "test/a.test.ts",
+        "test/keymap.test.ts",
+      ]);
+    });
+
+    it("S-019.4.2 refuses a test moved with mv under its new path, then adopts it", async () => {
+      repo019();
+      write("src/a.ts", "export const a = 1;\n");
+      renameSync(join(root, "test/a.test.ts"), join(root, "test/parse.test.ts"));
+      expect(gitRaw(["status", "--porcelain"]).split("\n")).toEqual(
+        expect.arrayContaining([" D test/a.test.ts", "?? test/parse.test.ts"]),
+      );
+      const refused = await finish();
+      expect(step(refused, "check")).toMatchObject({
+        status: "failed",
+        output: "test/parse.test.ts: adds a marker for S-001.1.1, which T-001.1 covers",
+      });
+      const result = await finish("T-001.1", { adopt: ["test/parse.test.ts"] });
+      expect(result.ok).toBe(true);
+      const nameStatus = gitRaw(["show", "--name-status", "--no-renames", "--format=", "HEAD"]);
+      expect(nameStatus.split("\n").filter(Boolean)).toEqual([
+        `M\t${PLAN}`,
+        "M\tsrc/a.ts",
+        "D\ttest/a.test.ts",
+        "A\ttest/parse.test.ts",
+      ]);
+    });
+
+    it("S-019.4.3 refuses to adopt a path git status shows unchanged", async () => {
+      repo019();
+      changeTaskFiles();
+      const result = await finish("T-001.1", { adopt: ["src/other.ts"] });
+      expect(steps(result)).toBe(ADOPT_REFUSED);
+      expect(step(result, "check")?.detail).toBe(
+        "Can't adopt src/other.ts: git status shows no change to it.",
+      );
+      expect(read(PLAN)).toBe(atHead(PLAN));
+    });
+
+    it("S-019.4.4 refuses to adopt a path another in-progress task lists", async () => {
+      repo019({
+        tasks: [
+          T1,
+          {
+            id: "T-001.2",
+            status: "in-progress",
+            covers: [],
+            files: ["test/keymap.test.ts"],
+            verify: "echo ok",
+          },
+        ],
+      });
+      changeTaskFiles();
+      addStrayTest();
+      const result = await finish("T-001.1", { adopt: ["test/keymap.test.ts"] });
+      expect(steps(result)).toBe(ADOPT_REFUSED);
+      expect(step(result, "check")?.detail).toBe(
+        "Can't adopt test/keymap.test.ts: T-001.2 lists it and is in progress, so it goes in T-001.2's commit.",
+      );
+      expect(read(PLAN)).toBe(atHead(PLAN));
+    });
+
+    it("S-019.4.5 writes neither notes.md nor plan.md when the check refuses another file", async () => {
+      repo019();
+      changeTaskFiles();
+      addStrayTest();
+      write("src/c.ts", "export const c = 1;\n");
+      const before = head();
+      const result = await finish("T-001.1", {
+        adopt: ["test/keymap.test.ts"],
+        note: "Counts the BOM.",
+      });
+      expect(steps(result)).toBe(
+        "check failed, adopt not-run, note not-run, stage not-run, commit not-run, verify not-run, done not-run, log not-run",
+      );
+      expect(step(result, "check")?.output).toBe(
+        "src/c.ts: a modify path in F-001's impact.md that no in-progress task lists",
+      );
+      expect(existsSync(join(root, `${DIR}notes.md`))).toBe(false);
+      expect(read(PLAN)).toBe(atHead(PLAN));
+      expect([head(), cached()]).toEqual([before, ""]);
+    });
+
+    it("S-019.4.6 accepts the same --adopt on the rerun after a failed verify", async () => {
+      repo019({ tasks: [{ ...T1, verify: "grep -q fixed src/a.ts && echo S-001.1.1 ok" }] });
+      write("src/a.ts", "export const a = 'broken';\n");
+      addStrayTest();
+      const broken = await finish("T-001.1", { adopt: ["test/keymap.test.ts"] });
+      expect([broken.ok, broken.run, runJson("R-0001").ok]).toEqual([false, "R-0001", false]);
+      expect(headFiles()).toEqual([PLAN, "src/a.ts", "test/keymap.test.ts"]);
+      write("src/a.ts", "export const a = 'fixed';\n");
+      const result = await finish("T-001.1", {
+        adopt: ["test/keymap.test.ts"],
+        message: "fix(F-001): fix a",
+      });
+      expect(result.ok).toBe(true);
+      expect(step(result, "adopt")).toEqual({
+        step: "adopt",
+        status: "done",
+        detail: "already T-001.1's files: test/keymap.test.ts",
+        output: "",
+      });
+      expect(headFiles()).toEqual([`${DIR}log.md`, "src/a.ts"]);
     });
   });
 });

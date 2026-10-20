@@ -3,20 +3,24 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { analyzeProject } from "./build-index";
 import { AzimuthError, isAzimuthError } from "./errors";
+import { updateFrontmatterItem } from "./frontmatter";
 import { headSha, isGitRepo, readBlobs, readCommits } from "./git";
 import { globToRegExp, matchesAny, testFileMatcher } from "./glob";
 import { featureOf, idKind } from "./ids";
+import { withLock, writeFileAtomic } from "./lock";
 import type { FeatureEntity } from "./model";
 import { addNote } from "./notes";
 import { parsePlan, type TaskRaw } from "./parse/feature";
 import { AZ_DIR } from "./paths";
-import { inScope, runScope } from "./run-scope";
+import { inScope, repoPath, runScope } from "./run-scope";
 import { scanTestFile } from "./trace";
 import { addLogEntry, moveTask, type Who } from "./transitions";
 import type { Commit, Id, Problem } from "./types";
 import { verifyBatch, verifyTargets, type VerifyBatchResult } from "./verify";
 
-export type FinishStepName = "check" | "note" | "stage" | "commit" | "verify" | "done" | "log";
+/** "adopt" runs after "check" and before "note", and only when `adopt` is given. */
+export type FinishStepName =
+  "check" | "adopt" | "note" | "stage" | "commit" | "verify" | "done" | "log";
 export type FinishStepStatus = "done" | "failed" | "not-run";
 
 export interface FinishStep {
@@ -35,8 +39,9 @@ export interface FinishResult {
   /** True when the task ended done. */
   ok: boolean;
   /**
-   * check, note, stage, commit, verify, done, log, in this order, every one of them (status
-   * "not-run" for those that didn't run); "note" only when a note was given.
+   * check, adopt, note, stage, commit, verify, done, log, in this order, every one of them
+   * (status "not-run" for those that didn't run); "adopt" only when `adopt` was given, "note"
+   * only when a note was given.
    */
   steps: FinishStep[];
   /** Paths staged and committed, sorted; [] until the stage step ran. */
@@ -69,6 +74,12 @@ export interface FinishOptions extends Who {
   note?: string | null;
   /** Aborting kills the running verify command (verifyBatch); done and log don't run. */
   signal?: AbortSignal;
+  /**
+   * Changed paths to add to the task's `files` in plan.md (the adopt step) and stage with the
+   * rest. Each is trimmed and loses a leading "./" and a trailing "/"; empty entries are
+   * dropped and duplicates count once. Absent or empty after that: no adopt step.
+   */
+  adopt?: string[];
 }
 
 export interface PathSelection {
@@ -167,6 +178,17 @@ export function selectPaths(
 function listedIn(files: string[]): (path: string) => boolean {
   const scope = runScope({ files }, { impact: [] }, [], []);
   return (path) => scope !== null && inScope(path, scope);
+}
+
+/** Whether a path is already a task's: listed in its files or in its feature's folder. */
+function ownedBy(files: string[], featureDir: string): (path: string) => boolean {
+  const listed = listedIn(files);
+  return (path) => path.startsWith(featureDir) || listed(path);
+}
+
+/** The --adopt paths as git prints them (runScope's normalization), each once, in the order given. */
+function adoptPaths(given: string[] | undefined): string[] {
+  return [...new Set((given ?? []).map(repoPath).filter(Boolean))];
 }
 
 /** The scenarios a test file's text marks; a missing file (null) marks none. */
@@ -354,6 +376,7 @@ type Checked =
   | {
       ok: true;
       feature: FeatureEntity;
+      /** The task, its files followed by the adopted paths it doesn't own yet. */
       task: TaskRaw;
       /** Every other in-progress task, of any feature, in model order. */
       others: TaskRaw[];
@@ -397,8 +420,39 @@ function unlistedLine({ path, reason }: UnlistedFile, taskId: string, featureId:
   return `${path}: adds ${markers} for ${reason.scenarios.join(", ")}, which ${taskId} covers`;
 }
 
+/**
+ * Why the check refuses --adopt paths, one sentence per invalid path, in the order given. A path
+ * the task already owns is accepted, changed or not. Any other must be exactly a path git status
+ * lists, so a directory can't sweep in another lane's files, and no other in-progress task may
+ * list it, since it belongs in that task's commit.
+ */
+function adoptRefusals(
+  adopt: string[],
+  changed: string[],
+  owns: (path: string) => boolean,
+  others: Pick<TaskRaw, "id" | "files">[],
+): string[] {
+  const isChanged = new Set(changed);
+  const claims = others.map((t) => ({ id: t.id, lists: listedIn(t.files) }));
+  return adopt.flatMap((path) => {
+    if (owns(path)) return [];
+    if (!isChanged.has(path)) return [`Can't adopt ${path}: git status shows no change to it.`];
+    const other = claims.find((t) => t.lists(path))?.id;
+    if (!other) return [];
+    return [
+      `Can't adopt ${path}: ${other} lists it and is in progress, so it goes in ${other}'s commit.`,
+    ];
+  });
+}
+
 /** The check step: reads only, in the order of contract.md's table. */
-function check(root: string, taskId: string, featureId: string, now: Date): Checked {
+function check(
+  root: string,
+  taskId: string,
+  featureId: string,
+  adopt: string[],
+  now: Date,
+): Checked {
   if (!isGitRepo(root)) return refuse("Not a git repository: task finish commits with git.");
   const { model, problems } = analyzeProject(root, now);
   const feature = model.features.find((f) => f.id === featureId);
@@ -426,23 +480,28 @@ function check(root: string, taskId: string, featureId: string, now: Date): Chec
     return refuse(`git status failed (exit ${status.code})`, tail(status.output, tailLines));
   }
   const changed = porcelainPaths(status.stdout);
+  const others = model.features.flatMap((f) =>
+    f.tasks.filter((t) => t.status === "in-progress" && t.id !== taskId),
+  );
+  const owns = ownedBy(task.files, feature.dir);
+  const refusals = adoptRefusals(adopt, changed, owns, others);
+  if (refusals.length > 0) return refuse(refusals.join(" "));
+  // From here on the adopted paths count as the task's files, as they will once adopt writes them.
+  const widened = { ...task, files: [...task.files, ...adopt.filter((path) => !owns(path))] };
   const staged = runGit(root, ["diff", "--cached", "--name-only", "--no-renames", "-z"]);
   if (staged.code !== 0) {
     return refuse(`git diff failed (exit ${staged.code})`, tail(staged.output, tailLines));
   }
   // Refusing here keeps the commit to the staged set without a pathspec commit.
-  const outside = selectPaths(nulList(staged.stdout), task, feature.dir).not_staged;
+  const outside = selectPaths(nulList(staged.stdout), widened, feature.dir).not_staged;
   if (outside.length > 0) {
     return refuse(
       `Already staged, but not ${taskId}'s files or ${featureId}'s records: ${outside.join(", ")}. Unstage them (git restore --staged <path>) or commit them first.`,
     );
   }
-  const others = model.features.flatMap((f) =>
-    f.tasks.filter((t) => t.status === "in-progress" && t.id !== taskId),
-  );
   const testGlobs = model.config.tests.globs;
   const unlisted = unlistedFiles(changed, {
-    task,
+    task: widened,
     feature,
     others,
     testGlobs,
@@ -457,7 +516,7 @@ function check(root: string, taskId: string, featureId: string, now: Date): Chec
   return {
     ok: true,
     feature,
-    task,
+    task: widened,
     others,
     sharedFiles: model.config.parallel.shared_files,
     tailLines,
@@ -503,7 +562,40 @@ function verifyOutcome(batch: VerifyBatchResult): VerifyOutcome {
   };
 }
 
-const STEPS: FinishStepName[] = ["check", "note", "stage", "commit", "verify", "done", "log"];
+/**
+ * The adopt step's writer, as moveTask writes plan.md: inside the lock, re-reads plan.md and
+ * appends to the task's `files` the adopted paths it doesn't own yet, in the order given. Writes
+ * nothing when it owns them all. Returns the step's detail.
+ */
+function adoptFiles(root: string, feature: FeatureEntity, taskId: string, adopt: string[]): string {
+  const plan = feature.files.plan ?? `${feature.dir}plan.md`;
+  return withLock(root, () => {
+    const text = readWorking(join(root, plan));
+    if (text === null) throw new AzimuthError("not-found", `${plan} does not exist.`);
+    const files = parsePlan(text, plan, feature.id).tasks.find((t) => t.id === taskId)?.files;
+    if (!files) throw new AzimuthError("not-found", `${taskId} is not in ${plan}.`);
+    const owns = ownedBy(files, feature.dir);
+    const added = adopt.filter((path) => !owns(path));
+    if (added.length === 0) return `already ${taskId}'s files: ${adopt.join(", ")}`;
+    const updated = updateFrontmatterItem(text, "tasks", (item) => item.id === taskId, {
+      files: [...files, ...added],
+    });
+    if (updated === null) throw new AzimuthError("not-found", `${taskId} is not in ${plan}.`);
+    writeFileAtomic(join(root, plan), updated);
+    return `added to ${taskId}'s files: ${added.join(", ")}`;
+  });
+}
+
+const STEPS: FinishStepName[] = [
+  "check",
+  "adopt",
+  "note",
+  "stage",
+  "commit",
+  "verify",
+  "done",
+  "log",
+];
 
 /**
  * Runs the steps in order and stops at the first that fails; after a failed verify only the log
@@ -521,11 +613,14 @@ export async function finishTask(
   }
   const who: Who = { actor: opts.actor, session: opts.session, now: opts.now };
   const hasNote = opts.note !== undefined && opts.note !== null;
+  const adopt = adoptPaths(opts.adopt);
+  const runs = (name: FinishStepName) =>
+    (name !== "note" || hasNote) && (name !== "adopt" || adopt.length > 0);
   const result: FinishResult = {
     task: taskId,
     feature: featureId,
     ok: false,
-    steps: STEPS.filter((name) => name !== "note" || hasNote).map((name) => ({
+    steps: STEPS.filter(runs).map((name) => ({
       step: name,
       status: "not-run",
       detail: "",
@@ -557,7 +652,7 @@ export async function finishTask(
     }
   };
 
-  const checked = check(root, taskId, featureId, opts.now ?? new Date());
+  const checked = check(root, taskId, featureId, adopt, opts.now ?? new Date());
   if (!checked.ok) {
     mark("check", "failed", checked.detail, checked.output);
     return result;
@@ -565,6 +660,10 @@ export async function finishTask(
   mark("check", "done", `${featureId} has no errors`);
   const { feature, task, others, sharedFiles, tailLines, logDepth } = checked;
 
+  // Before the note: a failed note then leaves a plan.md that a rerun with the same --adopt accepts.
+  if (adopt.length > 0 && !attempt("adopt", () => adoptFiles(root, feature, taskId, adopt))) {
+    return result;
+  }
   if (hasNote && !attempt("note", () => addNote(root, taskId, opts.note ?? "", who).message)) {
     return result;
   }

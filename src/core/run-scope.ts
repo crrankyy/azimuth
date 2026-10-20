@@ -55,7 +55,7 @@ export function inScope(path: string, scope: RunScope): boolean {
 }
 
 /** A path as git prints it: no leading "./", no trailing "/" (a directory needs no marker). */
-function repoPath(path: string): string {
+export function repoPath(path: string): string {
   return path
     .trim()
     .replace(/^(\.\/)+/, "")

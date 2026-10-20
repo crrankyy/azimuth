@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-019.2
     title: The check refuses unlisted files; the result splits not staged (red → green)
-    status: in-progress
+    status: done
     after: [T-019.1]
     covers: [S-019.3.1, S-019.3.2, S-019.3.3, S-019.3.4]
     files: [src/core/finish.ts, test/core/finish.test.ts]
@@ -18,10 +18,10 @@ tasks:
     note: null
   - id: T-019.3
     title: The adopt option and step (red → green)
-    status: todo
+    status: in-progress
     after: [T-019.2]
     covers: [S-019.4.1, S-019.4.2, S-019.4.3, S-019.4.4, S-019.4.5, S-019.4.6]
-    files: [src/core/finish.ts, test/core/finish.test.ts]
+    files: [src/core/finish.ts, test/core/finish.test.ts, src/core/run-scope.ts]
     verify: pnpm exec vitest run test/core/finish.test.ts --reporter=verbose
     note: null
   - id: T-019.4
