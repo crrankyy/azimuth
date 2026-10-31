@@ -86,6 +86,7 @@ describe("the milestone page's data", () => {
       blocking: ["F-006", "F-001", "F-002", "F-004"],
       ready: false,
       started_while_planned: false,
+      commits: [],
     });
     expect(index.milestones[0]?.id).toBe("M-01");
     expect(milestonePage(index, "M-09")).toBeNull();

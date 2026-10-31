@@ -1,6 +1,6 @@
 import { milestoneReady, milestoneStartedWhilePlanned } from "./flows";
 import { byPriority } from "./next";
-import type { FeatureStatus, Id, Index, Milestone, Priority } from "./types";
+import type { Commit, FeatureStatus, Id, Index, Milestone, Priority } from "./types";
 
 /** One feature line of a milestone page. */
 export interface MilestonePageFeature {
@@ -17,10 +17,7 @@ export interface MilestonePageGroup {
   features: MilestonePageFeature[];
 }
 
-/**
- * What `azimuth show M-NN` prints. F-028 adds its commits as one more field (and its release
- * and commits sections as two more section functions in formatMilestonePage).
- */
+/** What `azimuth show M-NN` prints. */
 export interface MilestonePage {
   /** The index's milestone, with its features and progress. */
   milestone: Milestone;
@@ -32,6 +29,8 @@ export interface MilestonePage {
   ready: boolean;
   /** milestoneStartedWhilePlanned(milestone). */
   started_while_planned: boolean;
+  /** index.commits whose refs include the milestone ID, in index order (newest first). */
+  commits: Commit[];
 }
 
 /** The groups' order: work in flight, what waits, what is finished, what doesn't count. */
@@ -76,6 +75,7 @@ export function milestonePage(index: Index, id: string): MilestonePage | null {
     blocking,
     ready: milestoneReady(milestone),
     started_while_planned: milestoneStartedWhilePlanned(milestone),
+    commits: index.commits.filter((c) => c.refs.includes(id)),
   };
 }
 
@@ -115,8 +115,36 @@ function readinessSection(page: MilestonePage): string[] {
   return [state, ...started];
 }
 
-// Sections are listed rather than inlined so that F-028 can add its release and commits ones.
-const SECTIONS: Section[] = [headerSection, groupsSection, readinessSection];
+// Each line only when set: a milestone released before 0.3.1, or without --tag, has none.
+function releaseSection({ milestone: m }: MilestonePage): string[] {
+  return [
+    ...(m.tag ? [`Tag: ${m.tag}`] : []),
+    ...(m.released_commit ? [`Released commit: ${m.released_commit}`] : []),
+  ];
+}
+
+const MAX_PAGE_COMMITS = 10;
+
+function commitsSection(page: MilestonePage): string[] {
+  if (page.commits.length === 0) return [];
+  const more = page.commits.length - MAX_PAGE_COMMITS;
+  return [
+    `Commits naming ${page.milestone.id}:`,
+    ...page.commits
+      .slice(0, MAX_PAGE_COMMITS)
+      .map((c) => `  ${c.sha} ${c.at.slice(0, 10)} ${c.subject}`),
+    ...(more > 0 ? [`  … and ${more} more`] : []),
+  ];
+}
+
+// Sections are listed rather than inlined so that each can be empty and drop out of the page.
+const SECTIONS: Section[] = [
+  headerSection,
+  groupsSection,
+  readinessSection,
+  releaseSection,
+  commitsSection,
+];
 
 /**
  * The page as text, without a trailing newline: the non-empty results of the section

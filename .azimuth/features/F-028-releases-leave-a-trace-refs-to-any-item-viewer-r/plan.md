@@ -37,7 +37,7 @@ tasks:
     status: in-progress
     after: [T-028.1]
     covers: [S-028.7.1, S-028.7.2, S-028.7.3, S-028.7.4]
-    files: [src/core/milestone-page.ts, test/core/release-page.test.ts]
+    files: [src/core/milestone-page.ts, test/core/release-page.test.ts, test/core/milestone-page.test.ts]
     verify: pnpm exec vitest run test/core/release-page.test.ts -t "S-028.7" --reporter=verbose
     note: null
   - id: T-028.6
@@ -50,7 +50,7 @@ tasks:
     note: null
   - id: T-028.7
     title: Refs may name any item, in the protocol and conventions (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-028.1.1, S-028.1.2, S-028.1.3, S-028.1.4, S-028.1.5, S-028.1.6]
     files: [src/core/protocol.ts, src/core/init.ts, test/core/refs.test.ts, test/core/task-brief.test.ts, test/cli/milestone.test.ts]
