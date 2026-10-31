@@ -422,3 +422,38 @@ describe("ST-009.8 azimuth brief on the command line", () => {
     expect(notTask.err.startsWith("F-001 is not a task ID.")).toBe(true);
   });
 });
+
+// Regression for GitHub #2: task finish left a test outside the task's files uncommitted, and
+// trace still credited its scenario from the working tree. Both halves, end to end.
+describe("GitHub #2: a stray test is refused or adopted, and trace marks it until committed", () => {
+  const STRAY = "    test/keymap.test.ts: S-001.1.2 maps the palette keys";
+  const traceLines = async () => (await runCli(root, ["trace", "F-001"])).out.split("\n");
+
+  it("refuses the stray test, marks it uncommitted, then commits it with --adopt", async () => {
+    repo019();
+    changeTaskFiles();
+    addStrayTest();
+    expect(await traceLines()).toContain(`${STRAY} (uncommitted)`);
+
+    const before = head();
+    const refused = await runCli(root, ["task", "finish", "T-001.1", ...COMMIT]);
+    expect(refused.code).toBe(1);
+    expect(head()).toBe(before);
+    expect(await traceLines()).toContain(`${STRAY} (uncommitted)`);
+
+    const adopted = await runCli(root, [
+      "task",
+      "finish",
+      "T-001.1",
+      ...COMMIT,
+      "--adopt",
+      "test/keymap.test.ts",
+    ]);
+    expect(adopted.code).toBe(0);
+    expect(atHead("test/keymap.test.ts")).toContain('it("S-001.1.2 maps the palette keys"');
+    expect(git(root, ["status", "--porcelain", "--", "test/keymap.test.ts"])).toBe("");
+    const after = await traceLines();
+    expect(after).toContain(STRAY);
+    expect(after.some((line) => line.includes("(uncommitted)"))).toBe(false);
+  });
+});
