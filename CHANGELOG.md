@@ -3,6 +3,59 @@
 Notable changes to Azimuth, newest first. The version is the one in `package.json` and the
 plugin manifest.
 
+## 0.3.1 (2026-10-31)
+
+Run history, milestone pages, a resumed conversation that keeps its session, and releases that
+leave a trace, from an agent's report on its ZenithMD release session.
+
+### Upgrading
+
+- In your clone, run `pnpm install && pnpm build`, then start a new Claude Code session (or run
+  `/reload-plugins`).
+- Run `azimuth init --refresh` in each project: PROTOCOL.md now says a `Refs:` trailer may name a
+  milestone or an issue, and that you release milestones in the viewer or with `azimuth release`.
+  It leaves your conventions.md alone; the template's Commits line changed the same way, so edit
+  yours if it still has the old line.
+- A milestone released with 0.3.1 gains `tag` and `released_commit`. Azimuth 0.3.0 reads such a
+  file with a `W-UNKNOWN-KEY` warning, so upgrade every clone that shares the project.
+- A planned milestone whose features have started now gets `W-MILESTONE-PLANNED` in
+  `azimuth check`. Run `azimuth move M-NN active`, or release it if every feature is done.
+
+### Added
+
+- `azimuth runs <T-ID|F-ID> [--limit N] [--json]` lists a task's or a feature's verify runs, newest
+  first, one line each: ID, time, commit, outcome, duration, time waited for the lock and the
+  prebuild. It reads every run file, not only the ones the index keeps.
+- `azimuth show R-NNNN` prints a whole run, its output tail included (`--brief` for one line,
+  `--json` for the record).
+- `azimuth show M-NN` prints the milestone's page: its features grouped by status with priority
+  and title, what keeps it from being ready, its release (tag and commit) and the commits whose
+  `Refs:` name it. `--brief` is still one line.
+- `azimuth release M-NN [--tag vX.Y.Z]`, yours only: releases a planned or active milestone whose
+  features are all done and records the date, the tag and the commit (the tag's when git has it,
+  else HEAD's). Azimuth never creates or pushes the tag.
+- `W-MILESTONE-PLANNED` in `azimuth check` for a planned milestone whose work has started.
+- The Roadmap lists the commits that name a milestone and shows a released milestone's tag.
+
+### Changed
+
+- When a feature moves to in-progress, its planned milestone moves to active in the same write,
+  and the move's message says so.
+- A `Refs:` trailer may name a milestone (a release commit) or an issue (a records-only commit);
+  the protocol and the conventions template say so.
+- On a resume, `/clear` or compaction, the start hook names the Azimuth session `session note` and
+  `session handoff` will write to and whether it is open, closed or missing, or says there is none.
+
+### Fixed
+
+- A conversation resumed more than 72 hours later lost its still-open Azimuth session: the start
+  hook pruned the live link, so `session note` and `session handoff` failed with "No current
+  session". Live files of an open session are now kept (BUG-0085).
+- The viewer couldn't release a planned milestone: Release appeared only on active ones. It now
+  appears on a planned milestone whose features are all done too (BUG-0084).
+- Azimuth's own tests inherited the running Claude Code session's `AZIMUTH_*` variables and failed
+  inside a session with working hooks (BUG-0087).
+
 ## 0.3.0 (2026-10-21)
 
 Finishing a lane without waiting for its batch, a fix for tests credited from the working tree, and
