@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-028.3
     title: azimuth release (red → green)
-    status: in-progress
+    status: done
     after: [T-028.2]
     covers: [S-028.5.1, S-028.5.2, S-028.5.3, S-028.5.4, S-028.5.5]
     files: [src/cli/commands/write.ts, src/cli/main.ts, test/cli/release.test.ts]

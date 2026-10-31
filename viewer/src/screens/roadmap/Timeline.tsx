@@ -12,6 +12,7 @@ import { href } from "../../lib/router";
 import { FEATURE_LOOK, LIFECYCLE, MILESTONE_LOOK } from "../../lib/status";
 import { daysLeftLabel, isParked, sortFeatures } from "../features/model";
 import { StatusMixBar } from "../features/parts";
+import { releaseLead, releaseOffer, releaseRequest, type ReleaseOffer } from "./release";
 import "./roadmap.css";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -226,6 +227,7 @@ function MilestoneLane({
     </button>
   );
   const done = `${m.progress.done} of ${m.progress.total} done`;
+  const offer = releaseOffer(m);
 
   if (!expanded) {
     const textLeft = right > 70;
@@ -278,7 +280,7 @@ function MilestoneLane({
           <StatusMixBar statuses={counted.map((f) => f.status)} width={100} height={5} />
           <span>{done}</span>
         </div>
-        {m.status === "active" && <ReleaseControl milestone={m} />}
+        {offer && <ReleaseControl milestone={m} offer={offer} />}
       </div>
       <div className="rm-track rm-track-open">
         {target !== null && (
@@ -370,24 +372,25 @@ function FeatureChip({ f, changed }: { f: Feature; changed: boolean }) {
   );
 }
 
-function ReleaseControl({ milestone: m }: { milestone: Milestone }) {
+function ReleaseControl({ milestone: m, offer }: { milestone: Milestone; offer: ReleaseOffer }) {
   const { canAct, reason } = useCanAct();
   const run = useAction();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
-  const notDone = m.progress.total - m.progress.done;
-  const why = notDone > 0 ? `${plural(notDone, "feature")} not done` : null;
+  const { why } = offer;
+  const lead = releaseLead(m);
 
   const release = async () => {
     setBusy(true);
-    const result = await run("move", m.id, { to: "released" }, m.status);
+    const { action, ref, payload, expect } = releaseRequest(m);
+    const result = await run(action, ref, payload, expect);
     setBusy(false);
     if (result.ok) setConfirming(false);
   };
   return (
     <div className="rm-release">
       <Button
-        disabled={!canAct || notDone > 0}
+        disabled={!canAct || !offer.enabled}
         title={why ?? reason ?? `Release ${m.id}`}
         onClick={() => setConfirming(true)}
       >
@@ -408,7 +411,8 @@ function ReleaseControl({ milestone: m }: { milestone: Milestone }) {
             </>
           }
         >
-          Marks the milestone released today and records the date in{" "}
+          {lead && <p>{lead}</p>}
+          Marks the milestone released today and records the date and the current commit in{" "}
           <code className="az-c">{m.file}</code>. Released milestones can't be reopened.
         </Dialog>
       )}

@@ -19,3 +19,7 @@ released_commit is the tag's commit when git has the tag, else HEAD (null outsid
 ### T-028.3 · 2026-10-31
 
 A missing ID is a usage error before runtime(). The missing-tag hint goes to stderr (also with --json) and is skipped when released_commit is null (no commit yet).
+
+### T-028.4 · 2026-10-31
+
+BUG-0084. ReleaseControl destructures releaseRequest(m) instead of spreading Object.values (not a tuple in TypeScript). The success toast shows the result message: Ui.tsx's DONE map has no release verb. The viewer render is checked by screenshot at close-out.

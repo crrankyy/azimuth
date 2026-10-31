@@ -11,6 +11,7 @@ import {
   type Result,
 } from "../core/transitions";
 import { idKind } from "../core/ids";
+import { releaseMilestone } from "../core/release";
 
 /** A write the viewer asks for. `expect` is the status the user saw (stale-write protection). */
 export interface ActionRequest {
@@ -89,6 +90,8 @@ export function runAction(root: string, req: ActionRequest): { result: Result } 
             supersededBy: text(p, "by"),
           }),
         };
+      case "release":
+        return { result: releaseMilestone(root, req.ref, opts) };
       case "set": {
         const value = p.value === null ? null : text(p, "value");
         return { result: setField(root, req.ref, text(p, "field") ?? "", value ?? null, you) };
