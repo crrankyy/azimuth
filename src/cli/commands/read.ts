@@ -4,7 +4,7 @@ import conceptsDoc from "../../../docs/concepts.md?raw";
 import formatsDoc from "../../../docs/file-format.md?raw";
 import { buildIndex } from "../../core/build-index";
 import { showBrief, statusBrief } from "../../core/brief";
-import { featureOf } from "../../core/ids";
+import { featureOf, idKind } from "../../core/ids";
 import {
   crossFeatureGroups,
   nextForFeature,
@@ -18,6 +18,7 @@ import type { Index, Problem } from "../../core/types";
 import { viewerUrl } from "../../server/registry";
 import { color, print, printJson, requirePositional, runtime, UsageError } from "../io";
 import type { Command } from "../types";
+import { showRun } from "./runs";
 
 function problemLine(p: Problem): string {
   const where = `${p.file}${p.line ? `:${p.line}` : ""}`;
@@ -112,6 +113,10 @@ export const show: Command = {
   run({ values, positionals }) {
     const id = requirePositional(positionals, 0, "ID");
     const rt = runtime(values);
+    if (idKind(id) === "run") {
+      showRun(rt.root, id, { brief: Boolean(values.brief), json: rt.json });
+      return;
+    }
     const { index } = buildIndex(rt.root, { mode: "live" });
     if (rt.json) {
       const entity = findEntity(index, id);
@@ -133,7 +138,6 @@ function findEntity(index: Index, id: string): unknown {
     index.questions,
     index.issues,
     index.sessions,
-    index.runs,
   ];
   for (const pool of pools) {
     const hit = pool.find((x) => x.id === id);

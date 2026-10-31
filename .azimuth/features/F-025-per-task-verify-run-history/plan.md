@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-025.2
     title: azimuth runs prints one line per run (red → green)
-    status: in-progress
+    status: done
     after: [T-025.1]
     covers: [S-025.2.1, S-025.2.2, S-025.2.3, S-025.2.4, S-025.2.5, S-025.2.6, S-025.2.7, S-025.2.8, S-025.2.9, S-025.2.10]
     files: [src/cli/commands/runs.ts, src/cli/verify-report.ts, src/cli/main.ts, test/cli/runs.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-025.3
     title: azimuth show R-NNNN prints the whole run (red → green)
-    status: todo
+    status: in-progress
     after: [T-025.2]
     covers: [S-025.3.1, S-025.3.2, S-025.3.3, S-025.3.4, S-025.3.5, S-025.3.6, S-025.3.7, S-025.3.8]
     files: [src/cli/commands/runs.ts, src/cli/commands/read.ts, test/cli/show-run.test.ts]

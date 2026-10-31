@@ -7,3 +7,7 @@ indexRuns in build-index.ts keeps its own copy of newestFirst's comparator; mode
 ### T-025.2 · 2026-10-31
 
 parseLimit runs before runtime(), so a bad --limit exits 2 outside a project too. verify-report now exports seconds, outcome, tailLines and runResultLine for T-025.3.
+
+### T-025.3 · 2026-10-31
+
+show R-NNNN reads loadProject, never the index, so runs outside the index's window are found; F-026's show change must keep the run branch before buildIndex. parseRun omits waited_ms and ses when absent, so runPage checks !== undefined.
