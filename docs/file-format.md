@@ -659,6 +659,9 @@ when no prebuild ran (none set, a blank command, `--no-prebuild`). A run file wi
 with a value that isn't an object with a boolean `ok` and a number `duration_ms` ≥ 0, reads as
 `null`, with no problem.
 
+`azimuth runs <T-ID|F-ID>` lists a task's or feature's run files newest first, and
+`azimuth show R-NNNN` prints one of them whole.
+
 A live log is append-only: each line is one record with a `kind` and its time `at` (UTC, whole
 seconds). `agent_id` is a subagent's ID, or `null` for the main agent.
 

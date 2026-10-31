@@ -49,7 +49,7 @@ sessions in `.azimuth/`, validates them and shows them live in a local viewer. F
 | Command                                                                                                     | Purpose                                                                |
 | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `azimuth status --brief`                                                                                    | Project summary: what needs the user, work in flight, what's next      |
-| `azimuth show <ID> --brief`                                                                                 | One item with its gate, tasks, questions and recent log                |
+| `azimuth show <ID> --brief` · `azimuth show R-NNNN`                                                         | One item with its gate, tasks, questions and recent log; a whole run   |
 | `azimuth next [F-ID]`                                                                                       | Highest-priority unblocked work, or a feature's ready tasks            |
 | `azimuth check [ID…]`                                                                                       | Validate files; exit 1 on errors                                       |
 | `azimuth new feature "<title>" [--summary "…"] [--priority P0-P3] [--milestone M-NN]`                       | Capture an idea                                                        |
@@ -64,6 +64,7 @@ sessions in `.azimuth/`, validates them and shows them live in a local viewer. F
 | `azimuth settle <S-ID> "<value>"`                                                                           | Fill a scenario's first `{?}` with the value a passing test proved     |
 | `azimuth as-built <F-ID>`                                                                                   | Draft as-built.md from the feature's commits (reruns keep the reasons) |
 | `azimuth verify <T-ID\|F-ID>`                                                                               | Run verify commands and record the result                              |
+| `azimuth runs <T-ID\|F-ID> [--limit N]`                                                                     | Past verify runs, newest first: when, commit, outcome, duration        |
 | `azimuth task finish <T-ID> --commit "<message>" [--note "<text>"] [--adopt <path,…>]`                      | Commit a task's files with `Refs:`, verify it and move it to done      |
 | `azimuth brief <T-ID>`                                                                                      | The prompt for a subagent building a task, from the records            |
 | `azimuth trace [F-ID]`                                                                                      | Scenario → test coverage                                               |

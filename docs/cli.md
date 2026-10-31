@@ -47,10 +47,11 @@ be on your PATH).
 | Command                                     | Output                                                                                                                                                                                                                                                               |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `azimuth status [--brief \| --json]`        | What needs you, work in flight, open high and critical issues, what's next, problem counts. `--json` prints the whole index. Outside a project, `--brief` says so and exits 0.                                                                                       |
-| `azimuth show <ID> [--brief \| --json]`     | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log.                                                                                                                                 |
+| `azimuth show <ID> [--brief \| --json]`     | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log. For a verify run: its fields and output tail (below).                                                                           |
 | `azimuth next [F-ID] [--json]`              | The highest-priority unblocked work across the project (critical bugs and debt, then milestones ready for you to release, then feature work by status and priority, then high-severity ones), or a feature's ready tasks; each shows which can run together (below). |
 | `azimuth check [ID…] [--warnings] [--json]` | Validation problems (all, or those concerning the given IDs). Every error is listed; without an ID or `--warnings`, warnings are only counted by code on one line. `--json` lists every problem. Exit 1 when there are errors.                                       |
 | `azimuth trace [F-ID] [--all] [--json]`     | Scenario → test coverage (below). References that only mention a scenario ID (outside a test name or marker) are hidden and counted on the last line; `--all` shows them, marked `(mention)`, and `--json` keeps them.                                               |
+| `azimuth runs <ID> [--limit N] [--json]`    | A task's or feature's verify runs, newest first: when, at which commit, the outcome and how long it took (below).                                                                                                                                                    |
 | `azimuth brief <T-ID> [--json]`             | The prompt for a subagent building the task, in Markdown, from the records alone (below). `--json` prints `{task, feature, text}`.                                                                                                                                   |
 | `azimuth docs [formats\|concepts\|cli]`     | Prints this reference: the file formats, the concepts, or this page. It is bundled into the CLI, so agents read it instead of Azimuth's code.                                                                                                                        |
 | `azimuth index [--out <file>]`              | Writes the index JSON (default `.azimuth/cache/index.json`).                                                                                                                                                                                                         |
@@ -113,6 +114,29 @@ S-001.1.2 passing Scenario
 
 `--json` prints one row per scenario (`feature`, `scenario`, `title`, `status`, `tests`), and
 every test carries `committed`, `false` for one marked `(uncommitted)`.
+
+`azimuth runs <T-ID|F-ID>` lists the verify runs of a task, or of a feature (its tasks, tasks
+since removed from the plan, and the feature itself), newest first. Each line gives the run's
+`at`, its commit (`no commit` when there was none), the outcome and duration as `verify` prints
+them, the wait for another verify (rounded up, when there was one) and the prebuild that served
+it. For a feature, the run's target follows its ID. It prints at most 20 runs unless `--limit N`
+(a whole number of at least 1) says otherwise, then `… and <n> older`. A known task or feature
+without runs prints `No verify runs for T-005.4 yet.` and exits 0. An ID of another kind, an
+unknown ID, or a feature with no tasks and no runs exits 1. `--json` prints the array of run
+records, newest first and cut to the limit, without their `output_tail`.
+
+```
+$ azimuth runs T-005.4
+R-0142 2026-10-18T11:56:00Z 9f3c2e1 failed (exit 1) in 2.1s, prebuild passed in 41.2s
+R-0137 2026-10-18T10:02:00Z no commit passed in 1.9s, waited 41s
+```
+
+`azimuth show R-NNNN` prints the run's result line as `verify` printed it, then `At:`, `Commit:`,
+`Command:`, `Waited:` and `Session:` (when the run file has them), `Prebuild:`, `JUnit:` (when
+there was a report), `Scenarios:` (when it lists any), and `Output:` with the output tail indented
+four spaces. `--brief` prints the run's `runs` line with its target, and `--json` the whole record.
+An unknown run exits 2. Both commands read every run file, not the index, which keeps only the
+newest runs, so an old run is found however many runs came after it.
 
 `azimuth brief <T-ID>` prints, in this order: the task's title, its feature and the status of its
 `after` tasks; the lines of each scenario it covers, as written in `stories.md`, with settled

@@ -21,3 +21,6 @@ Issue: $ARGUMENTS
 While you investigate or fix an issue, record each finding with `azimuth log <ID> "<finding>"`:
 it adds a dated bullet to the issue's Status notes, where
 `azimuth move <ID> resolved --reason "…"` later adds the closing one.
+
+For a flaky or newly failing test, `azimuth runs <T-ID>` shows when its task's verify last passed,
+at which commit and how long it took; `azimuth show R-NNNN` prints a run's output tail.

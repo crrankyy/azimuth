@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-025.3
     title: azimuth show R-NNNN prints the whole run (red → green)
-    status: in-progress
+    status: done
     after: [T-025.2]
     covers: [S-025.3.1, S-025.3.2, S-025.3.3, S-025.3.4, S-025.3.5, S-025.3.6, S-025.3.7, S-025.3.8]
     files: [src/cli/commands/runs.ts, src/cli/commands/read.ts, test/cli/show-run.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-025.4
     title: Docs, skills and full verification
-    status: todo
+    status: in-progress
     after: [T-025.3]
     covers: []
     files: [docs/cli.md, docs/file-format.md, plugin/skills/azimuth/SKILL.md, plugin/skills/bug/SKILL.md]
