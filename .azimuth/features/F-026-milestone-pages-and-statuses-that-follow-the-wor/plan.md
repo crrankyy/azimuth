@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-026.4
     title: Docs, skill and full verification
-    status: in-progress
+    status: done
     after: [T-026.2, T-026.3]
     covers: []
     files: [docs/cli.md, docs/concepts.md, docs/file-format.md, plugin/skills/azimuth/SKILL.md]

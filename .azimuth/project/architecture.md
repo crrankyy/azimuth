@@ -1,6 +1,6 @@
 ---
 updated: 2026-10-21
-reconciled_at: 3fbd9cc
+reconciled_at: 7c67864
 modules:
   - name: core
     path: src/core
@@ -89,6 +89,11 @@ frontmatter, Vitest, ESLint and Prettier. pnpm only.
   restarts a replaced viewer on its old port unless the config changed.
 - `src/core/flows.ts`, `glob.ts`, `ids.ts`, `next.ts`, `placeholders.ts` and `types.ts` import no
   Node modules, so the viewer can use them.
+- Milestones: a milestone's status follows its work. When a feature moves to in-progress,
+  `moveFeature` moves its planned milestone to active in the same locked write
+  (`milestoneActivation` in `transitions.ts`), and `check` warns `W-MILESTONE-PLANNED` about one
+  that fell behind before. `azimuth show M-NN` prints the page `src/core/milestone-page.ts` builds
+  from a list of section functions; like `flows.ts` it imports no Node modules.
 - An agent answers a question only under `autonomy.questions: proceed`, and only a new,
   non-blocking one it raised with exactly one recommended option (`answer.by: agent`).
   `azimuth answer` stays yours, and your answer replaces an agent's.
