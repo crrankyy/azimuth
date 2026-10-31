@@ -2,7 +2,7 @@
 id: F-026
 title: Milestone pages and statuses that follow the work
 summary: show M-NN lists the milestone's features by status and what keeps it from being ready; a feature starting moves its planned milestone to active; check warns about a planned milestone whose work has started.
-status: verifying
+status: done
 priority: P1
 size: M
 mode: brownfield
