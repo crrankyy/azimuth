@@ -5,6 +5,7 @@ import { asBuilt } from "./commands/as-built";
 import * as harness from "./commands/harness";
 import { note } from "./commands/note";
 import * as read from "./commands/read";
+import { runs } from "./commands/runs";
 import { settle } from "./commands/settle";
 import { brief, task } from "./commands/task";
 import * as viewer from "./commands/viewer";
@@ -21,6 +22,7 @@ const COMMANDS: Record<string, Command> = {
   check: read.check,
   index: read.index,
   trace: read.trace,
+  runs,
   docs: read.docs,
   new: write.newCommand,
   move: write.move,

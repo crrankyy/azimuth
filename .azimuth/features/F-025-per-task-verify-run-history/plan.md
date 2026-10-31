@@ -2,7 +2,7 @@
 tasks:
   - id: T-025.1
     title: runHistory picks, orders and caps runs (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-025.1.1, S-025.1.2, S-025.1.3, S-025.1.4, S-025.1.5, S-025.1.6, S-025.1.7, S-025.1.8]
     files: [src/core/runs.ts, test/core/runs.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-025.2
     title: azimuth runs prints one line per run (red → green)
-    status: todo
+    status: in-progress
     after: [T-025.1]
     covers: [S-025.2.1, S-025.2.2, S-025.2.3, S-025.2.4, S-025.2.5, S-025.2.6, S-025.2.7, S-025.2.8, S-025.2.9, S-025.2.10]
     files: [src/cli/commands/runs.ts, src/cli/verify-report.ts, src/cli/main.ts, test/cli/runs.test.ts]
