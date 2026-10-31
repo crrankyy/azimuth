@@ -59,6 +59,24 @@ export function milestoneReady(m: Pick<Milestone, "status" | "progress">): boole
   return m.progress.total > 0 && m.progress.done === m.progress.total;
 }
 
+/** Feature statuses that mean work on the feature has started. */
+export const STARTED_STATUSES: readonly FeatureStatus[] = ["in-progress", "verifying", "done"];
+
+/** Counted features (progress.by_status) whose status is in STARTED_STATUSES. */
+export function startedCount(m: Pick<Milestone, "progress">): number {
+  return STARTED_STATUSES.reduce((n, s) => n + (m.progress.by_status[s] ?? 0), 0);
+}
+
+/**
+ * A planned milestone with work started that milestoneReady doesn't accept: its status says the
+ * work hasn't started. A planned milestone whose features are all done is ready instead, never
+ * both, so it gets one warning.
+ */
+export function milestoneStartedWhilePlanned(m: Pick<Milestone, "status" | "progress">): boolean {
+  if (m.status !== "planned" || milestoneReady(m)) return false;
+  return startedCount(m) > 0;
+}
+
 export const ISSUE_FLOW: Record<IssueStatus, IssueStatus[]> = {
   open: ["in-progress", "resolved", "wontfix"],
   "in-progress": ["resolved", "wontfix", "open"],

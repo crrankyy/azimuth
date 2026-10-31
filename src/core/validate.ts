@@ -1,5 +1,10 @@
 import { codeCommitsAfter, milestoneProgress, type Derived } from "./derive";
-import { ACTIVE_STATUSES, milestoneReady } from "./flows";
+import {
+  ACTIVE_STATUSES,
+  milestoneReady,
+  milestoneStartedWhilePlanned,
+  startedCount,
+} from "./flows";
 import type { Facts } from "./facts";
 import { globToRegExp, inModule, matchesAny } from "./glob";
 import { idKind } from "./ids";
@@ -453,20 +458,36 @@ function questionProblems(model: Model): Problem[] {
   return out;
 }
 
-/** Only the user releases a milestone, so a finished one is reported until they do. */
+/**
+ * Only the user releases a milestone, so a finished one is reported until they do. A planned one
+ * whose work has started is reported too, so its status catches up; ready takes precedence.
+ */
 function milestoneProblems(model: Model): Problem[] {
   return model.milestones
     .map((m) => ({ ...m, ...milestoneProgress(model, m.id) }))
-    .filter(milestoneReady)
-    .map((m) =>
-      problem(
-        "W-MILESTONE-READY",
-        m.file,
-        null,
-        `Every feature of ${m.id} is done but it is still ${m.status}; ask the user to release it.`,
-        m.id,
-      ),
-    );
+    .flatMap((m) => {
+      if (milestoneReady(m)) {
+        return [
+          problem(
+            "W-MILESTONE-READY",
+            m.file,
+            null,
+            `Every feature of ${m.id} is done but it is still ${m.status}; ask the user to release it.`,
+            m.id,
+          ),
+        ];
+      }
+      if (!milestoneStartedWhilePlanned(m)) return [];
+      return [
+        problem(
+          "W-MILESTONE-PLANNED",
+          m.file,
+          null,
+          `${m.id} is still planned with work started on ${startedCount(m)} of its ${m.progress.total} features; move it to active (\`azimuth move ${m.id} active\`).`,
+          m.id,
+        ),
+      ];
+    });
 }
 
 function sessionProblems(model: Model, facts: Facts): Problem[] {

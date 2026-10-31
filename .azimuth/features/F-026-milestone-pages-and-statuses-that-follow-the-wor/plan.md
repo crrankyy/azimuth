@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-026.2
     title: A feature starting activates its planned milestone (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-026.1.1, S-026.1.2, S-026.1.3, S-026.1.4, S-026.1.5, S-026.1.6, S-026.1.7, S-026.1.8]
     files: [src/core/transitions.ts, test/core/milestone-activation.test.ts, test/cli/milestone-activation.test.ts, test/server/actions.test.ts]

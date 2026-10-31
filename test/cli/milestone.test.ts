@@ -80,3 +80,23 @@ describe("milestones ready for release on the command line", () => {
     expect(one.code).toBe(0);
   });
 });
+
+describe("planned milestones with started work on the command line", () => {
+  it("S-026.2.4 check on the milestone prints its planned warning", async () => {
+    const root = project({
+      ".azimuth/milestones/M-01-first.md": milestone("M-01", "First", "planned"),
+      ...featureFiles({ id: "F-001", status: "in-progress", extra: { milestone: "M-01" } }),
+      ...featureFiles({
+        id: "F-002",
+        status: "idea",
+        ideaOnly: true,
+        extra: { milestone: "M-01" },
+      }),
+    });
+    const r = await runCli(root, ["check", "M-01"]);
+    expect(r.out).toBe(
+      "W-MILESTONE-PLANNED .azimuth/milestones/M-01-first.md M-01\n  M-01 is still planned with work started on 1 of its 2 features; move it to active (`azimuth move M-01 active`).\n\n0 errors, 1 warnings\n",
+    );
+    expect(r.code).toBe(0);
+  });
+});
