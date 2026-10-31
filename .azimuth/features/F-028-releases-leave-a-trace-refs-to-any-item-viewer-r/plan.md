@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-028.2
     title: Release a milestone in the core (red → green)
-    status: in-progress
+    status: done
     after: [T-028.1]
     covers: [S-028.3.1, S-028.3.2, S-028.3.3, S-028.3.4, S-028.3.5, S-028.4.1, S-028.4.2, S-028.4.3, S-028.4.4, S-028.4.5, S-028.4.6, S-028.4.7]
     files: [src/core/release.ts, src/core/git.ts, src/core/transitions.ts, test/core/release.test.ts]
@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-028.3
     title: azimuth release (red → green)
-    status: todo
+    status: in-progress
     after: [T-028.2]
     covers: [S-028.5.1, S-028.5.2, S-028.5.3, S-028.5.4, S-028.5.5]
     files: [src/cli/commands/write.ts, src/cli/main.ts, test/cli/release.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-028.4
     title: The viewer releases a finished planned milestone (red → green)
-    status: todo
+    status: in-progress
     after: [T-028.2]
     covers: [S-028.6.1, S-028.6.2, S-028.6.3, S-028.6.4, S-028.6.5, S-028.6.6, S-028.6.7, S-028.6.8]
     files: [src/server/actions.ts, viewer/src/screens/roadmap/release.ts, viewer/src/screens/roadmap/Timeline.tsx, viewer/src/screens/roadmap/release.test.ts, viewer/src/screens/roadmap/Timeline.test.tsx, test/server/release-action.test.ts]

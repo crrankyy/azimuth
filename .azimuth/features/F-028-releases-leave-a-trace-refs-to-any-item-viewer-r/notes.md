@@ -15,3 +15,7 @@ MilestonePage gains commits (index commits whose refs name the milestone, at mos
 ### T-028.2 · 2026-10-31
 
 released_commit is the tag's commit when git has the tag, else HEAD (null outside git or before the first commit). An empty milestone passes the core check; the viewer's releaseOffer is stricter for planned ones. A digits-only SHA is quoted by updateFrontmatter.
+
+### T-028.3 · 2026-10-31
+
+A missing ID is a usage error before runtime(). The missing-tag hint goes to stderr (also with --json) and is skipped when released_commit is null (no commit yet).

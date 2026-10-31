@@ -8,6 +8,7 @@ import {
   type Created,
 } from "../../core/create";
 import { featureOf } from "../../core/ids";
+import { releaseMilestone } from "../../core/release";
 import { recordInSession } from "../../core/session";
 import {
   acknowledge,
@@ -350,5 +351,28 @@ export const log: Command = {
     });
     touch(rt, id);
     report(rt, result, result.message);
+  },
+};
+
+export const release: Command = {
+  usage: "release <M-ID> [--tag <name>] [--json]",
+  summary: "Release a milestone (you only): records the date, the tag and the commit",
+  options: { tag: { type: "string" }, json: { type: "boolean" } },
+  run({ values, positionals }) {
+    const id = requirePositional(positionals, 0, "M-ID");
+    const rt = runtime(values);
+    const result = releaseMilestone(rt.root, id, {
+      actor: rt.actor,
+      session: rt.session,
+      tag: values.tag as string | undefined,
+    });
+    touch(rt, id);
+    report(rt, result, result.message);
+    // Azimuth never creates tags, so the user gets the command that would make the record true.
+    if (result.tag_found === false && result.released_commit) {
+      process.stderr.write(
+        `Tag ${result.tag} doesn't exist yet. Create it with: git tag ${result.tag} ${result.released_commit}\n`,
+      );
+    }
   },
 };

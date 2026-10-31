@@ -31,6 +31,7 @@ const COMMANDS: Record<string, Command> = {
   resolve: write.resolve,
   ack: write.ack,
   set: write.set,
+  release: write.release,
   log: write.log,
   note,
   settle,
