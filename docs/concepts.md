@@ -81,6 +81,14 @@ of them done (cancelled and superseded features don't count; a deferred one isn'
 reported by `azimuth check` (`W-MILESTONE-READY`), and `azimuth next` asks the agent to have you
 release it.
 
+A milestone's status follows its work. When one of its features moves to in-progress, a planned
+milestone becomes active in the same step, and the move's message says so. A planned milestone
+that isn't ready but has work started (a counted feature in progress, verifying or done) is
+reported by `azimuth check` (`W-MILESTONE-PLANNED`); its message gives `azimuth move M-NN active`,
+which an agent may run. A milestone gets at most one of the two warnings: a ready one gets only
+`W-MILESTONE-READY`. `azimuth show M-NN` lists its features by status and what keeps it from
+being ready.
+
 An agent builds each task in a loop: `azimuth move <T-ID> in-progress`, the tests and the code
 (written by the agent itself, or by a subagent whose prompt is `azimuth brief <T-ID>`, built
 from the records), then `azimuth task finish <T-ID> --commit "<message>"`. Finish commits the

@@ -220,6 +220,12 @@ A planned or active milestone with at least one feature, every one of them done,
 counts and isn't done. `azimuth next` lists such a milestone after critical issues and before
 feature work, as `Ask the user to release M-02 in the viewer`: only the user releases a milestone.
 
+A planned milestone that isn't ready but has work started (a counted feature in progress,
+verifying or done) produces `W-MILESTONE-PLANNED` on its file, whose message gives
+`azimuth move M-02 active`. A milestone gets at most one of the two warnings. Moving a feature to
+in-progress moves its planned milestone to active, which rewrites only the milestone's `status`
+line.
+
 ## Features
 
 A feature is a folder, `features/F-NNN-<slug>/`. An `idea` needs only `feature.md`; the other

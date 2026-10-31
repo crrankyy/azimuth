@@ -50,6 +50,7 @@ sessions in `.azimuth/`, validates them and shows them live in a local viewer. F
 | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `azimuth status --brief`                                                                                    | Project summary: what needs the user, work in flight, what's next      |
 | `azimuth show <ID> --brief` · `azimuth show R-NNNN`                                                         | One item with its gate, tasks, questions and recent log; a whole run   |
+| `azimuth show M-NN`                                                                                         | A milestone's features by status and what keeps it from being ready    |
 | `azimuth next [F-ID]`                                                                                       | Highest-priority unblocked work, or a feature's ready tasks            |
 | `azimuth check [ID…]`                                                                                       | Validate files; exit 1 on errors                                       |
 | `azimuth new feature "<title>" [--summary "…"] [--priority P0-P3] [--milestone M-NN]`                       | Capture an idea                                                        |

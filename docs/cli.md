@@ -47,7 +47,7 @@ be on your PATH).
 | Command                                     | Output                                                                                                                                                                                                                                                               |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `azimuth status [--brief \| --json]`        | What needs you, work in flight, open high and critical issues, what's next, problem counts. `--json` prints the whole index. Outside a project, `--brief` says so and exits 0.                                                                                       |
-| `azimuth show <ID> [--brief \| --json]`     | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log. For a verify run: its fields and output tail (below).                                                                           |
+| `azimuth show <ID> [--brief \| --json]`     | One entity. For a feature: its gate checks, tasks with last runs, open questions, unapplied answers, change requests and recent log. For a milestone: its features by status and whether it is ready. For a verify run: its fields and output tail (below).          |
 | `azimuth next [F-ID] [--json]`              | The highest-priority unblocked work across the project (critical bugs and debt, then milestones ready for you to release, then feature work by status and priority, then high-severity ones), or a feature's ready tasks; each shows which can run together (below). |
 | `azimuth check [ID…] [--warnings] [--json]` | Validation problems (all, or those concerning the given IDs). Every error is listed; without an ID or `--warnings`, warnings are only counted by code on one line. `--json` lists every problem. Exit 1 when there are errors.                                       |
 | `azimuth trace [F-ID] [--all] [--json]`     | Scenario → test coverage (below). References that only mention a scenario ID (outside a test name or marker) are hidden and counted on the last line; `--all` shows them, marked `(mention)`, and `--json` keeps them.                                               |
@@ -138,6 +138,38 @@ four spaces. `--brief` prints the run's `runs` line with its target, and `--json
 An unknown run exits 2. Both commands read every run file, not the index, which keeps only the
 newest runs, so an old run is found however many runs came after it.
 
+`azimuth show M-NN` prints the milestone's page. The header gives its ID and title, its status
+(with the release date once released, and the target when set), its goal and its progress. Its
+features follow, grouped by status: in progress, verifying, approved, draft, idea, deferred, done,
+then cancelled and superseded, marked `not counted`. Each group lists ID, priority and title, by
+priority then ID. For a planned or active milestone, the last section names the counted features
+that aren't done (deferred ones included), says it is ready for you to release, or says no
+feature counts yet. A planned milestone with work started adds the `azimuth move M-NN active`
+line. `--brief` prints the one-line summary and `--json` the milestone. An unknown milestone
+exits 2.
+
+```
+$ azimuth show M-01
+M-01 First
+Status: active, target 2026-11-15
+Goal: Ship the login flow.
+Progress: 1/5 done
+
+in-progress (2)
+  F-006 P0 Reset password
+  F-001 P1 Login
+approved (1)
+  F-002 P2 Logout
+deferred (1)
+  F-004 P3 Export
+done (1)
+  F-003 P2 Signup
+cancelled (1, not counted)
+  F-005 P2 Import
+
+Keeping it from being ready: F-006, F-001, F-002, F-004
+```
+
 `azimuth brief <T-ID>` prints, in this order: the task's title, its feature and the status of its
 `after` tasks; the lines of each scenario it covers, as written in `stories.md`, with settled
 values filled in and `{?}` kept; `contract.md`, its headings one level deeper; the feature's
@@ -205,6 +237,11 @@ For a question, `--json` prints `{id, files, answered}`, where `answered` is tha
 | `azimuth as-built <F-ID> [--json]`                                                | Drafts the feature's `as-built.md` from its commits: the files changed and the deviations from `impact.md` (below).                                                                                                                                                                                                                                                                                                                       |
 
 Refused moves print the failing gate checks and exit 1.
+
+A feature that moves to in-progress also moves its milestone from planned to active, in the same
+locked write: `F-001: approved → in-progress (M-01: planned → active)`. Only the milestone's
+`status` line changes, and `--json` lists its file in `changed`. An active or released milestone
+is left as it is, and a refused move writes neither file.
 
 `note` and `settle` record what a build learned without touching the approved spec (see
 [Notes and placeholders](concepts.md#notes-and-placeholders)), so neither makes the approval

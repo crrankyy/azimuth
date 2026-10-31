@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-026.3
     title: The milestone page in show (red → green)
-    status: in-progress
+    status: done
     after: [T-026.1]
     covers: [S-026.3.1, S-026.3.2, S-026.3.3, S-026.3.4, S-026.3.5, S-026.3.6, S-026.4.1, S-026.4.2, S-026.4.3]
     files: [src/core/milestone-page.ts, src/core/next.ts, src/cli/commands/read.ts, test/core/milestone-page.test.ts, test/cli/milestone.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-026.4
     title: Docs, skill and full verification
-    status: todo
+    status: in-progress
     after: [T-026.2, T-026.3]
     covers: []
     files: [docs/cli.md, docs/concepts.md, docs/file-format.md, plugin/skills/azimuth/SKILL.md]
