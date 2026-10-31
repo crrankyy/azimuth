@@ -2,7 +2,7 @@
 tasks:
   - id: T-027.1
     title: The CLI's session with its state (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-027.1.1, S-027.1.2, S-027.1.3, S-027.1.4, S-027.1.5, S-027.1.6]
     files: [src/core/session.ts, test/core/session.test.ts]

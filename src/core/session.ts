@@ -75,6 +75,50 @@ function readSession(root: string, id: string): { text: string; session: Session
   return session ? { text, session } : null;
 }
 
+/**
+ * The state of the session the CLI would use, read from its own file:
+ * open: the file parses and ended_at is null;
+ * closed: ended_at is set;
+ * missing: .azimuth/sessions/<id>.md doesn't exist;
+ * invalid: the file exists but its frontmatter doesn't parse (parseSession gives no entity).
+ */
+export type LinkState = "open" | "closed" | "missing" | "invalid";
+
+export interface LinkedSession {
+  /** What currentSession returned: AZIMUTH_SESSION, else the Claude Code session's link. */
+  id: string;
+  state: LinkState;
+  /** The file's ended_at when state is "closed"; null otherwise. */
+  ended_at: ISODateTime | null;
+}
+
+/**
+ * The session `azimuth session note`, `handoff` and `close` use without --id, with its state:
+ * currentSession(root, env), then the session's own file (readSession, no loadProject).
+ * Null when currentSession returns null. Never throws for a missing or unparseable file.
+ */
+export function linkedSession(root: string, env: SessionEnv): LinkedSession | null {
+  const id = currentSession(root, env);
+  if (!id) return null;
+  // readSession returns null for both; only the CLI's refusal tells them apart, so we must too.
+  if (!existsSync(join(root, sessionFile(id)))) return { id, state: "missing", ended_at: null };
+  const found = readSession(root, id);
+  if (!found) return { id, state: "invalid", ended_at: null };
+  const ended = found.session.ended_at;
+  return ended === null
+    ? { id, state: "open", ended_at: null }
+    : { id, state: "closed", ended_at: ended };
+}
+
+/**
+ * Whether a Claude Code session's own link names an open Azimuth session:
+ * linkedSession(root, { AZIMUTH_CLAUDE_SESSION: claudeSession })?.state === "open".
+ * AZIMUTH_SESSION plays no part.
+ */
+export function linkOpen(root: string, claudeSession: string): boolean {
+  return linkedSession(root, { AZIMUTH_CLAUDE_SESSION: claudeSession })?.state === "open";
+}
+
 /** `- HH:MM · <text>` in UTC, on one line so that each goal or note stays one bullet. */
 const bullet = (now: Date, text: string) =>
   `- ${now.toISOString().slice(11, 16)} · ${text.replace(/\s+/g, " ").trim()}`;

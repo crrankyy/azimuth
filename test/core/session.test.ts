@@ -10,6 +10,8 @@ import {
   closeSession,
   closeStaleSessions,
   currentSession,
+  linkedSession,
+  linkOpen,
   startSession,
   writeHandoff,
 } from "../../src/core/session";
@@ -320,5 +322,83 @@ describe("F-011 sessions left open", () => {
     claudeSession(root, "c1", "SES-20261019-2000", "2026-10-20T10:00:00Z");
     closeStaleSessions(root, NOW);
     expect(read(root, "SES-20261019-2000")?.ended_at).toBe("2026-10-20T10:00:00Z");
+  });
+});
+
+describe("F-027 the CLI's session with its state", () => {
+  const LINKED = ".azimuth/sessions/SES-20261020-1343.md";
+  const OPEN =
+    "---\nid: SES-20261020-1343\nagent: claude-code\nskill: spec\nstarted_at: 2026-10-20T13:43:00Z\nended_at: null\ngoal: Spec F-050\ntouched: []\ncommits: []\nraised: []\n---\n## Summary\n\n## Handoff\n";
+  const CLOSED = OPEN.replace("ended_at: null", "ended_at: 2026-10-21T10:00:00Z");
+  const BROKEN = "---\nid: [SES-20261020-1343\n---\n## Summary\n";
+
+  const sidecar = (root: string) =>
+    updateLiveMeta(root, "c1", { started_at: "2026-10-20T13:43:00Z", ses: "SES-20261020-1343" });
+
+  it("S-027.1.1 reports an open linked session", () => {
+    const root = project({ [LINKED]: OPEN });
+    sidecar(root);
+    expect(linkedSession(root, { AZIMUTH_CLAUDE_SESSION: "c1" })).toEqual({
+      id: "SES-20261020-1343",
+      state: "open",
+      ended_at: null,
+    });
+    expect(linkOpen(root, "c1")).toBe(true);
+  });
+
+  it("S-027.1.2 reports a closed linked session with its end", () => {
+    const root = project({ [LINKED]: CLOSED });
+    sidecar(root);
+    expect(linkedSession(root, { AZIMUTH_CLAUDE_SESSION: "c1" })).toEqual({
+      id: "SES-20261020-1343",
+      state: "closed",
+      ended_at: "2026-10-21T10:00:00Z",
+    });
+    expect(linkOpen(root, "c1")).toBe(false);
+  });
+
+  it("S-027.1.3 returns null without a link", () => {
+    const root = project({ [LINKED]: OPEN });
+    expect(linkedSession(root, { AZIMUTH_CLAUDE_SESSION: "c9" })).toBeNull();
+    expect(linkOpen(root, "c9")).toBe(false);
+    expect(linkedSession(root, {})).toBeNull();
+  });
+
+  it("S-027.1.4 reports a linked session without a file as missing", () => {
+    const root = project();
+    sidecar(root);
+    expect(linkedSession(root, { AZIMUTH_CLAUDE_SESSION: "c1" })).toEqual({
+      id: "SES-20261020-1343",
+      state: "missing",
+      ended_at: null,
+    });
+    expect(linkOpen(root, "c1")).toBe(false);
+  });
+
+  it("S-027.1.5 reports a linked session whose file doesn't parse as invalid", () => {
+    const root = project({ [LINKED]: BROKEN });
+    sidecar(root);
+    expect(linkedSession(root, { AZIMUTH_CLAUDE_SESSION: "c1" })).toEqual({
+      id: "SES-20261020-1343",
+      state: "invalid",
+      ended_at: null,
+    });
+    expect(linkOpen(root, "c1")).toBe(false);
+  });
+
+  it("S-027.1.6 lets AZIMUTH_SESSION win over the Claude Code session's link", () => {
+    const older = CLOSED.replace("id: SES-20261020-1343", "id: SES-20261019-0800").replace(
+      "ended_at: 2026-10-21T10:00:00Z",
+      "ended_at: 2026-10-19T09:00:00Z",
+    );
+    const root = project({
+      [LINKED]: OPEN,
+      ".azimuth/sessions/SES-20261019-0800.md": older,
+    });
+    sidecar(root);
+    expect(
+      linkedSession(root, { AZIMUTH_SESSION: "SES-20261019-0800", AZIMUTH_CLAUDE_SESSION: "c1" }),
+    ).toEqual({ id: "SES-20261019-0800", state: "closed", ended_at: "2026-10-19T09:00:00Z" });
+    expect(linkOpen(root, "c1")).toBe(true);
   });
 });
