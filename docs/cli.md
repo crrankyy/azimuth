@@ -145,8 +145,11 @@ then cancelled and superseded, marked `not counted`. Each group lists ID, priori
 priority then ID. For a planned or active milestone, the last section names the counted features
 that aren't done (deferred ones included), says it is ready for you to release, or says no
 feature counts yet. A planned milestone with work started adds the `azimuth move M-NN active`
-line. `--brief` prints the one-line summary and `--json` the milestone. An unknown milestone
-exits 2.
+line. A release section follows with `Tag: <tag>` and `Released commit: <sha>`, each only when
+set. Last come the commits naming the milestone (in their `Refs:` trailer, else their scope),
+newest first, one `<sha> <date> <subject>` line each for the first 10, then `… and <n> more`.
+Only the index's commits count (`git.log_depth`). Either section is left out when empty.
+`--brief` prints the one-line summary and `--json` the milestone. An unknown milestone exits 2.
 
 ```
 $ azimuth show M-01
@@ -226,6 +229,7 @@ For a question, `--json` prints `{id, files, answered}`, where `answered` is tha
 | Command                                                                           | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `azimuth move <ID> <status> [--reason "…"] [--note "…"] [--by <ID>] [--override]` | Gated status change for features, tasks, decisions, milestones, issues and questions (`obsolete`). `--reason` for moves that undo or park work (kept in the feature's log, or an issue's `Status notes`), `--note` for blocked or skipped tasks and for accepting or rejecting an ADR (stored as its `decision_note`), `--by` for superseding, `--override` with `--reason` (you only) to start a feature whose dependencies aren't done. |
+| `azimuth release <M-ID> [--tag <name>]`                                           | Releases a milestone (you only) once its counted features are done, and records the date, the tag and the commit (below).                                                                                                                                                                                                                                                                                                                 |
 | `azimuth reapprove <F-ID>`                                                        | Approves a changed spec again (re-runs the approval gate). Only approved and in-progress features: a verifying feature needs none, since the done gate doesn't check the approval.                                                                                                                                                                                                                                                        |
 | `azimuth answer <Q-ID> [--option <key>] [--text "…"]`                             | Answers a question, or replaces an agent's answer with yours (clearing its `resolution`). You only.                                                                                                                                                                                                                                                                                                                                       |
 | `azimuth resolve <Q-ID> --adr ADR-NNNN \| --assumption F-NNN`                     | Records how an answer was applied.                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -242,6 +246,34 @@ A feature that moves to in-progress also moves its milestone from planned to act
 locked write: `F-001: approved → in-progress (M-01: planned → active)`. Only the milestone's
 `status` line changes, and `--json` lists its file in `changed`. An active or released milestone
 is left as it is, and a refused move writes neither file.
+
+`release` releases a milestone as you; an agent is refused. The milestone may be planned or
+active, and every counted feature (all but cancelled and superseded ones) must be done. A planned
+milestone passes through active in the same write. It writes only the milestone's file:
+`status: released`, `released_at` (today, UTC), `tag` (the `--tag` name, else `null`) and
+`released_commit`. That is the tag's commit when git has the tag, else HEAD's, else `null`
+(outside git or before the first commit). Azimuth never creates or pushes the tag. When git
+doesn't have it yet, the release still happens and stderr, also with `--json`, says how to
+create it:
+
+```
+$ azimuth release M-01 --tag v0.4.0
+M-01: active → released (v0.4.0 at abc1234)
+Tag v0.4.0 doesn't exist yet. Create it with: git tag v0.4.0 abc1234
+```
+
+The message starts `M-01: active → released` or `M-01: planned → active → released`, then adds
+` (<tag> at <sha>)`, ` (<tag>)` or ` (at <sha>)` when those are known. `--json` prints
+`{ref, from, to, changed, auto, message, tag, released_commit, tag_found}`; `tag_found` is
+`true` or `false` with a tag in a git repository, else `null`. The milestone is added to the
+current session's `touched` list. A tag name starts with a letter or digit, holds only letters,
+digits and `.` `_` `+` `-` `/`, holds no `..` or `//`, and doesn't end with `.`, `/` or `.lock`.
+A refusal exits 1 and writes nothing: an agent, an ID that isn't a milestone's, an invalid tag
+name, an unknown milestone, a milestone already released
+(`M-01 is already released (2026-10-20).`), or counted features that aren't done
+(`M-01 has features that aren't done: F-002 (in-progress), F-003 (deferred). Finish them or move them to another milestone (azimuth set <F-ID> milestone <M-ID|none>).`).
+A missing ID exits 2. `azimuth move M-NN released` is unchanged: it takes an active milestone,
+doesn't check its features and records only `released_at`.
 
 `note` and `settle` record what a build learned without touching the approved spec (see
 [Notes and placeholders](concepts.md#notes-and-placeholders)), so neither makes the approval

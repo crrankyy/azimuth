@@ -54,7 +54,7 @@ connection drops, a banner says so, actions are disabled, and the page reconnect
 | Agents           | `#/agents`                             | Live sessions and their subagents: running and waiting ones as cards, those finished today as rows; files being edited, planned overlaps and the permission prompts waiting on you.                            |
 | Agent transcript | `#/agents/<claude-session>/<agent-id>` | One agent's live transcript: a tab per agent, messages, tool calls with diffs and output, subagent cards; the session's agents, covered scenarios, files and commits. Without `/<agent-id>`, the main agent's. |
 | Overview         | `#/overview`                           | Status across features, the active milestone, coverage, questions, issues, verify runs, architecture freshness, recent activity.                                                                               |
-| Roadmap          | `#/roadmap`, `#/roadmap/graph`         | Milestones on a timeline; the feature dependency graph.                                                                                                                                                        |
+| Roadmap          | `#/roadmap`, `#/roadmap/graph`         | Milestones on a timeline with their release and the commits naming them; the feature dependency graph.                                                                                                         |
 | Features         | `#/features`                           | Table (filter, group, sort) or board by lifecycle.                                                                                                                                                             |
 | Feature          | `#/features/F-005/<tab>`               | Header, lifecycle and next gate with actions, and tabs: Context, Impact, Stories, Contract, Plan (task graph, runs; `plan/T-005.4` selects a task), Activity, As-built.                                        |
 | Decisions        | `#/decisions/ADR-0004`                 | ADRs with supersession chains; accept or reject proposed ones.                                                                                                                                                 |
@@ -168,14 +168,23 @@ Every action goes through the same gated transitions as the CLI and is recorded 
 | Accept / reject                             | Decisions (the Inbox's Review opens it)                             | Decides a proposed ADR, with an optional note for the agent.                                                                                                       |
 | Acknowledge / send back                     | Inbox, Decisions; Feature (acknowledge only)                        | Reviews an automatic approval, acceptance, rejection or answer. The Inbox's Review item for an agent's answer offers "Answer differently" instead of "Send back…". |
 | Priority, milestone, severity, issue status | Feature header, Features table (`p` / `m`), Issues, an issue's page | Sets the field.                                                                                                                                                    |
-| Release                                     | Roadmap                                                             | Releases a milestone.                                                                                                                                              |
+| Release                                     | Roadmap                                                             | Releases a milestone whose counted features are done, recording the date and the current commit (below).                                                           |
 
 The Inbox's Review item for values an agent settled in a feature offers the same two actions:
 "Acknowledge" accepts them all, "Send back…" returns the spec to draft.
 
-Status changes (approve, re-approve, answer, decide, revert, move) send the status you saw; if it
-changed in the meantime the action is refused rather than applied to something you didn't see. Writes change frontmatter fields or append log entries;
-Markdown bodies are never rewritten.
+Release… shows on every active milestone, disabled with `<n> features not done` while a counted
+feature isn't done. It shows on a planned milestone once all its features are done, but not on
+an empty one (`azimuth release` can release that). It releases as `azimuth release` does, without
+a tag: a planned milestone becomes active and released in one step, and the dialog says so first.
+A released milestone's row reads `Released <Mon D>`, then ` · <tag>` and ` · <sha>` when they were
+recorded. An expanded row lists the newest 5 commits naming the milestone (`<sha> <subject>`),
+then `and <n> more`; a collapsed row lists none.
+
+Status changes (approve, re-approve, answer, decide, revert, move, release) send the status you
+saw; if it changed in the meantime the action is refused rather than applied to something you
+didn't see. Writes change frontmatter fields or append log entries; Markdown bodies are never
+rewritten.
 
 ## HTTP API
 
@@ -191,7 +200,7 @@ Markdown bodies are never rewritten.
 
 Actions: `approve`, `reapprove`, `request-changes` `{comment}`, `answer` `{option, text}`,
 `decide` `{decision, note?}`, `acknowledge`, `revert` `{reason}`, `move` `{to, reason, by}`,
-`set` `{field, value}`.
+`release` (a milestone, no payload), `set` `{field, value}`.
 
 `GET /api/transcript/<claude-session>[?agent=<id>][&after=<offset>]` serves a page of a live
 session's Claude Code transcript: the main agent's, or with `agent` a subagent's. Its `entries`

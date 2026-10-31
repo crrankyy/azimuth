@@ -210,10 +210,21 @@ status: active # planned | active | released
 target: 2026-11-15 # or null
 released_at: null # set when released
 goal: No event is silently lost.
+tag: null # optional: the tag given to azimuth release --tag
+released_commit: null # optional: the 7-character SHA recorded at release
 ```
 
 The body is optional (scope notes, release notes). Features join a milestone through their own
 `milestone` field.
+
+`tag` and `released_commit` are written only by a release (`azimuth release` or the viewer's
+Release), which sets both every time and appends them after the other keys when the file lacks
+them. `tag` is the `--tag` name, else `null`. `released_commit` is the tag's commit when git has
+the tag, else HEAD's, else `null` (outside git or before the first commit). A file without them
+reads both as `null`, so a milestone released before 0.3.1 has neither. Both are read as text: a
+SHA of digits only is written quoted, and one written without quotes still reads as text.
+`azimuth move M-02 released` sets only `status` and `released_at`. Neither key is in the
+milestone template, and a 0.3.0 reader warns `W-UNKNOWN-KEY` for both.
 
 A planned or active milestone with at least one feature, every one of them done, produces
 `W-MILESTONE-READY` on its file. Cancelled and superseded features don't count; a deferred one

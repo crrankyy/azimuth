@@ -81,6 +81,13 @@ of them done (cancelled and superseded features don't count; a deferred one isn'
 reported by `azimuth check` (`W-MILESTONE-READY`), and `azimuth next` asks the agent to have you
 release it.
 
+You release a milestone with Release… on the Roadmap or with
+`azimuth release M-NN [--tag <name>]`. Both refuse while a counted feature isn't done, release a
+planned milestone through active in one step, and record on the milestone the commit it was
+released at (`released_commit`) and, with `--tag`, the tag (`tag`). Azimuth never creates the tag. `azimuth move M-NN released` stays an
+unchecked path: it takes an active milestone, doesn't check its features and records only the
+date.
+
 A milestone's status follows its work. When one of its features moves to in-progress, a planned
 milestone becomes active in the same step, and the move's message says so. A planned milestone
 that isn't ready but has work started (a counted feature in progress, verifying or done) is
@@ -230,6 +237,10 @@ What needs you, grouped by urgency:
 - **Task → commit:** commits carry a `Refs: T-005.2` trailer, which `azimuth task finish` adds;
   a commit without one is linked by the IDs in its Conventional Commits scope
   (`feat(F-005): …`).
+- **Milestone or issue → commit:** a commit about another item names it instead: a release
+  commit its milestone (`Refs: M-04`), a records-only commit its issue (`Refs: BUG-0010`). A
+  milestone's page (`azimuth show M-NN`) and its expanded Roadmap row list the commits naming
+  it, and so does an issue's page in the viewer.
 - **Question → decision → feature:** a resolved question points at the ADR or feature that
   applied it.
 

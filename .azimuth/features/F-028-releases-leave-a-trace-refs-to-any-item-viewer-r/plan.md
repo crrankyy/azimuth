@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-028.6
     title: The Roadmap rows show the release and the commits (red → green)
-    status: in-progress
+    status: done
     after: [T-028.4]
     covers: [S-028.7.5, S-028.7.6, S-028.7.7]
     files: [viewer/src/screens/roadmap/release.ts, viewer/src/screens/roadmap/Timeline.tsx, viewer/src/screens/roadmap/roadmap.css, viewer/src/screens/roadmap/release.test.ts, viewer/src/screens/roadmap/Timeline.test.tsx]
@@ -58,7 +58,7 @@ tasks:
     note: null
   - id: T-028.8
     title: Docs, skills and full verification
-    status: todo
+    status: in-progress
     after: [T-028.3, T-028.5, T-028.6, T-028.7]
     covers: []
     files: [docs/cli.md, docs/concepts.md, docs/file-format.md, docs/viewer.md, plugin/skills/azimuth/SKILL.md]
