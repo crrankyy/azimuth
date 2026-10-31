@@ -9,7 +9,7 @@ import { toUtc } from "./git";
 import { DECISION_FLOW, FEATURE_FLOW, ISSUE_FLOW, MILESTONE_FLOW, TASK_FLOW } from "./flows";
 import { featureOf, idKind } from "./ids";
 import { withLock, writeFileAtomic } from "./lock";
-import type { FeatureEntity } from "./model";
+import type { FeatureEntity, Model } from "./model";
 import { formatLogHeader } from "./parse/log";
 import { unreviewedSettles } from "./placeholders";
 import { specHash } from "./spec-hash";
@@ -241,6 +241,25 @@ export function featureTransitionError(
   return null;
 }
 
+/**
+ * A planned milestone whose feature starts becomes active in the same locked write, so its status
+ * follows the work without a separate `azimuth move M-NN active`. Active and released milestones,
+ * and milestone IDs without a record, are left alone.
+ */
+function milestoneActivation(
+  root: string,
+  model: Model,
+  f: FeatureEntity,
+): { write: Write; note: string } | null {
+  if (!f.milestone) return null;
+  const m = model.milestones.find((x) => x.id === f.milestone);
+  if (m?.status !== "planned") return null;
+  return {
+    write: { file: m.file, text: updateFrontmatter(read(root, m.file), { status: "active" }) },
+    note: `${m.id}: planned → active`,
+  };
+}
+
 export function moveFeature(root: string, id: string, toRaw: string, opts: MoveOptions): Result {
   if (!(FEATURE_STATUSES as readonly string[]).includes(toRaw)) {
     throw new AzimuthError(
@@ -312,6 +331,7 @@ export function moveFeature(root: string, id: string, toRaw: string, opts: MoveO
 
     const featureText = updateFrontmatter(read(root, f.files.feature), updates);
     const body = `${from} → ${to}${reason ? `\n\n${reason}` : ""}`;
+    const activation = to === "in-progress" ? milestoneActivation(root, model, f) : null;
     const changed = save(root, [
       { file: f.files.feature, text: featureText },
       logWrite(root, f, {
@@ -322,6 +342,7 @@ export function moveFeature(root: string, id: string, toRaw: string, opts: MoveO
         auto,
         body,
       }),
+      ...(activation ? [activation.write] : []),
     ]);
     return {
       ref: id,
@@ -329,7 +350,7 @@ export function moveFeature(root: string, id: string, toRaw: string, opts: MoveO
       to,
       changed,
       auto,
-      message: `${id}: ${from} → ${to}${auto ? " (approved automatically)" : ""}`,
+      message: `${id}: ${from} → ${to}${auto ? " (approved automatically)" : ""}${activation ? ` (${activation.note})` : ""}`,
     };
   });
 }
