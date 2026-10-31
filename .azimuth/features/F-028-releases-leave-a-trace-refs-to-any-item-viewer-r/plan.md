@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-028.5
     title: The milestone page shows the release and its commits (red → green)
-    status: in-progress
+    status: done
     after: [T-028.1]
     covers: [S-028.7.1, S-028.7.2, S-028.7.3, S-028.7.4]
     files: [src/core/milestone-page.ts, test/core/release-page.test.ts, test/core/milestone-page.test.ts]

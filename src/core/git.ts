@@ -3,7 +3,7 @@ import { featureBodyOf, type FeatureEntity, type Model } from "./model";
 import { emptyGitFacts, type GitFacts } from "./facts";
 import { featureOf, MENTION_PATTERN } from "./ids";
 import { specHash } from "./spec-hash";
-import type { ApprovalChange, Commit, Id } from "./types";
+import type { ApprovalChange, Commit, Id, Sha } from "./types";
 import { ACTIVE_STATUSES } from "./flows";
 
 const SEP = "\x1f";
@@ -357,6 +357,22 @@ function bodyChangedIn(root: string, f: FeatureEntity, commits: RawCommit[]): Se
 /** HEAD SHA (7 chars), or null outside a repo or before the first commit. */
 export function headSha(root: string): string | null {
   return git(root, ["rev-parse", "--short=7", "HEAD"])?.trim() || null;
+}
+
+/**
+ * The 7-character SHA of the commit the tag points at, or null when the tag doesn't exist or git
+ * fails. `^{commit}` peels an annotated tag to its commit.
+ */
+export function tagCommit(root: string, tag: string): Sha | null {
+  return (
+    git(root, [
+      "rev-parse",
+      "--verify",
+      "--quiet",
+      "--short=7",
+      `refs/tags/${tag}^{commit}`,
+    ])?.trim() || null
+  );
 }
 
 export function gitTopLevel(root: string): string | null {

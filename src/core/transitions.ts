@@ -148,7 +148,7 @@ function requireReason(reason: string | undefined, what: string): string {
   return reason.trim();
 }
 
-function checkExpected(current: string, expected: string | undefined, ref: string): void {
+export function checkExpected(current: string, expected: string | undefined, ref: string): void {
   if (expected !== undefined && expected !== current) {
     throw new AzimuthError(
       "conflict",

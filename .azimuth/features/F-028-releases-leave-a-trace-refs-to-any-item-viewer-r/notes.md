@@ -11,3 +11,7 @@ commitRefs already linked M- and BUG- IDs from the trailer and the scope, so S-0
 ### T-028.5 · 2026-10-31
 
 MilestonePage gains commits (index commits whose refs name the milestone, at most 10 shown); S-026.3.1 compares the whole page, so its expected object gains commits: [] (adopted). The release section is empty when neither tag nor released_commit is set.
+
+### T-028.2 · 2026-10-31
+
+released_commit is the tag's commit when git has the tag, else HEAD (null outside git or before the first commit). An empty milestone passes the core check; the viewer's releaseOffer is stricter for planned ones. A digits-only SHA is quoted by updateFrontmatter.
