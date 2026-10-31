@@ -2,7 +2,7 @@
 id: BUG-0085
 type: bug
 title: A resumed conversation loses its still-open Azimuth session after 72 hours
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: [BUG-0084]
 files: [src/core/live.ts, src/hooks/handlers.ts, src/core/session.ts]
 found_by: SES-20261031-1611
 created: 2026-10-31
-resolved_at: null
+resolved_at: 2026-10-31
 ---
 ## Repro
 In ZenithMD: Claude Code session b7f1a9ae started Azimuth session SES-20261020-1343 on 2026-10-20 and added a goal to it on 2026-10-21 at 09:04 UTC. Its process then ended without SessionEnd closing the session (`ended_at` is still null). On 2026-10-24 at 15:46 UTC a new Claude Code session started and its SessionStart hook ran `pruneLive`, which deletes live files untouched for 72 hours, b7f1a9ae's sidecar included. That conversation was then resumed (SessionStart `resume`, same session ID), and `azimuth session note` and `azimuth session handoff` failed.
@@ -23,3 +23,6 @@ The resumed conversation is still in SES-20261020-1343, the session its own `ses
 
 ## Fix
 F-027 (the user decided on 2026-10-31: keep the link while the session is open, and make the resume hook say which session the CLI will use).
+
+## Status notes
+- 2026-10-31T17:26:13Z · agent · open → resolved: Fixed by F-027 (22b9cd4, 75e0ff0, 33b4553): the live link of an open session is kept and the start hook names the session the CLI uses.

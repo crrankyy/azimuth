@@ -2,7 +2,7 @@
 id: BUG-0084
 type: bug
 title: "The viewer can't release a planned milestone: Release… only shows on active ones"
-status: open
+status: resolved
 severity: medium
 likelihood: null
 impact: null
@@ -10,7 +10,7 @@ links: [M-02, F-023]
 files: [viewer/src/screens/roadmap/Timeline.tsx, src/core/next.ts, src/core/validate.ts]
 found_by: SES-20261020-2303
 created: 2026-10-20
-resolved_at: null
+resolved_at: 2026-10-31
 ---
 ## Repro
 Finish every feature of a `planned` milestone (M-02 for 0.3.0), then open the Roadmap to release it, as `azimuth next` ("Ask the user to release M-02 in the viewer") and W-MILESTONE-READY tell the agent to ask.
@@ -23,3 +23,6 @@ A Release… control on the finished milestone, or a way to make it active first
 
 ## Fix
 The user decided on 2026-10-21 to fix this in the next release, not in 0.3.0.
+
+## Status notes
+- 2026-10-31T17:26:12Z · agent · open → resolved: Fixed in dddaf4e (F-028, T-028.4): the viewer offers Release on a planned milestone whose features are all done.

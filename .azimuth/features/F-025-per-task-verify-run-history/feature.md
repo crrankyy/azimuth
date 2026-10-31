@@ -2,7 +2,7 @@
 id: F-025
 title: Per-task verify run history
 summary: azimuth runs <T-ID|F-ID> lists a task's or feature's verify runs newest first, one line each; azimuth show R-NNNN prints a run's whole record, output tail included.
-status: verifying
+status: done
 priority: P1
 size: M
 mode: brownfield
