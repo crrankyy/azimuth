@@ -2,7 +2,7 @@
 tasks:
   - id: T-027.1
     title: The CLI's session with its state (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-027.1.1, S-027.1.2, S-027.1.3, S-027.1.4, S-027.1.5, S-027.1.6]
     files: [src/core/session.ts, test/core/session.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-027.2
     title: Pruning keeps an open session's live link (red → green)
-    status: todo
+    status: in-progress
     after: [T-027.1]
     covers: [S-027.2.1, S-027.2.2, S-027.2.3, S-027.2.4, S-027.2.5]
     files: [src/core/live.ts, test/core/live.test.ts]

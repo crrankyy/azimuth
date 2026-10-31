@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -22,6 +22,7 @@ import {
   type LiveRecord,
   type OpenCheck,
 } from "../../src/core/live";
+import { closeSession, linkOpen } from "../../src/core/session";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
 
 const NOW = new Date("2026-10-18T12:00:00Z");
@@ -482,5 +483,95 @@ describe("BUG-0080 whether hooks ran in a Claude Code session", () => {
     expect(hooksRan(root, "c1", NOW.getTime() - HOUR)).toBe(false);
     appendLive(root, "c1", { kind: "start", at: ago(0.25), source: "resume" });
     expect(hooksRan(root, "c1", NOW.getTime() - HOUR)).toBe(true);
+  });
+});
+
+describe("F-027 pruning keeps an open session's live link", () => {
+  const OPEN_SESSION =
+    "---\nid: SES-20261020-1343\nagent: claude-code\nskill: spec\nstarted_at: 2026-10-20T13:43:00Z\nended_at: null\ngoal: Spec F-050\ntouched: []\ncommits: []\nraised: []\n---\n## Summary\n\n## Handoff\n";
+  const CLOSED_SESSION = OPEN_SESSION.replace("ended_at: null", "ended_at: 2026-10-21T10:00:00Z");
+  const OLD = new Date("2026-10-21T09:04:00Z");
+  /** 78 h 42 min after OLD. */
+  const PRUNE_AT = new Date("2026-10-24T15:46:00Z");
+  const project = (sessionText?: string) => {
+    const tree = writeTree({
+      ".azimuth/config.yaml": MINIMAL_CONFIG,
+      ...(sessionText ? { ".azimuth/sessions/SES-20261020-1343.md": sessionText } : {}),
+    });
+    cleanup = tree.cleanup;
+    return tree.root;
+  };
+  const makeOld = (path: string) => utimesSync(path, OLD, OLD);
+  const c1Log = (root: string) => {
+    appendLive(root, "c1", {
+      kind: "session",
+      at: "2026-10-20T13:43:00Z",
+      ses: "SES-20261020-1343",
+    });
+    makeOld(liveFile(root, "c1"));
+  };
+  const c1Sidecar = (root: string) => {
+    updateLiveMeta(root, "c1", { started_at: "2026-10-20T13:43:00Z", ses: "SES-20261020-1343" });
+    makeOld(liveMetaFile(root, "c1"));
+  };
+  const prune = (root: string, now = PRUNE_AT) => pruneLive(root, now, (c) => linkOpen(root, c));
+  const mtime = (path: string) => statSync(path).mtime.toISOString();
+
+  /** The project of S-027.2.1, before the prune. */
+  const openWithC2 = () => {
+    const root = project(OPEN_SESSION);
+    c1Log(root);
+    c1Sidecar(root);
+    appendLive(root, "c2", { kind: "start", at: "2026-10-20T08:00:00Z", source: "startup" });
+    makeOld(liveFile(root, "c2"));
+    return root;
+  };
+
+  it("S-027.2.1 keeps an open session's live log and sidecar untouched", () => {
+    const root = openWithC2();
+    prune(root);
+    expect(mtime(liveFile(root, "c1"))).toBe("2026-10-21T09:04:00.000Z");
+    expect(mtime(liveMetaFile(root, "c1"))).toBe("2026-10-21T09:04:00.000Z");
+    expect(readLiveMeta(root, "c1")).toEqual({
+      started_at: "2026-10-20T13:43:00Z",
+      ses: "SES-20261020-1343",
+      transcript_path: null,
+    });
+    expect(existsSync(liveFile(root, "c2"))).toBe(false);
+  });
+
+  it("S-027.2.2 prunes a closed session's live log and sidecar", () => {
+    const root = project(CLOSED_SESSION);
+    c1Log(root);
+    c1Sidecar(root);
+    prune(root);
+    expect(existsSync(liveFile(root, "c1"))).toBe(false);
+    expect(existsSync(liveMetaFile(root, "c1"))).toBe(false);
+  });
+
+  it("S-027.2.3 prunes a link to a session without a file", () => {
+    const root = project();
+    c1Log(root);
+    c1Sidecar(root);
+    prune(root);
+    expect(existsSync(liveFile(root, "c1"))).toBe(false);
+    expect(existsSync(liveMetaFile(root, "c1"))).toBe(false);
+  });
+
+  it("S-027.2.4 keeps a live log whose only link is its session record", () => {
+    const root = project(OPEN_SESSION);
+    c1Log(root);
+    prune(root);
+    expect(mtime(liveFile(root, "c1"))).toBe("2026-10-21T09:04:00.000Z");
+    expect(existsSync(liveMetaFile(root, "c1"))).toBe(false);
+  });
+
+  it("S-027.2.5 prunes the kept files once their session is closed", () => {
+    const root = openWithC2();
+    prune(root);
+    closeSession(root, "SES-20261020-1343", new Date("2026-10-24T16:00:00Z"));
+    prune(root, new Date("2026-10-24T16:05:00Z"));
+    expect(existsSync(liveFile(root, "c1"))).toBe(false);
+    expect(existsSync(liveMetaFile(root, "c1"))).toBe(false);
   });
 });

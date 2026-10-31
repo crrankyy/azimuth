@@ -524,16 +524,34 @@ export function processAlive(pid: number): boolean {
   }
 }
 
-/** Deletes live files untouched for more than 72 hours. */
-export function pruneLive(root: string, now = new Date()): void {
+/** The Claude Code session a live log or sidecar belongs to, from its file name. */
+function claudeOfFile(name: string): string | null {
+  if (name.endsWith(META_SUFFIX)) return name.slice(0, -META_SUFFIX.length);
+  if (name.endsWith(".jsonl")) return name.slice(0, -".jsonl".length);
+  return null;
+}
+
+/**
+ * Deletes live files untouched for more than 72 hours, except a live log or sidecar for which
+ * keep(claude session) returns true. A kept file isn't touched, so its modification time still
+ * tells sessionsLastSeen and `session close --stale` when the session was last active.
+ */
+export function pruneLive(
+  root: string,
+  now = new Date(),
+  keep?: (claudeSession: string) => boolean,
+): void {
   const dir = liveDir(root);
   if (!existsSync(dir)) return;
   for (const name of readdirSync(dir)) {
     const path = join(dir, name);
     try {
-      if (now.getTime() - statSync(path).mtimeMs > KEEP_MS) unlinkSync(path);
+      if (now.getTime() - statSync(path).mtimeMs <= KEEP_MS) continue;
+      const claude = claudeOfFile(name);
+      if (keep && claude !== null && keep(claude)) continue;
+      unlinkSync(path);
     } catch {
-      // Already gone.
+      // Already gone, or the link couldn't be read: one file's trouble mustn't stop the rest.
     }
   }
 }
