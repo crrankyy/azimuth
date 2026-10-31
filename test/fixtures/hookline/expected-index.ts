@@ -147,6 +147,8 @@ export const expectedIndex = {
       "target": "2026-09-30",
       "released_at": "2026-09-28",
       "goal": "Accept events and deliver each one, signed, to registered endpoints.",
+      "tag": null,
+      "released_commit": null,
       "features": [
         "F-001",
         "F-002",
@@ -168,6 +170,8 @@ export const expectedIndex = {
       "target": "2026-11-15",
       "released_at": null,
       "goal": "No event is silently lost. Failures retry with backoff, then dead-letter with their full history.",
+      "tag": null,
+      "released_commit": null,
       "features": [
         "F-004",
         "F-005",
@@ -192,6 +196,8 @@ export const expectedIndex = {
       "target": "2026-12-20",
       "released_at": null,
       "goal": "Operators can replay, rate-limit and observe deliveries.",
+      "tag": null,
+      "released_commit": null,
       "features": [
         "F-008",
         "F-009",

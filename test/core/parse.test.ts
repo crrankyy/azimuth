@@ -3,7 +3,7 @@ import { parseConfig } from "../../src/core/config";
 import { compareIds, featureOf, idKind, mentions, slugify } from "../../src/core/ids";
 import { parseFeatureMd, parsePlan, parseContract } from "../../src/core/parse/feature";
 import { formatLogHeader, parseLog } from "../../src/core/parse/log";
-import { parseIssue, parseQuestion } from "../../src/core/parse/records";
+import { parseIssue, parseMilestone, parseQuestion } from "../../src/core/parse/records";
 import { parseStories } from "../../src/core/parse/stories";
 import { splitSections, stripTitle } from "../../src/core/sections";
 
@@ -271,6 +271,60 @@ Rotation matters.
       answer: null,
     });
     expect(entity?.options.map((o) => o.recommended)).toEqual([true, false]);
+  });
+
+  const milestoneFile = ".azimuth/milestones/M-01-mvp.md";
+
+  it("S-028.2.1 reads a milestone's tag and released_commit", () => {
+    const text =
+      "---\nid: M-01\ntitle: MVP\nstatus: released\nreleased_at: 2026-10-31\ntag: v0.3.1\nreleased_commit: abc1234\n---\n";
+    const { entity, problems } = parseMilestone(text, milestoneFile);
+    expect(problems).toEqual([]);
+    expect(entity).toEqual({
+      id: "M-01",
+      title: "MVP",
+      status: "released",
+      target: null,
+      released_at: "2026-10-31",
+      goal: "",
+      tag: "v0.3.1",
+      released_commit: "abc1234",
+      file: milestoneFile,
+    });
+  });
+
+  it("S-028.2.2 reads a milestone without tag or released_commit as both null", () => {
+    const text =
+      "---\nid: M-01\ntitle: MVP\nstatus: active\ntarget: 2026-11-15\nreleased_at: null\ngoal: Ship it.\n---\n# M-01: MVP\n";
+    const { entity, problems } = parseMilestone(text, milestoneFile);
+    expect(problems).toEqual([]);
+    expect(entity?.tag).toBeNull();
+    expect(entity?.released_commit).toBeNull();
+  });
+
+  it("S-028.2.3 reads a digits-only released_commit as text", () => {
+    const text =
+      "---\nid: M-01\ntitle: MVP\nstatus: released\nreleased_at: 2026-10-31\nreleased_commit: 1234567\n---\n";
+    const { entity, problems } = parseMilestone(text, milestoneFile);
+    expect(problems).toEqual([]);
+    expect(entity?.released_commit).toBe("1234567");
+  });
+
+  it("S-028.2.4 leaves out a milestone whose tag isn't text", () => {
+    const text =
+      "---\nid: M-01\ntitle: MVP\nstatus: released\nreleased_at: 2026-10-31\ntag: [v1]\n---\n";
+    const { entity, problems } = parseMilestone(text, milestoneFile);
+    expect(entity).toBeNull();
+    expect(problems).toEqual([
+      {
+        code: "E-SCHEMA",
+        severity: "error",
+        file: milestoneFile,
+        line: 6,
+        ref: null,
+        message: 'tag must be text (got ["v1"]). M-01 was left out of the index.',
+      },
+    ]);
   });
 });
 

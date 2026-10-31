@@ -2,7 +2,7 @@
 tasks:
   - id: T-028.1
     title: Milestones read tag and released_commit (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-028.2.1, S-028.2.2, S-028.2.3, S-028.2.4]
     files: [src/core/types.ts, src/core/parse/records.ts, test/fixtures/hookline/expected-index.ts, test/core/parse.test.ts]
@@ -50,7 +50,7 @@ tasks:
     note: null
   - id: T-028.7
     title: Refs may name any item, in the protocol and conventions (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-028.1.1, S-028.1.2, S-028.1.3, S-028.1.4, S-028.1.5, S-028.1.6]
     files: [src/core/protocol.ts, src/core/init.ts, test/core/refs.test.ts]

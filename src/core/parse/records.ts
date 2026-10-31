@@ -39,9 +39,21 @@ export function parseMilestone(text: string, file: string): Parsed<MilestoneReco
     target: opt(ctx, "target", r.nullable(r.date()), null),
     released_at: opt(ctx, "released_at", r.nullable(r.date()), null),
     goal: opt(ctx, "goal", r.string(), ""),
+    // r.text, not r.string: YAML reads a digits-only SHA such as 1234567 as a number.
+    tag: opt(ctx, "tag", r.nullable(r.text()), null),
+    released_commit: opt(ctx, "released_commit", r.nullable(r.text()), null),
     file,
   };
-  unknownKeys(ctx, ["id", "title", "status", "target", "released_at", "goal"]);
+  unknownKeys(ctx, [
+    "id",
+    "title",
+    "status",
+    "target",
+    "released_at",
+    "goal",
+    "tag",
+    "released_commit",
+  ]);
   return { entity: ctx.failed ? null : entity, problems: [...problems, ...finishSchema(ctx)] };
 }
 

@@ -171,6 +171,13 @@ export interface Milestone {
   status: MilestoneStatus;
   target: ISODate | null;
   released_at: ISODate | null;
+  /** The git tag the release was made at, as `azimuth release --tag` gave it; null otherwise. */
+  tag: string | null;
+  /**
+   * 7-character SHA recorded at release: the tag's commit when the tag existed, else HEAD;
+   * null outside git, before the first commit, or for a milestone released before 0.3.1.
+   */
+  released_commit: Sha | null;
   goal: string;
   features: Id[];
   progress: { done: number; total: number; by_status: Partial<Record<FeatureStatus, number>> };
