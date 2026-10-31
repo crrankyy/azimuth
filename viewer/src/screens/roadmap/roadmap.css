@@ -147,6 +147,34 @@
   line-height: 1.35;
   color: var(--ink-tertiary);
 }
+.rm-commits {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 28px;
+  font-size: 12px;
+}
+.rm-commit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.rm-commit-sha {
+  flex: none;
+  color: var(--ink-subtle);
+}
+.rm-commit-subject {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-muted);
+}
+.rm-commit-more {
+  font-size: 11px;
+  color: var(--ink-tertiary);
+}
 
 .rm-track-open {
   display: flex;

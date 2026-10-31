@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Feature, Index, Milestone } from "../../../../src/core/types";
+import type { Commit, Feature, Index, Milestone } from "../../../../src/core/types";
 import { useCanAct } from "../../components/AppShell";
 import { IdChip } from "../../components/IdChip";
 import { Button, EmptyState } from "../../components/primitives";
@@ -12,7 +12,15 @@ import { href } from "../../lib/router";
 import { FEATURE_LOOK, LIFECYCLE, MILESTONE_LOOK } from "../../lib/status";
 import { daysLeftLabel, isParked, sortFeatures } from "../features/model";
 import { StatusMixBar } from "../features/parts";
-import { releaseLead, releaseOffer, releaseRequest, type ReleaseOffer } from "./release";
+import {
+  MAX_LANE_COMMITS,
+  milestoneCommits,
+  releasedLabel,
+  releaseLead,
+  releaseOffer,
+  releaseRequest,
+  type ReleaseOffer,
+} from "./release";
 import "./roadmap.css";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -137,6 +145,7 @@ export function RoadmapTimeline() {
             <MilestoneLane
               key={m.id}
               milestone={m}
+              commits={milestoneCommits(index.commits, m.id)}
               features={sortFeatures(
                 index.features.filter((f) => f.milestone === m.id && visible(f)),
                 "activity",
@@ -190,13 +199,15 @@ function span(m: Milestone, start: string | null, axis: Axis): { left: number; r
 }
 
 function dateLine(m: Milestone, now: number): string {
-  if (m.status === "released") return `Released ${shortDate(m.released_at)}`;
+  const released = releasedLabel(m);
+  if (released !== null) return released;
   if (!m.target) return "No target date";
   return [shortDate(m.target), daysLeftLabel(m.target, now)].filter(Boolean).join(" · ");
 }
 
 function MilestoneLane({
   milestone: m,
+  commits,
   features,
   start,
   axis,
@@ -205,6 +216,7 @@ function MilestoneLane({
   onToggle,
 }: {
   milestone: Milestone;
+  commits: Commit[];
   features: Feature[];
   start: string | null;
   axis: Axis;
@@ -281,6 +293,7 @@ function MilestoneLane({
           <span>{done}</span>
         </div>
         {offer && <ReleaseControl milestone={m} offer={offer} />}
+        <LaneCommits commits={commits} />
       </div>
       <div className="rm-track rm-track-open">
         {target !== null && (
@@ -311,6 +324,23 @@ function MilestoneLane({
           {features.length === 0 && <span className="rm-empty">No features yet</span>}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The newest commits naming the milestone; the rest only counted, to keep lanes short. */
+function LaneCommits({ commits }: { commits: Commit[] }) {
+  if (commits.length === 0) return null;
+  const more = commits.length - MAX_LANE_COMMITS;
+  return (
+    <div className="rm-commits">
+      {commits.slice(0, MAX_LANE_COMMITS).map((c) => (
+        <span key={c.sha} className="rm-commit" title={c.subject}>
+          <span className="az-mono rm-commit-sha">{c.sha}</span>{" "}
+          <span className="rm-commit-subject">{c.subject}</span>
+        </span>
+      ))}
+      {more > 0 && <span className="rm-commit-more">and {more} more</span>}
     </div>
   );
 }

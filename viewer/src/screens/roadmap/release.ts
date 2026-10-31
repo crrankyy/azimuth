@@ -1,6 +1,6 @@
 import { milestoneReady } from "../../../../src/core/flows";
-import type { Id, Milestone, MilestoneStatus } from "../../../../src/core/types";
-import { plural } from "../../lib/format";
+import type { Commit, Id, Milestone, MilestoneStatus } from "../../../../src/core/types";
+import { plural, shortDate } from "../../lib/format";
 
 /** What the Release… control shows: enabled, or disabled with the reason. */
 export interface ReleaseOffer {
@@ -42,4 +42,20 @@ export function releaseRequest(m: Milestone): ReleaseRequest {
 export function releaseLead(m: Milestone): string | null {
   if (m.status !== "planned") return null;
   return `${m.id} is still planned: releasing it makes it active and released in one step.`;
+}
+
+/** Commit rows an expanded Roadmap lane shows before `and <n> more`. */
+export const MAX_LANE_COMMITS = 5;
+
+/** The commits whose refs include the ID, in the order given (the index's: newest first). */
+export function milestoneCommits(commits: Commit[], id: Id): Commit[] {
+  return commits.filter((c) => c.refs.includes(id));
+}
+
+/** A release made before 0.3.1 has no tag or commit, so the label shows only what was recorded. */
+export function releasedLabel(m: Milestone): string | null {
+  if (m.status !== "released") return null;
+  return [`Released ${shortDate(m.released_at)}`, m.tag, m.released_commit]
+    .filter(Boolean)
+    .join(" · ");
 }

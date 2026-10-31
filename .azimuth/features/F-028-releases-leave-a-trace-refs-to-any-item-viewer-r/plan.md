@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-028.4
     title: The viewer releases a finished planned milestone (red → green)
-    status: in-progress
+    status: done
     after: [T-028.2]
     covers: [S-028.6.1, S-028.6.2, S-028.6.3, S-028.6.4, S-028.6.5, S-028.6.6, S-028.6.7, S-028.6.8]
     files: [src/server/actions.ts, viewer/src/screens/roadmap/release.ts, viewer/src/screens/roadmap/Timeline.tsx, viewer/src/screens/roadmap/release.test.ts, viewer/src/screens/roadmap/Timeline.test.tsx, test/server/release-action.test.ts]
@@ -42,7 +42,7 @@ tasks:
     note: null
   - id: T-028.6
     title: The Roadmap rows show the release and the commits (red → green)
-    status: todo
+    status: in-progress
     after: [T-028.4]
     covers: [S-028.7.5, S-028.7.6, S-028.7.7]
     files: [viewer/src/screens/roadmap/release.ts, viewer/src/screens/roadmap/Timeline.tsx, viewer/src/screens/roadmap/roadmap.css, viewer/src/screens/roadmap/release.test.ts, viewer/src/screens/roadmap/Timeline.test.tsx]

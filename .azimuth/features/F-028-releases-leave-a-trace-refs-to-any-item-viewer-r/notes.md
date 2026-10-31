@@ -23,3 +23,7 @@ A missing ID is a usage error before runtime(). The missing-tag hint goes to std
 ### T-028.4 · 2026-10-31
 
 BUG-0084. ReleaseControl destructures releaseRequest(m) instead of spreading Object.values (not a tuple in TypeScript). The success toast shows the result message: Ui.tsx's DONE map has no release verb. The viewer render is checked by screenshot at close-out.
+
+### T-028.6 · 2026-10-31
+
+releasedLabel now drives dateLine, so collapsed and expanded lanes show the same label. Commit rows sit last in an expanded lane's label (the spec left the position open).

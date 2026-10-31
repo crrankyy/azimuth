@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { Index, Milestone } from "../../../../src/core/types";
+import type { Commit, Index, Milestone } from "../../../../src/core/types";
 import { expectedIndex } from "../../../../test/fixtures/hookline/expected-index";
-import { releaseLead, releaseOffer, releaseRequest } from "./release";
+import {
+  milestoneCommits,
+  releasedLabel,
+  releaseLead,
+  releaseOffer,
+  releaseRequest,
+} from "./release";
 
 const fixture = () => structuredClone(expectedIndex) as unknown as Index;
 
@@ -52,5 +58,39 @@ describe("F-028 the Roadmap's Release control", () => {
       "M-03 is still planned: releasing it makes it active and released in one step.",
     );
     expect(releaseLead(milestone("M-02"))).toBeNull();
+  });
+});
+
+const RELEASE_M01: Commit = {
+  sha: "c0ffee1",
+  at: "2026-09-28T10:00:00Z",
+  actor: "you",
+  session: null,
+  subject: "chore(azimuth): release M-01",
+  refs: ["M-01"],
+  files_changed: 1,
+};
+
+const PLAN_M02: Commit = {
+  sha: "def5678",
+  at: "2026-10-17T10:00:00Z",
+  actor: "agent",
+  session: null,
+  subject: "chore(azimuth): plan M-02",
+  refs: ["M-02", "F-005"],
+  files_changed: 1,
+};
+
+describe("F-028 the Roadmap's release and commit helpers", () => {
+  it("S-028.7.5 picks a milestone's commits and labels its release", () => {
+    const index = fixture();
+    index.commits = [PLAN_M02, RELEASE_M01, ...index.commits];
+    const m01 = milestone("M-01", { tag: "v1.0.0", released_commit: "c0ffee1" });
+    expect(milestoneCommits(index.commits, "M-02")).toEqual([PLAN_M02]);
+    expect(releasedLabel(m01)).toBe("Released Sep 28 · v1.0.0 · c0ffee1");
+    expect(releasedLabel(milestone("M-02"))).toBeNull();
+    expect(releasedLabel(milestone("M-01", { tag: null, released_commit: null }))).toBe(
+      "Released Sep 28",
+    );
   });
 });
