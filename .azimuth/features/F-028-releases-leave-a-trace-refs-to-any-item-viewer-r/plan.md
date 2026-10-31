@@ -2,7 +2,7 @@
 tasks:
   - id: T-028.1
     title: Milestones read tag and released_commit (red → green)
-    status: in-progress
+    status: done
     after: []
     covers: [S-028.2.1, S-028.2.2, S-028.2.3, S-028.2.4]
     files: [src/core/types.ts, src/core/parse/records.ts, test/fixtures/hookline/expected-index.ts, test/core/parse.test.ts]
@@ -10,7 +10,7 @@ tasks:
     note: null
   - id: T-028.2
     title: Release a milestone in the core (red → green)
-    status: todo
+    status: in-progress
     after: [T-028.1]
     covers: [S-028.3.1, S-028.3.2, S-028.3.3, S-028.3.4, S-028.3.5, S-028.4.1, S-028.4.2, S-028.4.3, S-028.4.4, S-028.4.5, S-028.4.6, S-028.4.7]
     files: [src/core/release.ts, src/core/git.ts, src/core/transitions.ts, test/core/release.test.ts]
@@ -34,7 +34,7 @@ tasks:
     note: null
   - id: T-028.5
     title: The milestone page shows the release and its commits (red → green)
-    status: todo
+    status: in-progress
     after: [T-028.1]
     covers: [S-028.7.1, S-028.7.2, S-028.7.3, S-028.7.4]
     files: [src/core/milestone-page.ts, test/core/release-page.test.ts]
@@ -53,7 +53,7 @@ tasks:
     status: in-progress
     after: []
     covers: [S-028.1.1, S-028.1.2, S-028.1.3, S-028.1.4, S-028.1.5, S-028.1.6]
-    files: [src/core/protocol.ts, src/core/init.ts, test/core/refs.test.ts]
+    files: [src/core/protocol.ts, src/core/init.ts, test/core/refs.test.ts, test/core/task-brief.test.ts, test/cli/milestone.test.ts]
     verify: pnpm exec vitest run test/core/refs.test.ts -t "S-028.1" --reporter=verbose
     note: null
   - id: T-028.8

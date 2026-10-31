@@ -541,7 +541,7 @@ describe("ST-022.2 The project's conventions are in the brief", () => {
       "## Error handling\nErrors are values.\n",
     );
     expect(briefWithConventions(conventions)).toContain(
-      "## Conventions\n\n### Error handling\nErrors are values.\n\n### Testing\nStart each test name with the scenario ID it covers.\n\n### Naming\n\n### Logging\n\n### Dependencies\n\n### Commits\nConventional Commits with a `Refs:` trailer naming the task or feature.\n\n## Rules",
+      "## Conventions\n\n### Error handling\nErrors are values.\n\n### Testing\nStart each test name with the scenario ID it covers.\n\n### Naming\n\n### Logging\n\n### Dependencies\n\n### Commits\nConventional Commits with a `Refs:` trailer naming the task or feature, or the milestone or issue the commit is about.\n\n## Rules",
     );
   });
 

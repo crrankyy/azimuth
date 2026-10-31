@@ -227,6 +227,8 @@ describe("the milestone page in show", () => {
       status: "active",
       target: "2026-11-15",
       released_at: null,
+      tag: null,
+      released_commit: null,
       goal: "Ship the login flow.",
       features: ["F-001", "F-002", "F-003", "F-004", "F-005", "F-006"],
       progress: {

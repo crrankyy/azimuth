@@ -17,9 +17,9 @@ Azimuth viewer. Follow this protocol whenever you work in this repository.
 - After every edit under \`.azimuth/\`, run \`azimuth check\` and fix every error it reports.
 - If the \`azimuth\` command is missing, stop and ask the user to install the Azimuth plugin.
   Don't edit \`.azimuth/\` by hand to compensate.
-- Only the user answers questions, releases milestones and overrides gates. You may approve
-  specs and accept decisions only when the project's autonomy settings allow it; the CLI
-  enforces this.
+- Only the user answers questions, releases milestones (in the viewer or with
+  \`azimuth release\`) and overrides gates. You may approve specs and accept decisions only when
+  the project's autonomy settings allow it; the CLI enforces this.
 - When \`azimuth status --brief\` shows \`questions proceed\`, the user has let the CLI answer a
   non-blocking question you raise with \`--recommend\` with that recommendation, and
   \`azimuth new question\` says so. Proceed with it and record it (\`azimuth resolve Q-…\`).
@@ -46,8 +46,9 @@ Azimuth viewer. Follow this protocol whenever you work in this repository.
   command and moves the task to \`done\` when it passes.
 - \`azimuth brief <T-ID>\` prints the prompt for a subagent building a task, from the records.
 - Commit with Conventional Commits and a \`Refs:\` trailer naming the task or feature
-  (\`Refs: T-005.2\`). Commit pending \`.azimuth/\` changes as well
-  (\`chore(azimuth): record decisions\`).
+  (\`Refs: T-005.2\`). A commit about another item names that item instead: a release commit its
+  milestone (\`Refs: M-04\`), a records-only commit its issue (\`Refs: BUG-0010\`). Commit pending
+  \`.azimuth/\` changes as well (\`chore(azimuth): record decisions\`).
 
 ## Specs
 

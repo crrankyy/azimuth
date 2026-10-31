@@ -173,7 +173,7 @@ viewer:
  * tell a project's own conventions from the untouched template.
  */
 export const CONVENTIONS_TEMPLATE =
-  "# Conventions\n\n## Error handling\n\n## Testing\nStart each test name with the scenario ID it covers.\n\n## Naming\n\n## Logging\n\n## Dependencies\n\n## Commits\nConventional Commits with a `Refs:` trailer naming the task or feature.\n";
+  "# Conventions\n\n## Error handling\n\n## Testing\nStart each test name with the scenario ID it covers.\n\n## Naming\n\n## Logging\n\n## Dependencies\n\n## Commits\nConventional Commits with a `Refs:` trailer naming the task or feature, or the milestone or issue the commit is about.\n";
 
 function projectDocs(d: Detected, date: string): Record<string, string> {
   return {
