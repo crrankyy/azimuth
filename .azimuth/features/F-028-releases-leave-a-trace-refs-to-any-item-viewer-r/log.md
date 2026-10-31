@@ -32,3 +32,9 @@ T-028.4: in-progress → done. Committed dddaf4e; R-0334 passed.
 
 ## 2026-10-31T17:12:55Z · agent · note · SES-20261031-1611
 T-028.6: in-progress → done. Committed ce06688; R-0335 passed.
+
+## 2026-10-31T17:19:35Z · agent · note · SES-20261031-1611
+T-028.8: in-progress → done. Committed a69bf8d; R-0336 passed.
+
+## 2026-10-31T17:19:35Z · agent · transition · SES-20261031-1611
+in-progress → verifying

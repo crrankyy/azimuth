@@ -1,6 +1,6 @@
 ---
-updated: 2026-10-21
-reconciled_at: 7c67864
+updated: 2026-10-31
+reconciled_at: a69bf8d
 modules:
   - name: core
     path: src/core
@@ -94,6 +94,13 @@ frontmatter, Vitest, ESLint and Prettier. pnpm only.
   (`milestoneActivation` in `transitions.ts`), and `check` warns `W-MILESTONE-PLANNED` about one
   that fell behind before. `azimuth show M-NN` prints the page `src/core/milestone-page.ts` builds
   from a list of section functions; like `flows.ts` it imports no Node modules.
+  Releasing goes through `releaseMilestone` (`src/core/release.ts`) for both `azimuth release`
+  and the viewer's `release` action: it checks the features, passes a planned milestone through
+  active and records `tag` and `released_commit`; Azimuth never writes git refs.
+  `azimuth move M-NN released` stays the user's unchecked path.
+- Run history: `azimuth runs` and `azimuth show R-NNNN` (`src/core/runs.ts`,
+  `src/cli/commands/runs.ts`) read every run file through `loadProject`, not the index, whose
+  runs are capped.
 - An agent answers a question only under `autonomy.questions: proceed`, and only a new,
   non-blocking one it raised with exactly one recommended option (`answer.by: agent`).
   `azimuth answer` stays yours, and your answer replaces an agent's.
@@ -142,7 +149,9 @@ prints and the server pushes to the viewer over SSE.
   open SES and adds its goal to a Goals list; `session note` appends to Notes; SessionEnd closes
   the SES from its own file. The sidecar `live/<claude-session>.meta.json` (`readLiveMeta`,
   `updateLiveMeta` in `live.ts`) keeps `started_at`, `ses` and `transcript_path`, so they survive
-  the live log's 64 KB tail.
+  the live log's 64 KB tail. `pruneLive` never deletes the live files of a Claude Code session whose
+  Azimuth session is open (`linkOpen`), so a conversation resumed days later continues it, and
+  the SessionStart hook names that session from `linkedSession`, the CLI's own lookup.
 - Live agents: the PermissionRequest, Notification (`permission_prompt`) and PostToolUseFailure
   hooks append `wait` records and failed `tool` records; tool records carry edit sizes
   (`editSize` in `src/core/tools.ts`) and `subagent-stop` the subagent's transcript path.

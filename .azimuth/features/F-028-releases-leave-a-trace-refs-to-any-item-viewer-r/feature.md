@@ -2,7 +2,7 @@
 id: F-028
 title: "Releases leave a trace: Refs to any item, viewer release and azimuth release"
 summary: Refs may name a milestone or an issue and link the commit to it; the viewer releases a finished planned milestone (BUG-0084); a user-only azimuth release M-NN [--tag] records the tag and commit.
-status: in-progress
+status: verifying
 priority: P2
 size: M
 mode: brownfield
