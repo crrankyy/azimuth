@@ -2,7 +2,7 @@
 id: F-028
 title: "Releases leave a trace: Refs to any item, viewer release and azimuth release"
 summary: Refs may name a milestone or an issue and link the commit to it; the viewer releases a finished planned milestone (BUG-0084); a user-only azimuth release M-NN [--tag] records the tag and commit.
-status: draft
+status: approved
 priority: P2
 size: M
 mode: brownfield
@@ -12,6 +12,11 @@ superseded_by: null
 tags: []
 created: 2026-10-31
 updated: 2026-10-31
+approved_at: 2026-10-31
+approved_by: agent
+approved_hash: sha256:9fe5432a67f448c1fcd233cd38d995893451dbf6e0e2fd8bdbb3f0cf7df76126
+approved_commit: 0935b31
+review_ack_at: null
 ---
 # F-028: Releases leave a trace: Refs to any item, viewer release and azimuth release
 

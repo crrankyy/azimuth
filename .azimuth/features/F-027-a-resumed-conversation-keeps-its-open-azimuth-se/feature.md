@@ -2,7 +2,7 @@
 id: F-027
 title: A resumed conversation keeps its open Azimuth session
 summary: Pruning keeps the live log and sidecar of a Claude Code session whose Azimuth session is still open, and the start hook on resume, clear and compact names the session the CLI will use, from the CLI's own lookup (BUG-0085).
-status: draft
+status: approved
 priority: P1
 size: M
 mode: brownfield
@@ -12,6 +12,11 @@ superseded_by: null
 tags: []
 created: 2026-10-31
 updated: 2026-10-31
+approved_at: 2026-10-31
+approved_by: agent
+approved_hash: sha256:18a645a67d0f2e1c343ac89bff5dd6c63dc60b59e7c3fdda4ff66520bc08f7b4
+approved_commit: 0935b31
+review_ack_at: null
 ---
 # F-027: A resumed conversation keeps its open Azimuth session
 

@@ -2,7 +2,7 @@
 id: F-026
 title: Milestone pages and statuses that follow the work
 summary: show M-NN lists the milestone's features by status and what keeps it from being ready; a feature starting moves its planned milestone to active; check warns about a planned milestone whose work has started.
-status: draft
+status: approved
 priority: P1
 size: M
 mode: brownfield
@@ -12,6 +12,11 @@ superseded_by: null
 tags: []
 created: 2026-10-31
 updated: 2026-10-31
+approved_at: 2026-10-31
+approved_by: agent
+approved_hash: sha256:b678fd0a46ca93bb46cfe617e365ee420ff095fce9bfc8d45eabb30a3549dbe9
+approved_commit: 0935b31
+review_ack_at: null
 ---
 # F-026: Milestone pages and statuses that follow the work
 
