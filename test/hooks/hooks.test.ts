@@ -1,11 +1,26 @@
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { buildIndex } from "../../src/core/build-index";
-import { appendLive, readLiveMeta, readLiveRecords, updateLiveMeta } from "../../src/core/live";
+import {
+  appendLive,
+  liveFile,
+  liveMetaFile,
+  readLiveMeta,
+  readLiveRecords,
+  updateLiveMeta,
+} from "../../src/core/live";
 import { parseSession } from "../../src/core/parse/records";
 import { closeSession, startSession } from "../../src/core/session";
 import {
@@ -16,6 +31,7 @@ import {
   userPromptSubmit,
   type HookEnv,
 } from "../../src/hooks/handlers";
+import { runCli } from "../helpers/cli";
 import { featureFiles } from "../helpers/project";
 import { commitAll, gitEnv, initRepo } from "../helpers/git";
 import { MINIMAL_CONFIG, writeTree } from "../helpers/tree";
@@ -651,6 +667,12 @@ describe("F-011 the sidecar and the Azimuth session at Claude Code's start and e
 
   it("S-011.7.3 names the session from the sidecar in the compaction note", async () => {
     const dir = root();
+    // The note names only a session whose own file is open, so the sidecar's session needs one.
+    mkdirSync(join(dir, ".azimuth/sessions"));
+    writeFileSync(
+      join(dir, ".azimuth/sessions/SES-20261020-0900.md"),
+      "---\nid: SES-20261020-0900\nagent: claude-code\nskill: build\nstarted_at: 2026-10-20T09:00:00Z\nended_at: null\ngoal: Build F-011\ntouched: []\ncommits: []\nraised: []\n---\n## Summary\n\n## Handoff\n",
+    );
     appendLive(dir, "c4", { kind: "start", at: "2026-10-20T09:00:00Z", source: "startup" });
     updateLiveMeta(dir, "c4", { ses: "SES-20261020-0900" });
     const r = await start(dir, "c4", "11:00:00", { source: "compact" });
@@ -658,6 +680,171 @@ describe("F-011 the sidecar and the Azimuth session at Claude Code's start and e
       JSON.parse(r.stdout ?? "{}") as { hookSpecificOutput: { additionalContext: string } }
     ).hookSpecificOutput.additionalContext;
     expect(text.split("\n")).toContain("- You are in Azimuth session SES-20261020-0900.");
+  });
+});
+
+describe("F-027 the start hook names the session the CLI will use", () => {
+  const LINKED = ".azimuth/sessions/SES-20261020-1343.md";
+  const OPEN =
+    "---\nid: SES-20261020-1343\nagent: claude-code\nskill: spec\nstarted_at: 2026-10-20T13:43:00Z\nended_at: null\ngoal: Spec F-050\ntouched: []\ncommits: []\nraised: []\n---\n## Summary\n\n## Handoff\n";
+  const CLOSED = OPEN.replace("ended_at: null", "ended_at: 2026-10-21T10:00:00Z");
+  const BROKEN = "---\nid: [SES-20261020-1343\n---\n## Summary\n";
+  const OPEN_LINES = [
+    "You are in Azimuth session SES-20261020-1343.",
+    "`azimuth session note` and `azimuth session handoff` write to it, and `azimuth session start` adds its goal to it.",
+  ];
+  const closedLines = (id: string, at: string) => [
+    `This conversation's Azimuth session ${id} was closed at ${at}.`,
+    `\`azimuth session start\` opens a new one; until then \`azimuth session note\` and \`azimuth session handoff\` still write to ${id}.`,
+  ];
+
+  let project: ReturnType<typeof writeTree> | null = null;
+  afterEach(() => project?.cleanup());
+
+  function root(files: Record<string, string> = {}): string {
+    project = writeTree({ ".azimuth/config.yaml": MINIMAL_CONFIG, ...files });
+    return project.root;
+  }
+  const sidecar = (dir: string) =>
+    updateLiveMeta(dir, "c1", { started_at: "2026-10-20T13:43:00Z", ses: "SES-20261020-1343" });
+  const liveLog = (dir: string) =>
+    appendLive(dir, "c1", {
+      kind: "session",
+      at: "2026-10-20T13:43:00Z",
+      ses: "SES-20261020-1343",
+    });
+  async function hookContext(
+    dir: string,
+    claude: string,
+    source: string,
+    now: Date,
+    extra: HookEnv = {},
+  ): Promise<string[]> {
+    const r = await sessionStart(
+      { session_id: claude, cwd: dir, source },
+      {
+        env: { CLAUDE_PROJECT_DIR: dir, AZIMUTH_NO_VIEWER: "1", ...extra },
+        now,
+        writeEnv: () => undefined,
+      },
+    );
+    return (
+      JSON.parse(r.stdout ?? "{}") as { hookSpecificOutput: { additionalContext: string } }
+    ).hookSpecificOutput.additionalContext.split("\n");
+  }
+  const at11 = new Date("2026-10-21T11:00:00Z");
+
+  it("S-027.3.1 continues the resumed conversation's session after another session's start", async () => {
+    const dir = root();
+    const id = startSession(dir, {
+      skill: "spec",
+      goal: "Spec F-050",
+      claudeSession: "b7f1a9ae",
+      now: new Date("2026-10-20T13:43:00Z"),
+    });
+    expect(id).toBe("SES-20261020-1343");
+    startSession(dir, {
+      skill: "release",
+      goal: "Release M-02",
+      claudeSession: "b7f1a9ae",
+      now: new Date("2026-10-21T09:04:00Z"),
+    });
+    const old = new Date("2026-10-21T09:04:00Z");
+    for (const file of [liveFile(dir, "b7f1a9ae"), liveMetaFile(dir, "b7f1a9ae")]) {
+      utimesSync(file, old, old);
+    }
+    await hookContext(dir, "c2", "startup", new Date("2026-10-24T15:46:00Z"));
+    const lines = await hookContext(dir, "b7f1a9ae", "resume", new Date("2026-10-24T16:00:00Z"));
+    expect(lines.join("\n").endsWith(`\n\n${OPEN_LINES.join("\n")}`)).toBe(true);
+    const r = await runCli(dir, ["session", "note", "Resumed"], {
+      AZIMUTH_CLAUDE_SESSION: "b7f1a9ae",
+    });
+    expect(r).toMatchObject({ code: 0, out: "Updated .azimuth/sessions/SES-20261020-1343.md\n" });
+    expect(readdirSync(join(dir, ".azimuth/sessions"))).toEqual(["SES-20261020-1343.md"]);
+    const file = ".azimuth/sessions/SES-20261020-1343.md";
+    const session = parseSession(readFileSync(join(dir, file), "utf8"), file).entity;
+    expect(session?.goals).toBe("- 09:04 · release · Release M-02");
+  });
+
+  it("S-027.3.2 tells a resumed conversation that its session is closed", async () => {
+    const dir = root({ [LINKED]: CLOSED });
+    sidecar(dir);
+    const lines = await hookContext(dir, "c1", "resume", at11);
+    expect(lines.slice(-2)).toEqual(closedLines("SES-20261020-1343", "2026-10-21T10:00:00Z"));
+  });
+
+  it("S-027.3.3 tells a resumed conversation without a link to start a session", async () => {
+    const dir = root({ [LINKED]: OPEN });
+    const lines = await hookContext(dir, "c9", "resume", at11);
+    expect(lines.slice(-2)).toEqual([
+      "No Azimuth session in this conversation yet.",
+      'Run `azimuth session start --skill <skill> --goal "<goal>"` before `azimuth session note` or `azimuth session handoff`.',
+    ]);
+  });
+
+  it("S-027.3.4 tells a cleared conversation that its session has no file", async () => {
+    const dir = root();
+    sidecar(dir);
+    const lines = await hookContext(dir, "c1", "clear", at11);
+    expect(lines.slice(-2)).toEqual([
+      "This conversation's Azimuth session SES-20261020-1343 has no file in .azimuth/sessions/.",
+      '`azimuth session start` opens a new one; until then `azimuth session note` and `azimuth session handoff` fail with "SES-20261020-1343 does not exist."',
+    ]);
+  });
+
+  it("S-027.3.5 tells a resumed conversation that its session file has errors", async () => {
+    const dir = root({ [LINKED]: BROKEN });
+    sidecar(dir);
+    const lines = await hookContext(dir, "c1", "resume", at11);
+    expect(lines.slice(-2)).toEqual([
+      "This conversation's Azimuth session SES-20261020-1343 has errors (run `azimuth check`).",
+      "`azimuth session start` opens a new one; until then `azimuth session note` and `azimuth session handoff` still write to SES-20261020-1343.",
+    ]);
+  });
+
+  it("S-027.3.6 names the open session and what writes to it in the compaction note", async () => {
+    const dir = root({ [LINKED]: OPEN });
+    liveLog(dir);
+    sidecar(dir);
+    const lines = await hookContext(dir, "c1", "compact", at11);
+    expect(lines.slice(0, 3)).toEqual([
+      "Azimuth (context restored after compaction):",
+      ...OPEN_LINES.map((line) => `- ${line}`),
+    ]);
+  });
+
+  it("S-027.3.7 doesn't claim a closed session in the compaction note", async () => {
+    const dir = root({ [LINKED]: CLOSED });
+    liveLog(dir);
+    sidecar(dir);
+    const lines = await hookContext(dir, "c1", "compact", at11);
+    expect(lines.slice(1, 3)).toEqual(
+      closedLines("SES-20261020-1343", "2026-10-21T10:00:00Z").map((line) => `- ${line}`),
+    );
+    expect(lines).not.toContain("- You are in Azimuth session SES-20261020-1343.");
+  });
+
+  it("S-027.3.8 adds no session lines to a startup context", async () => {
+    const dir = root({ [LINKED]: OPEN });
+    liveLog(dir);
+    sidecar(dir);
+    const lines = await hookContext(dir, "c1", "startup", at11);
+    expect(lines).not.toContain(OPEN_LINES[0]);
+    expect(lines).not.toContain("No Azimuth session in this conversation yet.");
+    expect(lines.filter((line) => line.includes("azimuth session note"))).toEqual([]);
+  });
+
+  it("S-027.3.9 lets AZIMUTH_SESSION in the hook's environment win, as in the CLI", async () => {
+    const older = CLOSED.replace("id: SES-20261020-1343", "id: SES-20261019-0800").replace(
+      "ended_at: 2026-10-21T10:00:00Z",
+      "ended_at: 2026-10-19T09:00:00Z",
+    );
+    const dir = root({ [LINKED]: OPEN, ".azimuth/sessions/SES-20261019-0800.md": older });
+    sidecar(dir);
+    const lines = await hookContext(dir, "c1", "resume", at11, {
+      AZIMUTH_SESSION: "SES-20261019-0800",
+    });
+    expect(lines.slice(-2)).toEqual(closedLines("SES-20261019-0800", "2026-10-19T09:00:00Z"));
   });
 });
 

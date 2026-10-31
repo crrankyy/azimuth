@@ -22,7 +22,10 @@ import { azPath, findProjectRoot, tidyPaths, type Places } from "../core/paths";
 import {
   claudeSessionFromEnv,
   closeSession,
+  linkedSession,
+  linkOpen,
   sessionOfClaude,
+  type LinkedSession,
   type SessionEnv,
 } from "../core/session";
 import { clip, displayPath, editSize, toolTarget } from "../core/tools";
@@ -67,6 +70,8 @@ export interface HookEnv {
   CLAUDE_CODE_REMOTE?: string;
   /** Claude Code's own process ID, set in hook commands. */
   CLAUDE_PID?: string;
+  /** The same override the CLI reads; the start hook passes it to linkedSession. */
+  AZIMUTH_SESSION?: string;
 }
 
 export interface HookContext {
@@ -225,6 +230,41 @@ export function recordSessionAfterInit(
   return true;
 }
 
+/** The two lines for a linked session's state, or for no link (null). */
+function sessionLines(linked: LinkedSession | null): [string, string] {
+  if (!linked) {
+    return [
+      "No Azimuth session in this conversation yet.",
+      'Run `azimuth session start --skill <skill> --goal "<goal>"` before `azimuth session note` or `azimuth session handoff`.',
+    ];
+  }
+  const { id } = linked;
+  const opensNew = "`azimuth session start` opens a new one; until then";
+  const stillWrite = `${opensNew} \`azimuth session note\` and \`azimuth session handoff\` still write to ${id}.`;
+  switch (linked.state) {
+    case "open":
+      return [
+        `You are in Azimuth session ${id}.`,
+        "`azimuth session note` and `azimuth session handoff` write to it, and `azimuth session start` adds its goal to it.",
+      ];
+    case "closed":
+      return [
+        `This conversation's Azimuth session ${id} was closed at ${linked.ended_at}.`,
+        stillWrite,
+      ];
+    case "missing":
+      return [
+        `This conversation's Azimuth session ${id} has no file in .azimuth/sessions/.`,
+        `${opensNew} \`azimuth session note\` and \`azimuth session handoff\` fail with "${id} does not exist."`,
+      ];
+    case "invalid":
+      return [
+        `This conversation's Azimuth session ${id} has errors (run \`azimuth check\`).`,
+        stillWrite,
+      ];
+  }
+}
+
 export async function sessionStart(input: HookInput, ctx: HookContext): Promise<HookOutput> {
   const root = projectRoot(input, ctx.env);
   const id = input.session_id;
@@ -234,7 +274,8 @@ export async function sessionStart(input: HookInput, ctx: HookContext): Promise<
     `export AZIMUTH_ACTOR=agent`,
     `export AZIMUTH_CLAUDE_SESSION=${JSON.stringify(id)}`,
   ]);
-  pruneLive(root, now);
+  // A resumed conversation days later must still find the link to the session it left open.
+  pruneLive(root, now, (c) => linkOpen(root, c));
   appendLive(root, id, {
     kind: "start",
     at: stamp(now),
@@ -245,10 +286,20 @@ export async function sessionStart(input: HookInput, ctx: HookContext): Promise<
   const url =
     (autostartEnabled(root, ctx.env) ? await ctx.ensureViewer?.(root) : null) ?? viewerUrl(root);
 
+  // The CLI's own lookup, so the session named here is the one `session note` writes to.
+  const linked = ["resume", "clear", "compact"].includes(input.source ?? "")
+    ? sessionLines(
+        linkedSession(root, {
+          AZIMUTH_SESSION: ctx.env.AZIMUTH_SESSION,
+          AZIMUTH_CLAUDE_SESSION: id,
+        }),
+      )
+    : null;
+
   if (input.source === "compact") {
     const live = summarizeLive(id, readLiveRecords(root, id), readLiveMeta(root, id));
     const lines = ["Azimuth (context restored after compaction):"];
-    if (live?.ses) lines.push(`- You are in Azimuth session ${live.ses}.`);
+    if (linked) lines.push(...linked.map((line) => `- ${line}`));
     if (live?.feature) {
       lines.push(
         `- You were working on ${live.task ?? live.feature}${live.task ? ` (${live.feature})` : ""}.`,
@@ -271,6 +322,7 @@ export async function sessionStart(input: HookInput, ctx: HookContext): Promise<
   ];
   const handoff = lastHandoff(root);
   if (handoff) parts.push("", handoff);
+  if (linked) parts.push("", ...linked);
   return context("SessionStart", parts.filter((p) => p !== null).join("\n"));
 }
 
