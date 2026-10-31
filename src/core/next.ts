@@ -102,7 +102,8 @@ export function taskGroups(index: Index, f: Feature): TaskGroup[] {
   return parallelGroups(readyTasks(f), index.project.shared_files);
 }
 
-const byPriority = (a: Feature, b: Feature) =>
+/** Features by priority, then ID. */
+export const byPriority = (a: Feature, b: Feature) =>
   PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority) || a.id.localeCompare(b.id);
 
 /** Ready tasks of several in-progress features, grouped like a feature's own (TaskGroup). */

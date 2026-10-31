@@ -5,6 +5,7 @@ import formatsDoc from "../../../docs/file-format.md?raw";
 import { buildIndex } from "../../core/build-index";
 import { showBrief, statusBrief } from "../../core/brief";
 import { featureOf, idKind } from "../../core/ids";
+import { formatMilestonePage, milestonePage } from "../../core/milestone-page";
 import {
   crossFeatureGroups,
   nextForFeature,
@@ -122,6 +123,12 @@ export const show: Command = {
       const entity = findEntity(index, id);
       if (!entity) throw new UsageError(`${id} not found.`);
       printJson(entity);
+      return;
+    }
+    if (!values.brief && idKind(id) === "milestone") {
+      const page = milestonePage(index, id);
+      if (!page) throw new UsageError(`${id} not found.`);
+      print(formatMilestonePage(page));
       return;
     }
     const brief = showBrief(index, id);
