@@ -243,7 +243,9 @@ hour: a long session that is still working is left alone.
 
 Independently, the Claude Code hooks record every tool call to a live log, so the viewer shows
 what each agent is doing right now, and tell a running agent when you answer, review or move its
-work. See [Claude Code integration](claude-code.md). Live logs are kept for 72 hours.
+work. See [Claude Code integration](claude-code.md). Live logs are kept for 72 hours, or for as
+long as their Azimuth session stays open, so a conversation resumed days later continues its
+session.
 
 From its live log, each Claude Code session, its main agent and each subagent get a status. An
 agent's is the first that applies:

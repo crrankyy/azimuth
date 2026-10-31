@@ -18,7 +18,7 @@ tasks:
     note: null
   - id: T-027.3
     title: The start hook names the session the CLI will use (red → green)
-    status: in-progress
+    status: done
     after: [T-027.1, T-027.2]
     covers: [S-027.3.1, S-027.3.2, S-027.3.3, S-027.3.4, S-027.3.5, S-027.3.6, S-027.3.7, S-027.3.8, S-027.3.9]
     files: [src/hooks/handlers.ts, test/hooks/hooks.test.ts]
@@ -26,7 +26,7 @@ tasks:
     note: null
   - id: T-027.4
     title: Docs, skill and full verification
-    status: todo
+    status: in-progress
     after: [T-027.3]
     covers: []
     files: [docs/file-format.md, docs/concepts.md, docs/cli.md, docs/claude-code.md, plugin/skills/azimuth/SKILL.md]

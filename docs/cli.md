@@ -14,8 +14,9 @@
 Read commands, write commands, `init` and `view --detach` accept `--json`. Who is acting comes from `AZIMUTH_ACTOR` (`agent` or
 `you`; Claude Code sessions set `agent`), else `CLAUDECODE=1` means an agent, else you. The
 current session comes from `AZIMUTH_SESSION`, or from the Azimuth session of this Claude Code
-session, which its sidecar (`cache/live/<claude-session>.meta.json`) keeps however long the
-session runs.
+session, which its sidecar (`cache/live/<claude-session>.meta.json`) keeps while that Azimuth
+session is open, so a resumed conversation continues it. After it is closed, `session note` and
+`session handoff` still write to it and `session start` opens a new one.
 
 ## Set up
 

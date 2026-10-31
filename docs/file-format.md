@@ -610,8 +610,10 @@ Bullet times are UTC, and each goal or note is kept to one line.
 
 `.azimuth/cache/` is local state and is gitignored. In a linked git worktree, the write and verify
 locks, ID marks, live logs, viewer files and hook log are kept in the main worktree's
-`.azimuth/cache/`, so every worktree of a repository shares them; live logs and their sidecars
-untouched for 72 hours are deleted.
+`.azimuth/cache/`, so every worktree of a repository shares them. When a Claude Code session
+starts, live logs and their sidecars untouched for 72 hours are deleted, except those of a Claude
+Code session whose Azimuth session (the sidecar's `ses`, else the log's last `session` record) is
+still open. Kept files aren't touched, so their age still shows the session's last activity.
 
 | Path                              | Contents                                                                                    |
 | --------------------------------- | ------------------------------------------------------------------------------------------- |

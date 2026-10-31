@@ -43,8 +43,12 @@ passes to hooks: `$AZIMUTH_NODE`, then the path it remembered last time
    `viewer.autostart` is `false` or `AZIMUTH_NO_VIEWER=1` is set), and gives Claude the project status (with your answers and change requests not yet applied), the last
    handoff and the viewer URL. It also records the Claude Code session's start time and transcript
    path in a sidecar next to the live log (`azimuth session start` adds the Azimuth session to
-   it). After a compaction it gives a short re-grounding note instead (current session, feature and
-   task).
+   it). On a resume or `/clear`, the context ends by naming the Azimuth session that
+   `session note` and `session handoff` will write to and its state (open, closed, without a file
+   or with errors), or by saying there is none yet. After a compaction it gives a short
+   re-grounding note instead (those session lines, then the feature and task). The hook also
+   deletes live logs and sidecars untouched for 72 hours, except those whose Azimuth session is
+   still open, so a conversation resumed days later continues its session.
 2. **Work.** Every tool call is appended to `.azimuth/cache/live/<session>.jsonl`, with the lines
    each edit added and removed and the error of a call that failed, and so is every permission
    prompt Claude Code shows you; the viewer shows what each agent is doing, and whether it waits
