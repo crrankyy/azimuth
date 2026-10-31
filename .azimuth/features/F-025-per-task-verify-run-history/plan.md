@@ -2,7 +2,7 @@
 tasks:
   - id: T-025.1
     title: runHistory picks, orders and caps runs (red → green)
-    status: todo
+    status: in-progress
     after: []
     covers: [S-025.1.1, S-025.1.2, S-025.1.3, S-025.1.4, S-025.1.5, S-025.1.6, S-025.1.7, S-025.1.8]
     files: [src/core/runs.ts, test/core/runs.test.ts]
